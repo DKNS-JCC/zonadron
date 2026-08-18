@@ -1,0 +1,248 @@
+import React, { useMemo, useState } from 'react';
+import { Linking, Pressable, Share, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { usePalette } from '../hooks/useTheme';
+import type { LayerKey, QueryResult } from '../types';
+import { VerdictCard } from './VerdictCard';
+import { ZoneCard } from './ZoneCard';
+import { Banner, Card, Divider, GhostButton, InfoRow, SectionTitle } from './ui';
+import { Chevron, Collapsible, FadeInUp } from './motion';
+import { layerLabel } from '../logic/labels';
+import { ENAIRE_DRONES_URL } from '../api/enaire';
+import { ELEVATION_SOURCE } from '../api/elevation';
+import { buildShareText, enaireViewerUrl } from '../logic/share';
+import { DroneCard } from './DroneCard';
+import { MiniMap } from './MiniMap';
+import { WeatherCard } from './WeatherCard';
+import { ProximityCard } from './ProximityCard';
+import { NotamCard } from './NotamCard';
+import { space, type } from '../theme';
+
+export function ResultView({
+  result,
+  place,
+  onHeightChange,
+  onRefresh,
+  refreshing,
+  onOpenMap,
+  showMap = true,
+}: {
+  result: QueryResult;
+  place?: string | null;
+  onHeightChange?: (h: number) => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
+  onOpenMap?: () => void;
+  /** El mapa grande ya está detrás: no hace falta la vista previa. */
+  showMap?: boolean;
+}) {
+  const p = usePalette();
+  const [showOthers, setShowOthers] = useState(false);
+  const [showData, setShowData] = useState(false);
+
+  const affecting = result.verdict.affecting;
+  const others = result.verdict.notAffecting;
+  const expired = result.zones.filter((z) => z.timing === 'CADUCADA');
+
+  const queriedAt = useMemo(
+    () =>
+      new Date(result.queriedAt).toLocaleString('es-ES', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }),
+    [result.queriedAt],
+  );
+
+  const share = () => {
+    Share.share({ message: buildShareText(result, place) }).catch(() => {});
+  };
+
+  return (
+    <View style={{ gap: space.lg }}>
+      <VerdictCard
+        result={result}
+        place={place}
+        onHeightChange={onHeightChange}
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+      />
+
+      {result.offline ? (
+        <Banner tone="warn" icon="cloud-offline-outline">
+          Sin conexión: resuelto con la zona que descargaste
+          {result.offlinePackDate
+            ? ` el ${new Date(result.offlinePackDate).toLocaleDateString('es-ES')}`
+            : ''}
+          . La elevación del terreno es interpolada (±{result.elevationUncertaintyM ?? 30} m, aplicada
+          hacia el lado restrictivo) y <Text style={{ fontWeight: '700' }}>no se han podido consultar
+          los NOTAM</Text>, que son avisos temporales y cambian a diario.
+        </Banner>
+      ) : null}
+
+      {result.verdict.incomplete ? (
+        <Banner tone="warn">
+          No ha respondido {result.failedLayers.map((l: LayerKey) => layerLabel[l]).join(', ')}. Esta
+          comprobación está incompleta: no la des por buena.
+        </Banner>
+      ) : null}
+
+      {result.terrainElevation === null ? (
+        <Banner tone="warn">
+          No se ha podido obtener la elevación del terreno en este punto. Las zonas con límites
+          referidos al nivel del mar se muestran como si te afectaran, por prudencia.
+        </Banner>
+      ) : null}
+
+      {showMap ? <MiniMap coords={result.coords} onOpen={onOpenMap} /> : null}
+
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
+        <View style={{ flex: 1 }}>
+          <GhostButton label="Compartir" icon="share-outline" onPress={share} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <GhostButton
+            label="Ver en ENAIRE"
+            icon="open-outline"
+            onPress={() =>
+              Linking.openURL(enaireViewerUrl(result.coords.lat, result.coords.lon)).catch(() => {})
+            }
+          />
+        </View>
+      </View>
+
+      {affecting.length > 0 ? (
+        <FadeInUp animationKey={result.queriedAt} delay={80}>
+          <View style={{ gap: space.md }}>
+            <SectionTitle>
+              {affecting.length === 1
+                ? 'La zona que te afecta'
+                : `Las ${affecting.length} zonas que te afectan`}
+            </SectionTitle>
+            {affecting.map((z, i) => (
+              <ZoneCard
+                key={z.key}
+                zone={z}
+                defaultOpen={affecting.length === 1 && i === 0}
+                requestContext={{ result, place }}
+              />
+            ))}
+          </View>
+        </FadeInUp>
+      ) : null}
+
+      {others.length > 0 ? (
+        <View style={{ gap: space.md }}>
+          <Pressable
+            onPress={() => setShowOthers((v) => !v)}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showOthers }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 36 }}
+          >
+            <Chevron open={showOthers} color={p.textMuted} size={16} />
+            <Text style={[type.overline, { color: p.textMuted, textTransform: 'uppercase', flex: 1 }]}>
+              {others.length} {others.length === 1 ? 'zona que no te afecta' : 'zonas que no te afectan'} a
+              esta altura
+            </Text>
+          </Pressable>
+          <Collapsible open={showOthers}>
+            <View style={{ gap: space.md }}>
+              {others.map((z) => (
+                <ZoneCard key={z.key} zone={z} dimmed />
+              ))}
+            </View>
+          </Collapsible>
+        </View>
+      ) : null}
+
+      {result.verdict.advisories.length > 0 ? (
+        <View style={{ gap: space.md }}>
+          <SectionTitle>Avisos de ENAIRE para toda España</SectionTitle>
+          {result.verdict.advisories.map((z) => (
+            <ZoneCard key={z.key} zone={z} />
+          ))}
+        </View>
+      ) : null}
+
+      {expired.length > 0 ? (
+        <View style={{ gap: space.md }}>
+          <SectionTitle>Zonas ya no vigentes</SectionTitle>
+          {expired.map((z) => (
+            <ZoneCard key={z.key} zone={z} dimmed />
+          ))}
+        </View>
+      ) : null}
+
+      {!result.offline ? <NotamCard coords={result.coords} /> : null}
+
+      {!result.offline ? <ProximityCard coords={result.coords} /> : null}
+
+      {!result.offline ? <WeatherCard coords={result.coords} /> : null}
+
+      <DroneCard compact />
+
+      <Card padded={false}>
+        <Pressable
+          onPress={() => setShowData((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showData }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: space.sm,
+            padding: space.lg,
+            minHeight: 52,
+          }}
+        >
+          <Chevron open={showData} color={p.textMuted} size={16} />
+          <Text style={[type.captionStrong, { color: p.textMuted, flex: 1 }]}>
+            Datos y fuentes de esta consulta
+          </Text>
+        </Pressable>
+        <Collapsible open={showData}>
+          <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg }}>
+            <InfoRow
+              label="Coordenadas"
+              value={`${result.coords.lat.toFixed(5)}, ${result.coords.lon.toFixed(5)}`}
+            />
+            <InfoRow
+              label="Elevación del terreno"
+              value={
+                result.terrainElevation === null
+                  ? 'No disponible'
+                  : `${Math.round(result.terrainElevation)} m sobre el nivel del mar`
+              }
+            />
+            <InfoRow
+              label="Tu dron llegaría a"
+              value={
+                result.terrainElevation === null
+                  ? `${result.flightHeightAgl} m sobre el terreno`
+                  : `${Math.round(result.terrainElevation + result.flightHeightAgl)} m sobre el nivel del mar`
+              }
+            />
+            <InfoRow
+              label="Zonas en el punto"
+              value={`${result.zones.filter((z) => !z.advisory).length} (+${result.verdict.advisories.length} aviso general)`}
+            />
+            <InfoRow label="Consultado" value={queriedAt} />
+            <Divider />
+            <InfoRow label="Zonas" value="ENAIRE · Zonas Geográficas UAS (ED-318)" />
+            <InfoRow label="Elevación" value={ELEVATION_SOURCE} />
+          </View>
+        </Collapsible>
+      </Card>
+
+      <Banner>
+        Esta app consulta en directo los servicios oficiales de ENAIRE (zonas geográficas UAS y
+        NOTAM), pero no los sustituye: los horarios de los NOTAM vienen en texto libre y hay que
+        leerlos. La responsabilidad del vuelo siempre es del piloto.{' '}
+        <Text
+          style={{ color: p.accent, textDecorationLine: 'underline' }}
+          onPress={() => Linking.openURL(ENAIRE_DRONES_URL).catch(() => {})}
+        >
+          Abrir ENAIRE Drones
+        </Text>
+      </Banner>
+    </View>
+  );
+}

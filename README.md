@@ -1,5 +1,7 @@
 # Zona Dron
 
+[![Descargar APK](https://img.shields.io/github/v/release/DKNS-JCC/zonadron?label=Descargar%20APK&style=for-the-badge&color=1355E8)](https://github.com/DKNS-JCC/zonadron/releases/latest)
+
 App móvil para saber, de un vistazo y en lenguaje claro, **si puedes volar tu dron en un punto
 concreto de España**.
 
@@ -9,6 +11,15 @@ condiciones, necesitas autorización o no puedes volar.
 
 > **Aviso**: es una herramienta de consulta independiente. No sustituye a los servicios oficiales de
 > ENAIRE ni a la normativa. La responsabilidad del vuelo es siempre del piloto.
+
+## Instalación (Android)
+
+1. Descarga el APK desde [**Releases**](https://github.com/DKNS-JCC/zonadron/releases/latest).
+2. Ábrelo desde el móvil. Al no venir de Google Play, Android pedirá permitir instalar desde esta
+   fuente la primera vez — es normal, no hace falta ninguna cuenta ni permiso especial.
+
+No hay versión de iOS publicada: hace falta cuenta de desarrollador de Apple para firmar el `.ipa`.
+Puedes compilarla tú mismo, ver [Cómo ejecutarla](#cómo-ejecutarla).
 
 ---
 

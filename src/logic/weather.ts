@@ -1,4 +1,4 @@
-import type { FlightWeather } from '../api/weather';
+import type { FlightWeather, HourlySample } from '../api/weather';
 import { getDroneProfile, type DroneProfileId } from './drone';
 
 /**
@@ -98,4 +98,19 @@ export function assessWeather(
   if (notes.length === 0) notes.push('Viento flojo, sin lluvia y con buena visibilidad.');
 
   return { level, headline, notes, minutesToSunset };
+}
+
+/**
+ * Nivel de una hora suelta de la previsión: sólo rachas y lluvia, que es lo
+ * que de verdad decide si se puede salir. Sin visibilidad ni ocaso —esos
+ * importan al momento de volar, no para escanear un día entero de un vistazo.
+ */
+export function assessHour(sample: HourlySample, drone: DroneProfileId): WeatherLevel {
+  const limits = WIND_LIMITS[drone] ?? WIND_LIMITS.otro;
+  if (sample.precipitationMm !== null && sample.precipitationMm > 0) return 'danger';
+  if (sample.gustMs !== null) {
+    if (sample.gustMs >= limits.danger) return 'danger';
+    if (sample.gustMs >= limits.caution) return 'caution';
+  }
+  return 'ok';
 }

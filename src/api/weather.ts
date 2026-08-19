@@ -26,6 +26,17 @@ export interface FlightWeather {
   sunrise: string | null;
   sunset: string | null;
   fetchedAt: string;
+  /** Próximas horas, para elegir cuándo salir en vez de sólo si ahora mismo. */
+  hourly: HourlySample[];
+}
+
+export interface HourlySample {
+  /** ISO local. */
+  time: string;
+  temperatureC: number | null;
+  windMs: number | null;
+  gustMs: number | null;
+  precipitationMm: number | null;
 }
 
 export async function getFlightWeather(
@@ -37,10 +48,12 @@ export async function getFlightWeather(
     latitude: String(lat),
     longitude: String(lon),
     current: 'temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation,visibility,cloud_cover',
+    hourly: 'temperature_2m,wind_speed_10m,wind_gusts_10m,precipitation',
     daily: 'sunrise,sunset',
     wind_speed_unit: 'ms',
     timezone: 'auto',
     forecast_days: '1',
+    forecast_hours: '18',
   });
 
   const controller = new AbortController();
@@ -57,7 +70,17 @@ export async function getFlightWeather(
     const json = await res.json();
     const c = json?.current ?? {};
     const d = json?.daily ?? {};
+    const h = json?.hourly ?? {};
     const num = (v: unknown) => (Number.isFinite(Number(v)) ? Number(v) : null);
+
+    const times: unknown[] = Array.isArray(h.time) ? h.time : [];
+    const hourly: HourlySample[] = times.map((t, i) => ({
+      time: String(t),
+      temperatureC: num(h.temperature_2m?.[i]),
+      windMs: num(h.wind_speed_10m?.[i]),
+      gustMs: num(h.wind_gusts_10m?.[i]),
+      precipitationMm: num(h.precipitation?.[i]),
+    }));
 
     return {
       temperatureC: num(c.temperature_2m),
@@ -69,6 +92,7 @@ export async function getFlightWeather(
       sunrise: Array.isArray(d.sunrise) ? String(d.sunrise[0]) : null,
       sunset: Array.isArray(d.sunset) ? String(d.sunset[0]) : null,
       fetchedAt: new Date().toISOString(),
+      hourly,
     };
   } catch {
     return null;

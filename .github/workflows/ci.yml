@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check (app)
+        run: npm run typecheck
+
+      - name: Type-check (tests)
+        run: npm run typecheck:tests
+
+      - name: Unit tests (deterministic, no network)
+        run: npm run test:unit
+
+  live-check:
+    # Contra el servicio real de ENAIRE: informativo, no bloquea el merge. Un
+    # fallo aquí puede ser ENAIRE caído, no un error del motor — ver
+    # scripts/verificar-motor.ts.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run test:motor

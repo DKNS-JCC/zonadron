@@ -100,11 +100,27 @@ npx expo prebuild
 
 ## Testing
 
-The decision engine can be tested against the live ENAIRE service:
+Deterministic unit tests (pure logic, synthetic fixtures, no network — safe for CI):
+
+```bash
+npm run test:unit
+```
+
+Covers the decision engine (`verdict.ts`, including the aerodrome-reference-point
+altitude recalculation), offline-mode geometry, the sun/shadow/horizon math, and
+HTML sanitization. Node's built-in test runner, via `tsx`.
+
+Live integration check against the real ENAIRE service (known locations —
+airport runways, city centers, open countryside — verifying the result changes
+correctly with altitude and that a partial service response never turns into a
+"you can fly"):
 
 ```bash
 npm run test:motor
 ```
+
+This one needs network and can fail because ENAIRE is down, not because the
+engine is wrong — that's why it's kept separate from `test:unit`.
 
 Type checking is also available:
 
@@ -112,7 +128,11 @@ Type checking is also available:
 npm run typecheck
 ```
 
-The engine tests include known locations and verify, among other things, changes in the result according to altitude and the handling of incomplete responses.
+> **Windows note:** if `test:unit` or `test:motor` fail immediately with
+> `The package "@esbuild/win32-x64" could not be found`, your `node_modules`
+> is missing the Windows-specific optional dependency (common right after
+> cloning if `npm install` last ran on Linux/WSL). Delete `node_modules` and
+> run `npm install` again on Windows to fix it.
 
 ## Architecture
 

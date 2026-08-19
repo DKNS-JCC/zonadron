@@ -2,17 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
-import { radius, space, type } from '../theme';
+import { radius, space, systemColor, tabular, type, emphasize } from '../theme';
 import { getFlightWeather, WEATHER_SOURCE, type FlightWeather } from '../api/weather';
 import { assessWeather, type WeatherLevel } from '../logic/weather';
 import { useSettings } from '../state/SettingsContext';
 import { Card, SectionTitle, SkeletonRows } from './ui';
 import type { Coords } from '../types';
 
-const TONE: Record<WeatherLevel, { color: string; darkColor: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  ok: { color: '#07835A', darkColor: '#3FBE8F', icon: 'sunny-outline' },
-  caution: { color: '#8F5300', darkColor: '#E8A33D', icon: 'alert-circle-outline' },
-  danger: { color: '#B01F15', darkColor: '#FF6B5E', icon: 'thunderstorm-outline' },
+const TONE: Record<
+  WeatherLevel,
+  { color: 'green' | 'orange' | 'red'; icon: keyof typeof Ionicons.glyphMap }
+> = {
+  ok: { color: 'green', icon: 'sunny' },
+  caution: { color: 'orange', icon: 'alert-circle' },
+  danger: { color: 'red', icon: 'thunderstorm' },
 };
 
 /**
@@ -50,7 +53,7 @@ export function WeatherCard({ coords }: { coords: Coords }) {
 
   const assessment = assessWeather(weather, drone);
   const tone = TONE[assessment.level];
-  const color = p.scheme === 'dark' ? tone.darkColor : tone.color;
+  const color = systemColor(tone.color, p);
 
   const sunsetTime = weather.sunset
     ? new Date(weather.sunset).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
@@ -61,22 +64,20 @@ export function WeatherCard({ coords }: { coords: Coords }) {
       <SectionTitle>Condiciones de vuelo</SectionTitle>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-        <View
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            backgroundColor: color + (p.scheme === 'dark' ? '2E' : '1C'),
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={tone.icon} size={22} color={color} />
-        </View>
-        <Text style={[type.subtitle, { color, flex: 1 }]}>{assessment.headline}</Text>
+        <Ionicons name={tone.icon} size={26} color={color} />
+        <Text style={[type.title3, { color, flex: 1 }]}>{assessment.headline}</Text>
       </View>
 
-      <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.lg, flexWrap: 'wrap' }}>
+      {/* Las cuatro lecturas, en una fila hundida con líneas finísimas entre ellas. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          marginTop: space.lg,
+          backgroundColor: p.surfaceSunken,
+          borderRadius: radius.md,
+          overflow: 'hidden',
+        }}
+      >
         <Metric
           icon="speedometer-outline"
           value={weather.gustMs !== null ? `${weather.gustMs.toFixed(1).replace('.', ',')}` : '—'}
@@ -84,41 +85,45 @@ export function WeatherCard({ coords }: { coords: Coords }) {
           label="rachas"
           highlight={color}
         />
+        <Rule />
         <Metric
           icon="navigate-outline"
           value={weather.windMs !== null ? `${weather.windMs.toFixed(1).replace('.', ',')}` : '—'}
           unit="m/s"
           label="viento"
         />
+        <Rule />
         <Metric
           icon="thermometer-outline"
           value={weather.temperatureC !== null ? `${Math.round(weather.temperatureC)}` : '—'}
           unit="°C"
           label="temp."
         />
-        <Metric
-          icon="moon-outline"
-          value={sunsetTime ?? '—'}
-          unit=""
-          label="ocaso"
-        />
+        <Rule />
+        <Metric icon="moon-outline" value={sunsetTime ?? '—'} unit="" label="ocaso" />
       </View>
 
       <View style={{ gap: 6, marginTop: space.lg }}>
         {assessment.notes.map((n, i) => (
           <View key={i} style={{ flexDirection: 'row', gap: space.sm }}>
-            <Text style={[type.caption, { color }]}>•</Text>
-            <Text style={[type.caption, { color: p.text, flex: 1 }]}>{n}</Text>
+            <Text style={[type.footnote, { color: p.labelTertiary }]}>•</Text>
+            <Text style={[type.footnote, { color: p.label, flex: 1 }]}>{n}</Text>
           </View>
         ))}
       </View>
 
-      <Text style={[type.caption, { color: p.textFaint, fontSize: 12, marginTop: space.md }]}>
+      <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
         Datos de {WEATHER_SOURCE} en superficie. A la altura a la que vuelas sopla más. Los umbrales
         son orientativos: manda el manual de tu dron.
       </Text>
     </Card>
   );
+}
+
+/** Línea vertical finísima entre lecturas. */
+function Rule() {
+  const p = usePalette();
+  return <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: p.separator }} />;
 }
 
 function Metric({
@@ -139,21 +144,18 @@ function Metric({
     <View
       style={{
         flex: 1,
-        minWidth: 72,
-        backgroundColor: p.bg,
-        borderRadius: radius.md,
         paddingVertical: space.md,
-        paddingHorizontal: space.sm,
+        paddingHorizontal: space.xs,
         alignItems: 'center',
-        gap: 2,
+        gap: 3,
       }}
     >
-      <Ionicons name={icon} size={15} color={highlight ?? p.textFaint} />
+      <Ionicons name={icon} size={14} color={highlight ?? p.labelTertiary} />
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-        <Text style={[type.bodyStrong, { color: highlight ?? p.text, fontSize: 16 }]}>{value}</Text>
-        {unit ? <Text style={[type.caption, { color: p.textMuted, fontSize: 11 }]}>{unit}</Text> : null}
+        <Text style={[emphasize(type.callout), tabular, { color: highlight ?? p.label }]}>{value}</Text>
+        {unit ? <Text style={[type.caption2, { color: p.labelSecondary }]}>{unit}</Text> : null}
       </View>
-      <Text style={[type.caption, { color: p.textFaint, fontSize: 11 }]}>{label}</Text>
+      <Text style={[type.caption2, { color: p.labelTertiary }]}>{label}</Text>
     </View>
   );
 }

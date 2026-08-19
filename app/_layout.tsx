@@ -1,41 +1,55 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SettingsProvider } from '../src/state/SettingsContext';
 import { HistoryProvider } from '../src/state/HistoryContext';
-import { darkPalette, lightPalette } from '../src/theme';
+import { usePalette, useScheme } from '../src/hooks/useTheme';
 
 export default function RootLayout() {
-  const scheme = useColorScheme();
-  const palette = scheme === 'dark' ? darkPalette : lightPalette;
-
   return (
     <SafeAreaProvider>
       <SettingsProvider>
         <HistoryProvider>
-        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack
-          screenOptions={{
-            headerStyle: { backgroundColor: palette.bg },
-            headerTintColor: palette.text,
-            headerTitleStyle: { fontWeight: '700' },
-            contentStyle: { backgroundColor: palette.bg },
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="resultado"
-            options={{
-              presentation: 'modal',
-              headerShown: true,
-              headerBackButtonDisplayMode: 'minimal',
-            }}
-          />
-        </Stack>
+          {/* El aspecto se lee de los ajustes, así que la pila de navegación
+              tiene que ir por dentro del proveedor para enterarse del cambio. */}
+          <Navegacion />
         </HistoryProvider>
       </SettingsProvider>
     </SafeAreaProvider>
+  );
+}
+
+function Navegacion() {
+  const palette = usePalette();
+  const scheme = useScheme();
+
+  return (
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: palette.background },
+          headerTintColor: palette.label,
+          headerTitleStyle: { fontWeight: '700' },
+          contentStyle: { backgroundColor: palette.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="resultado"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            headerBackButtonDisplayMode: 'minimal',
+          }}
+        />
+        <Stack.Screen
+          name="descargar"
+          options={{ presentation: 'modal', headerShown: true, title: 'Elegir zona' }}
+        />
+        <Stack.Screen name="luz" options={{ headerShown: true, title: 'Luz y sombras' }} />
+      </Stack>
+    </>
   );
 }

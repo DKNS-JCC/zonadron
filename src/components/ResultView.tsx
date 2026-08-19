@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Linking, Pressable, Share, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
 import type { LayerKey, QueryResult } from '../types';
 import { VerdictCard } from './VerdictCard';
 import { ZoneCard } from './ZoneCard';
-import { Banner, Card, Divider, GhostButton, InfoRow, SectionTitle } from './ui';
-import { Chevron, Collapsible, FadeInUp } from './motion';
+import { Banner, Card, GhostButton, InfoRow, SectionTitle, Separator } from './ui';
+import { Chevron, Collapsible, Appear } from './motion';
 import { layerLabel } from '../logic/labels';
 import { ENAIRE_DRONES_URL } from '../api/enaire';
 import { ELEVATION_SOURCE } from '../api/elevation';
@@ -16,7 +17,7 @@ import { MiniMap } from './MiniMap';
 import { WeatherCard } from './WeatherCard';
 import { ProximityCard } from './ProximityCard';
 import { NotamCard } from './NotamCard';
-import { space, type } from '../theme';
+import { space, type, emphasize } from '../theme';
 
 export function ResultView({
   result,
@@ -37,6 +38,7 @@ export function ResultView({
   showMap?: boolean;
 }) {
   const p = usePalette();
+  const router = useRouter();
   const [showOthers, setShowOthers] = useState(false);
   const [showData, setShowData] = useState(false);
 
@@ -110,8 +112,23 @@ export function ResultView({
         </View>
       </View>
 
+      <GhostButton
+        label="Luz y sombras aquí"
+        icon="sunny-outline"
+        onPress={() =>
+          router.push({
+            pathname: '/luz',
+            params: {
+              lat: String(result.coords.lat),
+              lon: String(result.coords.lon),
+              ...(place ? { label: place } : {}),
+            },
+          })
+        }
+      />
+
       {affecting.length > 0 ? (
-        <FadeInUp animationKey={result.queriedAt} delay={80}>
+        <Appear animationKey={result.queriedAt} delay={80}>
           <View style={{ gap: space.md }}>
             <SectionTitle>
               {affecting.length === 1
@@ -127,7 +144,7 @@ export function ResultView({
               />
             ))}
           </View>
-        </FadeInUp>
+        </Appear>
       ) : null}
 
       {others.length > 0 ? (
@@ -136,10 +153,17 @@ export function ResultView({
             onPress={() => setShowOthers((v) => !v)}
             accessibilityRole="button"
             accessibilityState={{ expanded: showOthers }}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 36 }}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space.sm,
+              minHeight: 36,
+              paddingHorizontal: space.xs,
+              opacity: pressed ? 0.6 : 1,
+            })}
           >
-            <Chevron open={showOthers} color={p.textMuted} size={16} />
-            <Text style={[type.overline, { color: p.textMuted, textTransform: 'uppercase', flex: 1 }]}>
+            <Chevron open={showOthers} color={p.labelSecondary} size={14} />
+            <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase', flex: 1 }]}>
               {others.length} {others.length === 1 ? 'zona que no te afecta' : 'zonas que no te afectan'} a
               esta altura
             </Text>
@@ -185,21 +209,23 @@ export function ResultView({
           onPress={() => setShowData((v) => !v)}
           accessibilityRole="button"
           accessibilityState={{ expanded: showData }}
-          style={{
+          style={({ pressed }) => ({
             flexDirection: 'row',
             alignItems: 'center',
             gap: space.sm,
             padding: space.lg,
             minHeight: 52,
-          }}
+            backgroundColor: pressed ? p.surfaceSunken : 'transparent',
+          })}
         >
-          <Chevron open={showData} color={p.textMuted} size={16} />
-          <Text style={[type.captionStrong, { color: p.textMuted, flex: 1 }]}>
+          <Chevron open={showData} color={p.labelSecondary} size={14} />
+          <Text style={[emphasize(type.subheadline), { color: p.labelSecondary, flex: 1 }]}>
             Datos y fuentes de esta consulta
           </Text>
         </Pressable>
         <Collapsible open={showData}>
-          <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg }}>
+          <Separator inset={space.lg} />
+          <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, paddingTop: space.xs }}>
             <InfoRow
               label="Coordenadas"
               value={`${result.coords.lat.toFixed(5)}, ${result.coords.lon.toFixed(5)}`}
@@ -225,7 +251,9 @@ export function ResultView({
               value={`${result.zones.filter((z) => !z.advisory).length} (+${result.verdict.advisories.length} aviso general)`}
             />
             <InfoRow label="Consultado" value={queriedAt} />
-            <Divider />
+            <View style={{ marginVertical: space.sm }}>
+              <Separator />
+            </View>
             <InfoRow label="Zonas" value="ENAIRE · Zonas Geográficas UAS (ED-318)" />
             <InfoRow label="Elevación" value={ELEVATION_SOURCE} />
           </View>
@@ -237,7 +265,7 @@ export function ResultView({
         NOTAM), pero no los sustituye: los horarios de los NOTAM vienen en texto libre y hay que
         leerlos. La responsabilidad del vuelo siempre es del piloto.{' '}
         <Text
-          style={{ color: p.accent, textDecorationLine: 'underline' }}
+          style={{ color: p.tint, fontWeight: '600' }}
           onPress={() => Linking.openURL(ENAIRE_DRONES_URL).catch(() => {})}
         >
           Abrir ENAIRE Drones

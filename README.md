@@ -38,6 +38,47 @@ condiciones, necesitas autorización o no puedes volar.
   elevaciones, y responde sin datos móviles. Los NOTAM no se guardan (cambian a diario y uno viejo es
   peor que ninguno) y la app lo dice.
 
+### Luz y sombras
+
+Planificador de luz para fotografía, calculado entero en el móvil (SunCalc, algoritmos de Meeus):
+
+- **Trayectoria del sol sobre el mapa**: un rayo por hora coloreado según el tipo de luz, con las
+  líneas de amanecer y ocaso etiquetadas con su hora, y un deslizador para mover el momento del día.
+- **Hora dorada y hora azul** con sus tramos exactos (dorada: sol entre 0° y 6°; azul: entre −4° y
+  −6°), mediodía solar y altura máxima.
+- **Sombras**: cuánto mide la sombra respecto a la altura del objeto y hacia dónde cae.
+- **El ocaso de verdad, contra el terreno**: el ocaso de las tablas es el de un mundo llano. Esto
+  muestrea la elevación real hasta 20 km por las direcciones en las que cae el sol, con corrección de
+  curvatura terrestre y refracción, y da la hora a la que el sol se esconde tras el monte. En
+  Salamanca el sol sale 15 minutos más tarde de lo que dice la tabla.
+
+### Mapas base
+
+Tres capas, todas gratuitas y sin clave:
+
+- **Mapa**: callejero de OpenStreetMap (CARTO oscuro en modo noche).
+- **Topográfico**: MTN oficial del Instituto Geográfico Nacional, con curvas de nivel.
+- **Satélite**: ortofoto PNOA del IGN — para España tiene mejor resolución que las genéricas y es
+  la fuente oficial.
+
+### Desde dónde fotografiar algo
+
+Botón de cámara en el mapa: marcas lo que quieres fotografiar y la app busca el punto más cercano
+desde el que se puede volar sin pedir autorización, con su distancia, rumbo y hasta qué altura se
+puede subir ahí. Avisa si el punto queda a más de 500 m, porque entonces el objetivo se te va del
+alcance visual. Necesita el paquete descargado: la búsqueda mira miles de puntos.
+
+### Mapa de altura libre
+
+Pinta el mapa por celdas según hasta qué altura puedes subir en cada punto sin pedir permiso —
+verde 120 m, ámbar 60, rojo nada. Responde a "¿dónde me voy a volar?" en vez de a "¿puedo volar en
+este punto?". Se calcula en el móvil con el paquete descargado: hacerlo consultando a ENAIRE serían
+miles de peticiones. Se activa en Ajustes → Funciones avanzadas.
+
+Se descartó una función de "modo vuelo" que iba a vigilar en vivo el margen hasta la zona más
+cercana: el móvil está en la mano del piloto, no en el dron, así que habría medido lo que no era.
+El dato útil (a qué distancia está la zona más próxima y en qué dirección) ya sale en cada consulta.
+
 ### Interfaz
 
 - **El veredicto es lo primero de la pantalla**: tarjeta de color sólido, legible con sol directo y

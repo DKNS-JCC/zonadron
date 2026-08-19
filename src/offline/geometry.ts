@@ -74,3 +74,75 @@ export function interpolateElevation(
 
   return (v00 * (1 - tc) + v01 * tc) * (1 - tr) + (v10 * (1 - tc) + v11 * tc) * tr;
 }
+
+const EARTH_R = 6371000;
+
+/** Metros por grado de longitud y latitud, en la latitud dada. */
+export function metresPerDegree(lat: number) {
+  const latRad = (lat * Math.PI) / 180;
+  return { x: (Math.PI / 180) * EARTH_R * Math.cos(latRad), y: (Math.PI / 180) * EARTH_R };
+}
+
+function pointToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return { dist: Math.hypot(px - ax, py - ay), x: ax, y: ay };
+  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * dx;
+  const cy = ay + t * dy;
+  return { dist: Math.hypot(px - cx, py - cy), x: cx, y: cy };
+}
+
+const COMPASS = [
+  'al norte', 'al noreste', 'al este', 'al sureste',
+  'al sur', 'al suroeste', 'al oeste', 'al noroeste',
+];
+
+/** Rumbo legible a partir de un desplazamiento en metros (este, norte). */
+export function bearingLabel(dx: number, dy: number): string {
+  const angle = (Math.atan2(dx, dy) * 180) / Math.PI;
+  return COMPASS[Math.round(((angle + 360) % 360) / 45) % 8];
+}
+
+/**
+ * Distancia mínima del punto al borde del polígono, en metros, junto con el
+ * desplazamiento hacia el punto más cercano (para poder dar el rumbo).
+ */
+export function distanceToRings(
+  lat: number,
+  lon: number,
+  rings: number[][][],
+): { dist: number; dx: number; dy: number } | null {
+  const scale = metresPerDegree(lat);
+  let best: { dist: number; dx: number; dy: number } | null = null;
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length - 1; i++) {
+      const a = ring[i];
+      const b = ring[i + 1];
+      if (!a || !b) continue;
+      const r = pointToSegment(
+        0, 0,
+        (a[0] - lon) * scale.x, (a[1] - lat) * scale.y,
+        (b[0] - lon) * scale.x, (b[1] - lat) * scale.y,
+      );
+      if (!best || r.dist < best.dist) best = { dist: r.dist, dx: r.x, dy: r.y };
+    }
+  }
+  return best;
+}
+
+/** Caja envolvente de unos anillos, para descartar rápido. */
+export function ringsBBox(rings: number[][][]): BBox {
+  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  for (const ring of rings) {
+    for (const [lon, lat] of ring) {
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+    }
+  }
+  return { minLat, maxLat, minLon, maxLon };
+}

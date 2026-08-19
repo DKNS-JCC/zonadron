@@ -54,6 +54,10 @@ export function buildMapHtml(opts: MapOptions): string {
     border: 3px solid #fff; border-radius: 50%;
     box-shadow: 0 0 0 2px rgba(11,18,32,.5), 0 3px 10px rgba(0,0,0,.35);
   }
+  /* Las celdas se ven como celdas: la resolución es la que es y disimularla
+     con un degradado sería fingir una precisión que no hay. */
+  .coverage { image-rendering: pixelated; image-rendering: crisp-edges; }
+
   .crosshair:after {
     content: ''; position: absolute; left: 50%; top: 50%;
     width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
@@ -87,20 +91,46 @@ export function buildMapHtml(opts: MapOptions): string {
     tap: INTERACTIVE
   }).setView([${lat}, ${lon}], ${zoom});
 
+  // Mapas base. Para España los del Instituto Geográfico Nacional son mejores
+  // que los genéricos y son oficiales y gratuitos; fuera de España no cubren,
+  // pero esta app sólo mira España.
+  var IGN = 'https://www.ign.es/wmts/';
+  function ignUrl(service, layer, format) {
+    return IGN + service + '?service=WMTS&request=GetTile&version=1.0.0&layer=' + layer +
+      '&style=default&tilematrixset=GoogleMapsCompatible&format=' + format +
+      '&TileMatrix={z}&TileCol={x}&TileRow={y}';
+  }
+
   var BASES = {
-    light: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
-    dark: { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO' }
+    mapa: {
+      light: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap', max: 19 },
+      dark: { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO', max: 19 }
+    },
+    topo: {
+      any: { url: ignUrl('mapa-raster', 'MTN', 'image/jpeg'), attr: 'MTN &copy; Instituto Geográfico Nacional', max: 18 }
+    },
+    satelite: {
+      any: { url: ignUrl('pnoa-ma', 'OI.OrthoimageCoverage', 'image/jpeg'), attr: 'PNOA &copy; Instituto Geográfico Nacional', max: 19 }
+    }
   };
+
   var baseLayer = null;
-  function setBase(mode) {
-    var cfg = BASES[mode] || BASES.light;
+  var baseId = '${'mapa'}';
+  var isDark = ${dark ? 'true' : 'false'};
+
+  function setBase(id, dark) {
+    if (id) baseId = id;
+    if (dark !== undefined && dark !== null) isDark = dark;
+    var group = BASES[baseId] || BASES.mapa;
+    var cfg = group.any || (isDark ? group.dark : group.light);
     if (baseLayer) map.removeLayer(baseLayer);
-    baseLayer = L.tileLayer(cfg.url, { maxZoom: 19, attribution: cfg.attr });
+    baseLayer = L.tileLayer(cfg.url, { maxZoom: 19, maxNativeZoom: cfg.max, attribution: cfg.attr });
     baseLayer.addTo(map);
     baseLayer.bringToBack();
-    document.body.style.background = mode === 'dark' ? '#0A1017' : '#F1F4F9';
+    // Sobre satélite el fondo oscuro disimula las teselas que faltan.
+    document.body.style.background = (baseId === 'satelite' || isDark) ? '#0A1017' : '#F1F4F9';
   }
-  setBase('${dark ? 'dark' : 'light'}');
+  setBase('mapa', ${dark ? 'true' : 'false'});
 
   // --- Capas oficiales de ENAIRE (endpoint export del servicio ArcGIS) ---
   // Una sola capa que pide las tres a la vez (layers=show:a,b,c): una petición
@@ -146,6 +176,196 @@ export function buildMapHtml(opts: MapOptions): string {
     enaire.redraw();
   }
 
+  // --- Capa de alturas libres ("dónde sí puedo volar") ---
+  // Se pinta como una imagen: una rejilla de 48x48 con miles de rectángulos
+  // vectoriales dejaría el mapa inservible en un móvil.
+  var coverageLayer = null;
+
+  function drawCoverage(msg) {
+    var canvas = document.createElement('canvas');
+    canvas.width = msg.cols;
+    canvas.height = msg.rows;
+    var ctx = canvas.getContext('2d');
+    for (var r = 0; r < msg.rows; r++) {
+      for (var c = 0; c < msg.cols; c++) {
+        ctx.fillStyle = msg.colors[r * msg.cols + c];
+        // La fila 0 de los datos es el borde sur; en el lienzo es la de abajo.
+        ctx.fillRect(c, msg.rows - 1 - r, 1, 1);
+      }
+    }
+    if (coverageLayer) map.removeLayer(coverageLayer);
+    coverageLayer = L.imageOverlay(
+      canvas.toDataURL(),
+      [[msg.bbox.minLat, msg.bbox.minLon], [msg.bbox.maxLat, msg.bbox.maxLon]],
+      { opacity: 0.5, interactive: false, className: 'coverage' }
+    ).addTo(map);
+  }
+
+  function clearCoverage() {
+    if (coverageLayer) { map.removeLayer(coverageLayer); coverageLayer = null; }
+  }
+
+  // --- Círculo de descarga: se queda en el centro y sigue al mapa ---
+  var downloadCircle = null;
+  var downloadRadius = 0;
+
+  function updateDownloadCircle() {
+    if (!downloadRadius) return;
+    var c = map.getCenter();
+    if (!downloadCircle) {
+      downloadCircle = L.circle(c, {
+        radius: downloadRadius,
+        color: '#1355E8', weight: 3, fillColor: '#1355E8', fillOpacity: 0.12
+      }).addTo(map);
+    } else {
+      downloadCircle.setLatLng(c);
+      downloadCircle.setRadius(downloadRadius);
+    }
+  }
+
+  function clearDownloadCircle() {
+    if (downloadCircle) { map.removeLayer(downloadCircle); downloadCircle = null; }
+    downloadRadius = 0;
+  }
+
+  // --- Trayectoria del sol ---
+  var sunLayers = [];
+
+  function destination(lat, lon, azimuth, metres) {
+    var rad = azimuth * Math.PI / 180;
+    var dLat = (metres / 111320) * Math.cos(rad);
+    var dLon = (metres / (111320 * Math.cos(lat * Math.PI / 180))) * Math.sin(rad);
+    return [lat + dLat, lon + dLon];
+  }
+
+  function clearSunPath() {
+    sunLayers.forEach(function (l) { map.removeLayer(l); });
+    sunLayers = [];
+  }
+
+  function drawSunPath(msg) {
+    clearSunPath();
+    var o = msg.origin;
+    // La longitud del rayo se ajusta al zoom para que siempre se vea.
+    var base = 40075016 * Math.cos(o.lat * Math.PI / 180) / Math.pow(2, map.getZoom() + 8) * 220;
+
+    (msg.rays || []).forEach(function (ray) {
+      var length = base * (ray.main ? 1.25 : 0.85);
+      var line = L.polyline([[o.lat, o.lon], destination(o.lat, o.lon, ray.azimuth, length)], {
+        color: ray.color,
+        weight: ray.main ? 3 : 1.5,
+        opacity: ray.main ? 0.95 : 0.5,
+        interactive: false
+      }).addTo(map);
+      sunLayers.push(line);
+      if (ray.label) {
+        var end = destination(o.lat, o.lon, ray.azimuth, length * 1.06);
+        var tag = L.marker(end, {
+          interactive: false,
+          icon: L.divIcon({
+            className: '',
+            html: '<div style="white-space:nowrap;font:600 11px -apple-system,sans-serif;color:' + ray.color +
+                  ';text-shadow:0 0 3px #000,0 0 3px #000,0 0 6px #000">' + ray.label + '</div>',
+            iconSize: [0, 0]
+          })
+        }).addTo(map);
+        sunLayers.push(tag);
+      }
+    });
+
+    if (msg.current && msg.current.azimuth != null) {
+      var cur = L.polyline([[o.lat, o.lon], destination(o.lat, o.lon, msg.current.azimuth, base * 1.5)], {
+        color: msg.current.color, weight: 5, opacity: 1, interactive: false
+      }).addTo(map);
+      sunLayers.push(cur);
+    }
+
+    if (msg.shadow) {
+      var sh = L.polyline([[o.lat, o.lon], destination(o.lat, o.lon, msg.shadow.azimuth, base * msg.shadow.scale)], {
+        color: '#111827', weight: 4, opacity: 0.55, dashArray: '6,7', interactive: false
+      }).addTo(map);
+      sunLayers.push(sh);
+    }
+
+    var dot = L.circleMarker([o.lat, o.lon], {
+      radius: 6, color: '#fff', weight: 3, fillColor: '#1355E8', fillOpacity: 1, interactive: false
+    }).addTo(map);
+    sunLayers.push(dot);
+  }
+
+  // --- Objetivo fotográfico y punto volable más cercano ---
+  var targetLayers = [];
+
+  function clearTarget() {
+    targetLayers.forEach(function (l) { map.removeLayer(l); });
+    targetLayers = [];
+  }
+
+  function drawTarget(msg) {
+    clearTarget();
+    var t = msg.target;
+
+    // Chincheta en SVG con ancla explícita en la punta. Con un emoji la punta
+    // no coincide con su caja, y la chincheta quedaba descentrada de la línea.
+    var pinSvg =
+      '<svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M13 33.5C13 33.5 24.5 20.6 24.5 12.6 24.5 6.2 19.4 1 13 1 6.6 1 1.5 6.2 1.5 12.6c0 8 11.5 20.9 11.5 20.9z"' +
+      ' fill="#BE2318" stroke="#FFFFFF" stroke-width="2"/>' +
+      '<circle cx="13" cy="12.4" r="4.4" fill="#FFFFFF"/></svg>';
+
+    var pin = L.marker([t.lat, t.lon], {
+      interactive: false,
+      icon: L.divIcon({
+        className: '',
+        html: '<div style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))">' + pinSvg + '</div>',
+        iconSize: [26, 34],
+        iconAnchor: [13, 34]
+      })
+    }).addTo(map);
+    targetLayers.push(pin);
+
+    if (msg.spot) {
+      var s = msg.spot;
+      var line = L.polyline([[t.lat, t.lon], [s.lat, s.lon]], {
+        color: '#07835A', weight: 4, opacity: 0.9, dashArray: '2,8', lineCap: 'round', interactive: false
+      }).addTo(map);
+      targetLayers.push(line);
+
+      // Pequeño: la cruz del mapa se queda encima y dos círculos grandes
+      // superpuestos no se entienden.
+      var ring = L.circleMarker([s.lat, s.lon], {
+        radius: 7, color: '#FFFFFF', weight: 2.5, fillColor: '#07835A', fillOpacity: 1, interactive: false
+      }).addTo(map);
+      targetLayers.push(ring);
+
+      var mid = [(t.lat + s.lat) / 2, (t.lon + s.lon) / 2];
+      // Con iconSize [0,0] la caja del icono se queda a cero y el texto se sale
+      // de su fondo: hay que darle tamaño y anclarlo por el centro.
+      var tag = L.marker(mid, {
+        interactive: false,
+        icon: L.divIcon({
+          className: '',
+          html: '<div style="width:100%;height:100%;display:flex;align-items:center;' +
+                'justify-content:center;white-space:nowrap;background:#07835A;color:#fff;' +
+                'font:700 12px -apple-system,sans-serif;border-radius:999px;' +
+                'box-shadow:0 2px 6px rgba(0,0,0,.35)">' + msg.label + '</div>',
+          iconSize: [74, 24],
+          iconAnchor: [37, 12]
+        })
+      }).addTo(map);
+      targetLayers.push(tag);
+
+      // La cruz del mapa es lo que la app consulta, así que tiene que quedarse
+      // sobre el punto seguro: si se encuadran los dos extremos, la cruz cae en
+      // mitad de la línea y el panel enseña el veredicto de un punto que no es
+      // ninguno de los dos.
+      var bounds = L.latLngBounds([[t.lat, t.lon], [s.lat, s.lon]]).pad(0.35);
+      // Un nivel menos porque el centro va en un extremo, no en el medio.
+      var z = Math.max(11, Math.min(17, map.getBoundsZoom(bounds) - 1));
+      map.setView([s.lat, s.lon], z, { animate: true });
+    }
+  }
+
   var marker = null;
   var accuracyCircle = null;
 
@@ -160,6 +380,7 @@ export function buildMapHtml(opts: MapOptions): string {
     map.panTo(e.latlng, { animate: true });
   });
 
+  map.on('move', function () { updateDownloadCircle(); });
   map.on('movestart', function () { post({ type: 'movestart' }); });
   map.on('moveend', function () {
     var c = map.getCenter();
@@ -182,7 +403,26 @@ export function buildMapHtml(opts: MapOptions): string {
     } else if (msg.type === 'layers') {
       applyVisibility(msg.visible);
     } else if (msg.type === 'theme') {
-      setBase(msg.dark ? 'dark' : 'light');
+      setBase(null, msg.dark);
+    } else if (msg.type === 'basemap') {
+      setBase(msg.base, null);
+    } else if (msg.type === 'circle') {
+      downloadRadius = msg.radiusM;
+      updateDownloadCircle();
+    } else if (msg.type === 'circleOff') {
+      clearDownloadCircle();
+    } else if (msg.type === 'sunpath') {
+      drawSunPath(msg);
+    } else if (msg.type === 'sunpathOff') {
+      clearSunPath();
+    } else if (msg.type === 'target') {
+      drawTarget(msg);
+    } else if (msg.type === 'targetOff') {
+      clearTarget();
+    } else if (msg.type === 'coverage') {
+      drawCoverage(msg);
+    } else if (msg.type === 'coverageOff') {
+      clearCoverage();
     } else if (msg.type === 'invalidate') {
       map.invalidateSize();
     }

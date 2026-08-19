@@ -1,50 +1,49 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, type ViewStyle } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  View,
+  type PressableProps,
+  type ViewStyle,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { REDUCED_FADE_MS, SPRINGS } from '../ui/motion';
+import { useMotionPreferences } from '../ui/accessibility';
 
 /**
- * Animaciones hechas con la API `Animated` del propio React Native, sin
- * dependencias extra y sin `LayoutAnimation` (que no es fiable con la nueva
- * arquitectura en Android).
+ * Movimiento de la interfaz.
+ *
+ * Todo lo que el usuario puede tocar se mueve con muelles, no con animaciones de
+ * duración fija: un muelle arranca del valor que hay en pantalla y se puede
+ * reinterpretar a mitad de camino, que es lo que hace falta para que nada se
+ * sienta bloqueado.
+ *
+ * Si el sistema pide menos movimiento, se cambia por un cruce de opacidad corto.
  */
 
-const DURATION = 220;
-const EASE = Easing.out(Easing.cubic);
-
-/**
- * Contenido que se despliega y se pliega.
- *
- * La primera versión animaba la ALTURA del contenedor y medía el contenido con
- * `onLayout` desde dentro de un contenedor recortado a 0 px. En Android con la
- * nueva arquitectura ese hijo reporta altura 0, así que la animación se
- * ejecutaba pero no aparecía nada: el desplegable quedaba vacío.
- *
- * Ahora el contenido simplemente se monta y entra con opacidad y un pequeño
- * desplazamiento. No depende de medir nada, así que no se puede romper.
- */
-export function Collapsible({
-  open,
-  children,
-}: {
-  open: boolean;
-  children: React.ReactNode;
-}) {
+/** Contenido que se despliega y se pliega. */
+export function Collapsible({ open, children }: { open: boolean; children: React.ReactNode }) {
+  const { reduceMotion } = useMotionPreferences();
   const anim = useRef(new Animated.Value(open ? 1 : 0)).current;
   const [mounted, setMounted] = useState(open);
 
   useEffect(() => {
     if (open) setMounted(true);
-    const animation = Animated.timing(anim, {
-      toValue: open ? 1 : 0,
-      duration: open ? DURATION : 150,
-      easing: EASE,
-      useNativeDriver: true,
-    });
+    const animation = reduceMotion
+      ? Animated.timing(anim, {
+          toValue: open ? 1 : 0,
+          duration: REDUCED_FADE_MS,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        })
+      : Animated.spring(anim, { toValue: open ? 1 : 0, ...SPRINGS.ui, useNativeDriver: true });
+
     animation.start(({ finished }) => {
       if (finished && !open) setMounted(false);
     });
     return () => animation.stop();
-  }, [open, anim]);
+  }, [open, anim, reduceMotion]);
 
   if (!mounted) return null;
 
@@ -53,9 +52,9 @@ export function Collapsible({
       pointerEvents={open ? 'auto' : 'none'}
       style={{
         opacity: anim,
-        transform: [
-          { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) },
-        ],
+        transform: reduceMotion
+          ? []
+          : [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
       }}
     >
       {children}
@@ -63,13 +62,15 @@ export function Collapsible({
   );
 }
 
-/** Entrada suave: sube 12 px y aparece. Para tarjetas de resultado. */
-export function FadeInUp({
+/**
+ * Entrada de un elemento nuevo. Sube unos píxeles y aparece: el movimiento
+ * apunta hacia donde va la cosa, no interpola a ciegas.
+ */
+export function Appear({
   children,
   delay = 0,
-  distance = 12,
+  distance = 10,
   style,
-  /** Cambiar esta clave vuelve a lanzar la animación. */
   animationKey,
 }: {
   children: React.ReactNode;
@@ -78,18 +79,23 @@ export function FadeInUp({
   style?: ViewStyle;
   animationKey?: string | number;
 }) {
+  const { reduceMotion } = useMotionPreferences();
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     anim.setValue(0);
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: 280,
-      delay,
-      easing: EASE,
-      useNativeDriver: true,
-    }).start();
-  }, [anim, delay, animationKey]);
+    const animation = reduceMotion
+      ? Animated.timing(anim, {
+          toValue: 1,
+          duration: REDUCED_FADE_MS,
+          delay,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        })
+      : Animated.spring(anim, { toValue: 1, delay, ...SPRINGS.ui, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [anim, delay, animationKey, reduceMotion]);
 
   return (
     <Animated.View
@@ -97,9 +103,9 @@ export function FadeInUp({
         style,
         {
           opacity: anim,
-          transform: [
-            { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) },
-          ],
+          transform: reduceMotion
+            ? []
+            : [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [distance, 0] }) }],
         },
       ]}
     >
@@ -108,26 +114,18 @@ export function FadeInUp({
   );
 }
 
-/** Flecha que rota en vez de cambiar de icono. */
-export function Chevron({
-  open,
-  color,
-  size = 18,
-}: {
-  open: boolean;
-  color: string;
-  size?: number;
-}) {
+/** Flecha que gira en lugar de cambiar de icono. */
+export function Chevron({ open, color, size = 17 }: { open: boolean; color: string; size?: number }) {
+  const { reduceMotion } = useMotionPreferences();
   const anim = useRef(new Animated.Value(open ? 1 : 0)).current;
 
   useEffect(() => {
-    Animated.timing(anim, {
-      toValue: open ? 1 : 0,
-      duration: DURATION,
-      easing: EASE,
-      useNativeDriver: true,
-    }).start();
-  }, [open, anim]);
+    const animation = reduceMotion
+      ? Animated.timing(anim, { toValue: open ? 1 : 0, duration: REDUCED_FADE_MS, useNativeDriver: true })
+      : Animated.spring(anim, { toValue: open ? 1 : 0, ...SPRINGS.rotate, useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [open, anim, reduceMotion]);
 
   return (
     <Animated.View
@@ -142,20 +140,96 @@ export function Chevron({
   );
 }
 
-/** Pulso suave para los esqueletos de carga. */
+/**
+ * Pulsable con realce inmediato.
+ *
+ * El realce ocurre al APOYAR el dedo, no al soltar: esperar al toque de salida
+ * se siente muerto. Y se confirma al soltar, con holgura alrededor para perdonar
+ * el pulso.
+ */
+export function PressableScale({
+  children,
+  scaleTo = 0.97,
+  dimTo = 0.75,
+  style,
+  onPressIn,
+  onPressOut,
+  ...rest
+}: PressableProps & {
+  children: React.ReactNode;
+  scaleTo?: number;
+  dimTo?: number;
+  style?: ViewStyle | ViewStyle[];
+}) {
+  const { reduceMotion } = useMotionPreferences();
+  const anim = useRef(new Animated.Value(0)).current;
+
+  const to = useCallback(
+    (value: number) => {
+      Animated.spring(anim, { toValue: value, ...SPRINGS.press, useNativeDriver: true }).start();
+    },
+    [anim],
+  );
+
+  const transform = useMemo(
+    () =>
+      reduceMotion
+        ? []
+        : [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [1, scaleTo] }) }],
+    [anim, reduceMotion, scaleTo],
+  );
+
+  return (
+    <Pressable
+      {...rest}
+      onPressIn={(e) => {
+        to(1);
+        onPressIn?.(e);
+      }}
+      onPressOut={(e) => {
+        to(0);
+        onPressOut?.(e);
+      }}
+    >
+      <Animated.View
+        style={[
+          style as ViewStyle,
+          {
+            transform,
+            opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [1, dimTo] }),
+          },
+        ]}
+      >
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/** Latido suave de los esqueletos de carga. */
 export function Pulse({ children }: { children: React.ReactNode }) {
-  const anim = useRef(new Animated.Value(0.45)).current;
+  const { reduceMotion } = useMotionPreferences();
+  const anim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      anim.setValue(0.8);
+      return;
+    }
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(anim, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(anim, { toValue: 0.45, duration: 700, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 1, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.5, duration: 800, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
       ]),
     );
     loop.start();
     return () => loop.stop();
-  }, [anim]);
+  }, [anim, reduceMotion]);
 
   return <Animated.View style={{ opacity: anim }}>{children}</Animated.View>;
+}
+
+/** Contenedor que reserva sitio sin animar nada. */
+export function Static({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
+  return <View style={style}>{children}</View>;
 }

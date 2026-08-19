@@ -1,109 +1,133 @@
 import { Platform, type TextStyle } from 'react-native';
 import type { VerdictLevel } from './types';
 
+/**
+ * Fundamentos visuales.
+ *
+ * Sigue los criterios de la guía de diseño de Apple: tipografía con óptica por
+ * tamaño, color semántico que se adapta a claro y oscuro, materiales
+ * translúcidos con jerarquía por peso, y nada puesto al azar — cada espaciado y
+ * cada tamaño es una decisión que se puede defender.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Color                                                               */
+/* ------------------------------------------------------------------ */
+
 export interface Palette {
-  bg: string;
-  bgElevated: string;
-  card: string;
-  cardBorder: string;
-  text: string;
-  textMuted: string;
-  textFaint: string;
-  accent: string;
-  accentSoft: string;
-  divider: string;
-  tabBar: string;
-  skeleton: string;
   scheme: 'light' | 'dark';
+
+  /** Fondo de las pantallas agrupadas (listas, formularios). */
+  background: string;
+  /** Superficie de las tarjetas sobre ese fondo. */
+  surface: string;
+  /** Superficie de segundo nivel (dentro de una tarjeta). */
+  surfaceSunken: string;
+
+  /** Texto principal. */
+  label: string;
+  /** Texto de apoyo. */
+  labelSecondary: string;
+  /** Texto terciario: pistas, unidades, notas al pie. */
+  labelTertiary: string;
+
+  /** Color de acento del sistema. */
+  tint: string;
+  /** Fondo suave del acento, para rellenos y estados seleccionados. */
+  tintSoft: string;
+
+  /** Línea de separación fina entre filas. */
+  separator: string;
+  /** Borde visible de una superficie. */
+  border: string;
+
+  /** Relleno de los esqueletos de carga. */
+  skeleton: string;
+  /** Velo de oscurecimiento bajo una hoja modal. */
+  scrim: string;
 }
 
-/**
- * Contraste: la app se usa en la calle, muchas veces con sol directo. Todos los
- * colores de texto llegan a 4.5:1 sobre su fondo (AA), incluidos los textos
- * secundarios, y los bordes de tarjeta son visibles de verdad (no hairline).
- */
 export const lightPalette: Palette = {
   scheme: 'light',
-  bg: '#F1F4F9',
-  bgElevated: '#FFFFFF',
-  card: '#FFFFFF',
-  cardBorder: '#D3DAE7',
-  text: '#0B1220',
-  textMuted: '#525E74',
-  textFaint: '#67718A',
-  accent: '#1355E8',
-  accentSoft: '#E7EEFD',
-  divider: '#E4E9F2',
-  tabBar: '#FFFFFFF2',
-  skeleton: '#E4E9F2',
+  background: '#F2F2F7',
+  surface: '#FFFFFF',
+  surfaceSunken: '#F2F2F7',
+  label: '#000000',
+  labelSecondary: '#3C3C4399',
+  labelTertiary: '#3C3C434D',
+  tint: '#0A6CFF',
+  tintSoft: '#0A6CFF14',
+  separator: '#3C3C432E',
+  border: '#3C3C431F',
+  skeleton: '#78788028',
+  scrim: '#00000059',
 };
 
 export const darkPalette: Palette = {
   scheme: 'dark',
-  bg: '#0A1017',
-  bgElevated: '#141D28',
-  card: '#141D28',
-  cardBorder: '#28364A',
-  text: '#F2F5FA',
-  textMuted: '#A3B0C4',
-  textFaint: '#8B9AB1',
-  accent: '#6E9CFF',
-  accentSoft: '#1A2740',
-  divider: '#22303F',
-  tabBar: '#0D141DF2',
-  skeleton: '#1C2836',
+  background: '#000000',
+  surface: '#1C1C1E',
+  surfaceSunken: '#2C2C2E',
+  label: '#FFFFFF',
+  labelSecondary: '#EBEBF599',
+  labelTertiary: '#EBEBF54D',
+  tint: '#3B90FF',
+  tintSoft: '#3B90FF1F',
+  separator: '#54545899',
+  border: '#5454585C',
+  skeleton: '#7878805C',
+  scrim: '#00000080',
 };
 
 /* ------------------------------------------------------------------ */
-/* Escala tipográfica                                                   */
+/* Tipografía                                                          */
 /* ------------------------------------------------------------------ */
 
 /**
- * Seis pasos y ninguno más. Antes había diecinueve tamaños distintos, ocho de
- * ellos con decimales, y eso es lo que el ojo lee como "hecho a mano".
+ * La letra cambia de forma con el tamaño.
+ *
+ * El interletrado es específico de cada tamaño, nunca uno solo para todos: el
+ * texto grande necesita interletrado NEGATIVO (al crecer, las letras se leen
+ * demasiado separadas) y el pequeño uno ligeramente positivo para que se
+ * distinga. La interlínea va al revés que el tamaño: apretada en los titulares,
+ * holgada en el texto corrido.
+ *
+ * La jerarquía se construye con peso + tamaño + interlínea a la vez, no sólo con
+ * el tamaño: el peso da presencia sin ocupar más sitio.
+ *
+ * Los tamaños son los del sistema (34/28/22/20/17/16/15/13/12/11), porque la
+ * tipografía del sistema ya trae su óptica, su interletrado y su ajuste de
+ * legibilidad resueltos.
  */
 export const type = {
-  display: { fontSize: 32, fontWeight: '800', letterSpacing: -0.8, lineHeight: 38 },
-  title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4, lineHeight: 29 },
-  subtitle: { fontSize: 17, fontWeight: '700', letterSpacing: -0.2, lineHeight: 23 },
-  body: { fontSize: 15, fontWeight: '400', lineHeight: 22 },
-  bodyStrong: { fontSize: 15, fontWeight: '700', lineHeight: 22 },
-  caption: { fontSize: 13, fontWeight: '400', lineHeight: 19 },
-  captionStrong: { fontSize: 13, fontWeight: '700', lineHeight: 19 },
-  overline: { fontSize: 11, fontWeight: '700', letterSpacing: 0.9, lineHeight: 15 },
+  largeTitle: { fontSize: 34, lineHeight: 41, letterSpacing: -0.7, fontWeight: '700' },
+  title1: { fontSize: 28, lineHeight: 34, letterSpacing: -0.45, fontWeight: '700' },
+  title2: { fontSize: 22, lineHeight: 28, letterSpacing: -0.3, fontWeight: '700' },
+  title3: { fontSize: 20, lineHeight: 25, letterSpacing: -0.24, fontWeight: '600' },
+  headline: { fontSize: 17, lineHeight: 22, letterSpacing: -0.2, fontWeight: '600' },
+  body: { fontSize: 17, lineHeight: 24, letterSpacing: -0.1, fontWeight: '400' },
+  callout: { fontSize: 16, lineHeight: 22, letterSpacing: -0.06, fontWeight: '400' },
+  subheadline: { fontSize: 15, lineHeight: 21, letterSpacing: 0, fontWeight: '400' },
+  footnote: { fontSize: 13, lineHeight: 18, letterSpacing: 0.05, fontWeight: '400' },
+  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.1, fontWeight: '400' },
+  caption2: { fontSize: 11, lineHeight: 14, letterSpacing: 0.12, fontWeight: '400' },
+  /** Rótulo de sección de lista agrupada. */
+  sectionHeader: { fontSize: 13, lineHeight: 18, letterSpacing: 0.06, fontWeight: '400' },
 } satisfies Record<string, TextStyle>;
 
-/* ------------------------------------------------------------------ */
-/* Veredicto                                                            */
-/* ------------------------------------------------------------------ */
-
-export interface VerdictStyle {
-  /** Color sólido de la tarjeta. Todos dan >= 4:1 con texto blanco. */
-  color: string;
-  /** Variante para chips y bordes sobre fondo claro. */
-  onLight: string;
-  /** Variante para chips y bordes sobre fondo oscuro. */
-  onDark: string;
-  icon: string;
+/** Mismo tamaño, más peso: así se enfatiza sin ocupar más espacio. */
+export function emphasize(style: TextStyle, weight: TextStyle['fontWeight'] = '600'): TextStyle {
+  return { ...style, fontWeight: weight };
 }
 
-export const verdictStyles: Record<VerdictLevel, VerdictStyle> = {
-  LIBRE: { color: '#07835A', onLight: '#07835A', onDark: '#3FBE8F', icon: 'checkmark-circle' },
-  CONDICIONES: { color: '#A96200', onLight: '#8F5300', onDark: '#E8A33D', icon: 'alert-circle' },
-  AUTORIZACION: { color: '#C24400', onLight: '#A73A00', onDark: '#FF8A47', icon: 'shield-half' },
-  PROHIBIDO: { color: '#BE2318', onLight: '#B01F15', onDark: '#FF6B5E', icon: 'close-circle' },
-  DESCONOCIDO: { color: '#4A5A70', onLight: '#4A5A70', onDark: '#9FB0C6', icon: 'help-circle' },
-};
+/** Cifras de ancho fijo para lecturas que cambian: no bailan al actualizarse. */
+export const tabular: TextStyle = { fontVariant: ['tabular-nums'] };
 
-/** Color del veredicto adaptado al tema, para chips, bordes y textos. */
-export function verdictTint(level: VerdictLevel, palette: Palette): string {
-  const s = verdictStyles[level];
-  return palette.scheme === 'dark' ? s.onDark : s.onLight;
-}
+/* ------------------------------------------------------------------ */
+/* Métrica                                                             */
+/* ------------------------------------------------------------------ */
 
-export const radius = { sm: 10, md: 14, lg: 20, xl: 26, pill: 999 };
-
-/** Espaciado en múltiplos de 4. Úsalo siempre en vez de números sueltos. */
+/** Espaciado en múltiplos de 4. Nada de números sueltos por ahí. */
 export const space = {
   xs: 4,
   sm: 8,
@@ -112,26 +136,95 @@ export const space = {
   xl: 20,
   xxl: 24,
   xxxl: 32,
+} as const;
+
+export const radius = { sm: 8, md: 12, lg: 16, xl: 22, sheet: 28, pill: 999 } as const;
+
+/** Superficie mínima que un dedo acierta sin pensar. */
+export const HIT_SIZE = 44;
+/** Holgura alrededor del objetivo, para perdonar el pulso. */
+export const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 };
+
+/* ------------------------------------------------------------------ */
+/* Materiales y profundidad                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * El peso del material marca la jerarquía: los más densos separan regiones
+ * estructurales, los más ligeros llaman la atención sobre lo interactivo. Nunca
+ * se apila una superficie translúcida clara sobre otra: la legibilidad se cae.
+ *
+ * Y cuanto más grande es la superficie, más gruesa debe leerse: más desenfoque y
+ * sombra más profunda que en una pastilla pequeña.
+ */
+export type MaterialWeight = 'chrome' | 'panel' | 'sheet';
+
+export const materialIntensity: Record<MaterialWeight, number> = {
+  chrome: 60,
+  panel: 75,
+  sheet: 90,
 };
 
-export const shadow = Platform.select({
-  ios: {
-    shadowColor: '#0B1220',
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 5 },
-  },
-  android: { elevation: 2 },
-  default: {},
-}) as object;
+export const shadow = {
+  /** Elementos pequeños apoyados sobre el fondo. */
+  chip: Platform.select({
+    ios: { shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 } },
+    android: { elevation: 1 },
+    default: {},
+  }) as object,
+  /** Tarjetas y paneles flotantes. */
+  panel: Platform.select({
+    ios: { shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } },
+    android: { elevation: 4 },
+    default: {},
+  }) as object,
+  /** Hojas: superficie grande, sombra más profunda. */
+  sheet: Platform.select({
+    ios: { shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 28, shadowOffset: { width: 0, height: -6 } },
+    android: { elevation: 16 },
+    default: {},
+  }) as object,
+};
 
-export const shadowStrong = Platform.select({
-  ios: {
-    shadowColor: '#0B1220',
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  android: { elevation: 8 },
-  default: {},
-}) as object;
+/* ------------------------------------------------------------------ */
+/* Veredicto                                                           */
+/* ------------------------------------------------------------------ */
+
+export interface VerdictStyle {
+  /** Relleno sólido, con texto blanco encima. */
+  solid: string;
+  /** Tinte para texto e iconos sobre fondo claro. */
+  onLight: string;
+  /** Tinte para texto e iconos sobre fondo oscuro. */
+  onDark: string;
+  icon: string;
+}
+
+/**
+ * Los rellenos son versiones profundas de los colores del sistema: el blanco
+ * encima tiene que leerse al sol, y los tonos vivos de iOS no dan contraste
+ * suficiente para eso.
+ */
+export const verdictStyles: Record<VerdictLevel, VerdictStyle> = {
+  LIBRE: { solid: '#1C7A45', onLight: '#187141', onDark: '#4ED88A', icon: 'checkmark.circle' },
+  CONDICIONES: { solid: '#A55E00', onLight: '#8A4F00', onDark: '#FFB340', icon: 'exclamationmark.circle' },
+  AUTORIZACION: { solid: '#B84A02', onLight: '#A03F00', onDark: '#FF9F45', icon: 'shield.lefthalf.filled' },
+  PROHIBIDO: { solid: '#B3261E', onLight: '#A31E17', onDark: '#FF7A70', icon: 'xmark.circle' },
+  DESCONOCIDO: { solid: '#4A4A4F', onLight: '#48484A', onDark: '#AEAEB2', icon: 'questionmark.circle' },
+};
+
+export function verdictTint(level: VerdictLevel, palette: Palette): string {
+  const s = verdictStyles[level];
+  return palette.scheme === 'dark' ? s.onDark : s.onLight;
+}
+
+/** Colores del sistema para estados puntuales. */
+export const systemColors = {
+  green: { light: '#187141', dark: '#4ED88A' },
+  orange: { light: '#8A4F00', dark: '#FFB340' },
+  red: { light: '#A31E17', dark: '#FF7A70' },
+};
+
+export function systemColor(name: keyof typeof systemColors, palette: Palette): string {
+  return palette.scheme === 'dark' ? systemColors[name].dark : systemColors[name].light;
+}

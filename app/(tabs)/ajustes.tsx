@@ -1,20 +1,23 @@
 import React from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenScroll } from '../../src/components/Screen';
 import { Banner, Card, ScreenTitle, SectionTitle } from '../../src/components/ui';
 import { DroneCard } from '../../src/components/DroneCard';
 import { OfflineCard } from '../../src/components/OfflineCard';
+import { AdvancedCard } from '../../src/components/AdvancedCard';
 import { HeightControl } from '../../src/components/HeightControl';
 import { noWebOutline } from '../../src/components/HeightControl';
 import { usePalette } from '../../src/hooks/useTheme';
-import { useSettings, type OperatorProfile } from '../../src/state/SettingsContext';
+import { APPEARANCES, useSettings } from '../../src/state/SettingsContext';
 import { missingOperatorFields } from '../../src/logic/request';
-import { radius, space, type } from '../../src/theme';
+import { radius, shadow, space, systemColor, type, emphasize } from '../../src/theme';
 
 export default function AjustesScreen() {
   const p = usePalette();
-  const { operator, setOperator, flightHeight, setFlightHeight } = useSettings();
+  const { operator, setOperator, flightHeight, setFlightHeight, appearance, setAppearance } =
+    useSettings();
   const missing = missingOperatorFields(operator);
 
   return (
@@ -24,9 +27,71 @@ export default function AjustesScreen() {
         subtitle="Tus datos se guardan sólo en este móvil y se usan para redactar las solicitudes de autorización."
       />
 
+      <Card>
+        <SectionTitle>Aspecto</SectionTitle>
+        {/* Control segmentado del sistema: pista hundida y pastilla elevada. */}
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 2,
+            backgroundColor: p.surfaceSunken,
+            borderRadius: 10,
+            padding: 2,
+          }}
+        >
+          {APPEARANCES.map((a) => {
+            const active = appearance === a.id;
+            return (
+              <Pressable
+                key={a.id}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setAppearance(a.id);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={`Aspecto ${a.label}`}
+                style={[
+                  {
+                    flex: 1,
+                    minHeight: 44,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 3,
+                    backgroundColor: active ? p.surface : 'transparent',
+                  },
+                  active ? (shadow.chip as object) : {},
+                ]}
+              >
+                <Ionicons
+                  name={a.icon as keyof typeof Ionicons.glyphMap}
+                  size={17}
+                  color={active ? p.tint : p.labelSecondary}
+                />
+                <Text
+                  style={[
+                    emphasize(type.caption, active ? '600' : '500'),
+                    { color: active ? p.label : p.labelSecondary },
+                  ]}
+                >
+                  {a.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
+          En automático manda el modo del móvil. Fuerza el claro si vas a volar con el sol de cara:
+          la pantalla se lee mucho mejor.
+        </Text>
+      </Card>
+
       <DroneCard />
 
       <OfflineCard />
+
+      <AdvancedCard />
 
       <Card>
         <SectionTitle>Tus datos de operador</SectionTitle>
@@ -87,7 +152,7 @@ export default function AjustesScreen() {
       <Card>
         <SectionTitle>Altura de vuelo por defecto</SectionTitle>
         <HeightControl value={flightHeight} onChange={setFlightHeight} />
-        <Text style={[type.caption, { color: p.textFaint, marginTop: space.md }]}>
+        <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
           Es la altura con la que se abren las consultas. Puedes cambiarla en cualquier momento desde
           la propia tarjeta del resultado.
         </Text>
@@ -137,8 +202,8 @@ function Field({
   return (
     <View style={{ gap: 6 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <Text style={[type.captionStrong, { color: p.textMuted, flex: 1 }]}>{label}</Text>
-        {filled ? <Ionicons name="checkmark-circle" size={15} color="#07835A" /> : null}
+        <Text style={[type.footnote, { color: p.labelSecondary, flex: 1 }]}>{label}</Text>
+        {filled ? <Ionicons name="checkmark-circle" size={15} color={systemColor('green', p)} /> : null}
       </View>
       <TextInput
         value={value}
@@ -146,26 +211,29 @@ function Field({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        placeholderTextColor={p.textFaint}
+        placeholderTextColor={p.labelTertiary}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         autoCorrect={false}
         accessibilityLabel={label}
         style={[
+          type.callout,
           {
-            color: p.text,
-            fontSize: 15,
+            color: p.label,
             paddingHorizontal: space.md,
-            paddingVertical: 13,
+            paddingVertical: 12,
+            minHeight: 44,
             borderRadius: radius.md,
-            borderWidth: focused ? 2 : 1,
-            borderColor: focused ? p.accent : p.cardBorder,
-            backgroundColor: p.bgElevated,
+            backgroundColor: p.surfaceSunken,
+            // El foco se marca con un filo del color de acento, no engordando el
+            // marco: así el campo no da un salto de tamaño al tocarlo.
+            borderWidth: 1,
+            borderColor: focused ? p.tint : 'transparent',
           },
           noWebOutline,
         ]}
       />
-      {hint ? <Text style={[type.caption, { color: p.textFaint, fontSize: 12 }]}>{hint}</Text> : null}
+      {hint ? <Text style={[type.caption, { color: p.labelTertiary }]}>{hint}</Text> : null}
     </View>
   );
 }

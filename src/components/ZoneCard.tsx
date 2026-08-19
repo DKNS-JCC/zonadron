@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
-import { radius, shadow, space, type, verdictStyles } from '../theme';
+import { radius, shadow, space, systemColor, type, verdictStyles, emphasize, tabular } from '../theme';
 import type { EvaluatedZone } from '../types';
 import {
   layerColor,
@@ -14,7 +14,7 @@ import {
 } from '../logic/labels';
 import { actionAdvice, rawBandLabel, verticalBandShort } from '../logic/verdict';
 import { toParagraphs } from '../logic/html';
-import { Chip, Divider, GhostButton } from './ui';
+import { Chip, GhostButton, Separator } from './ui';
 import { buildMailto, missingOperatorFields } from '../logic/request';
 import { useSettings } from '../state/SettingsContext';
 import type { QueryResult } from '../types';
@@ -28,12 +28,21 @@ const TYPE_TINT: Record<string, keyof typeof verdictStyles> = {
   UNKNOWN: 'DESCONOCIDO',
 };
 
+const TYPE_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  PROHIBITED: 'close-circle',
+  REQ_AUTHORIZATION: 'shield-half',
+  CONDITIONAL: 'alert-circle',
+  NO_RESTRICTION: 'checkmark-circle',
+  UNKNOWN: 'help-circle',
+};
+
 /**
- * Una zona. Plegada ocupa una fila; desplegada enseña todo.
+ * Una zona. Plegada es una fila de lista; desplegada enseña todo.
  *
- * Antes cada tarjeta repetía íntegra la explicación genérica del tipo de zona,
- * así que un resultado de cuatro zonas eran cuatro párrafos idénticos y más de
- * dos mil píxeles de scroll.
+ * La fila sigue la forma de una lista agrupada del sistema: un símbolo con
+ * color a la izquierda, dos líneas de texto y la punta de flecha a la derecha.
+ * El color vive sólo en el símbolo, que es donde significa algo; la fila no se
+ * tiñe ni se enmarca.
  */
 export function ZoneCard({
   zone,
@@ -54,11 +63,11 @@ export function ZoneCard({
 
   const level = TYPE_TINT[zone.type] ?? 'DESCONOCIDO';
   const tint = zone.advisory
-    ? p.accent
+    ? p.tint
     : p.scheme === 'dark'
       ? verdictStyles[level].onDark
       : verdictStyles[level].onLight;
-  const barColor = dimmed ? p.cardBorder : tint;
+  const symbolColor = dimmed ? p.labelTertiary : tint;
   const paragraphs = toParagraphs(zone.officialText);
 
   const contactLinks: Array<{ icon: keyof typeof Ionicons.glyphMap; text: string; url: string }> = [];
@@ -88,14 +97,12 @@ export function ZoneCard({
     <View
       style={[
         {
-          backgroundColor: p.card,
+          backgroundColor: p.surface,
           borderRadius: radius.lg,
-          borderWidth: 1,
-          borderColor: p.cardBorder,
           overflow: 'hidden',
-          opacity: dimmed ? 0.8 : 1,
+          opacity: dimmed ? 0.72 : 1,
         },
-        shadow,
+        shadow.chip,
       ]}
     >
       <Pressable
@@ -106,40 +113,46 @@ export function ZoneCard({
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          backgroundColor: pressed ? p.accentSoft : 'transparent',
-          minHeight: 68,
+          gap: space.md,
+          paddingHorizontal: space.lg,
+          paddingVertical: space.md,
+          minHeight: 64,
+          backgroundColor: pressed ? p.surfaceSunken : 'transparent',
         })}
       >
-        <View style={{ width: 4, alignSelf: 'stretch', backgroundColor: barColor }} />
-        <View style={{ flex: 1, paddingVertical: space.md, paddingHorizontal: space.md + 2, gap: 3 }}>
-          <Text style={[type.subtitle, { color: p.text }]} numberOfLines={2}>
+        <Ionicons
+          name={zone.advisory ? 'megaphone' : (TYPE_ICON[zone.type] ?? 'help-circle')}
+          size={22}
+          color={symbolColor}
+        />
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[type.subheadline, emphasize(type.subheadline), { color: p.label }]} numberOfLines={2}>
             {zone.title}
           </Text>
-          <Text style={[type.caption, { color: tint }]} numberOfLines={1}>
+          <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
             {subtitle}
           </Text>
         </View>
-        <View style={{ paddingRight: space.md }}>
-          <Chevron open={open} color={p.textFaint} />
-        </View>
+        <Chevron open={open} color={p.labelTertiary} size={15} />
       </Pressable>
 
       <Collapsible open={open}>
-        <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.md }}>
+        <Separator inset={space.lg} />
+        <View style={{ paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.lg, gap: space.md }}>
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
             {zone.advisory ? (
-              <Chip label="Aviso general" color={p.accent} icon="megaphone-outline" />
+              <Chip label="Aviso general" color={p.tint} icon="megaphone-outline" />
             ) : (
               <Chip label={zoneTypeLabel[zone.type]} color={tint} icon="shield-outline" />
             )}
             <Chip label={layerLabel[zone.layer]} color={layerColor[zone.layer]} />
             {zone.vertical.usedReferencePoint ? (
-              <Chip label="Alturas desde el aeródromo" color={p.accent} icon="git-compare-outline" />
+              <Chip label="Alturas desde el aeródromo" color={p.tint} icon="git-compare-outline" />
             ) : null}
             {zone.timing !== 'PERMANENTE' ? (
               <Chip
                 label={zone.timing === 'CADUCADA' ? 'No vigente' : 'Aplicación limitada'}
-                color={p.scheme === 'dark' ? '#E8A33D' : '#8F5300'}
+                color={systemColor('orange', p)}
                 icon="time-outline"
               />
             ) : null}
@@ -147,26 +160,26 @@ export function ZoneCard({
           </View>
 
           {!zone.advisory ? (
-            <Text style={[type.body, { color: p.text }]}>{zoneTypeExplain[zone.type]}</Text>
+            <Text style={[type.callout, { color: p.label }]}>{zoneTypeExplain[zone.type]}</Text>
           ) : null}
 
           {zone.reasons.length > 0 && !zone.advisory ? (
-            <Text style={[type.caption, { color: p.textMuted }]}>
+            <Text style={[type.footnote, { color: p.labelSecondary }]}>
               {zone.reasons.map((r) => reasonExplain[r] ?? `Motivo: ${reasonLabel[r] ?? r}.`).join(' ')}
             </Text>
           ) : null}
 
           <View
             style={{
-              backgroundColor: p.accentSoft,
+              backgroundColor: p.surfaceSunken,
               borderRadius: radius.md,
               padding: space.md,
               flexDirection: 'row',
               gap: space.sm + 2,
             }}
           >
-            <Ionicons name="navigate-circle" size={18} color={p.accent} style={{ marginTop: 1 }} />
-            <Text style={[type.caption, { color: p.text, flex: 1 }]}>{actionAdvice(zone)}</Text>
+            <Ionicons name="navigate-circle" size={18} color={p.tint} style={{ marginTop: 1 }} />
+            <Text style={[type.footnote, { color: p.label, flex: 1 }]}>{actionAdvice(zone)}</Text>
           </View>
 
           {mailto ? (
@@ -176,7 +189,7 @@ export function ZoneCard({
                 icon="mail-open-outline"
                 onPress={() => Linking.openURL(mailto).catch(() => {})}
               />
-              <Text style={[type.caption, { color: p.textFaint }]}>
+              <Text style={[type.footnote, { color: p.labelTertiary }]}>
                 {missing.length > 0
                   ? `Se abrirá tu correo con la solicitud redactada. Te falta por rellenar en Ajustes: ${missing.join(', ')}; esos huecos aparecerán como [COMPLETAR].`
                   : 'Se abrirá tu app de correo con la solicitud ya redactada y tus datos rellenados. Revísala antes de enviarla: la envías tú, no la app.'}
@@ -199,11 +212,8 @@ export function ZoneCard({
                     minHeight: 32,
                   })}
                 >
-                  <Ionicons name={c.icon} size={15} color={p.accent} />
-                  <Text
-                    style={[type.caption, { color: p.accent, flex: 1, textDecorationLine: 'underline' }]}
-                    numberOfLines={1}
-                  >
+                  <Ionicons name={c.icon} size={15} color={p.tint} />
+                  <Text style={[type.footnote, { color: p.tint, flex: 1 }]} numberOfLines={1}>
                     {c.text}
                   </Text>
                 </Pressable>
@@ -212,18 +222,16 @@ export function ZoneCard({
           ) : null}
 
           {!zone.advisory ? (
-            <Text style={[type.caption, { color: p.textFaint }]}>{zone.vertical.explanation}</Text>
+            <Text style={[type.footnote, { color: p.labelTertiary }]}>{zone.vertical.explanation}</Text>
           ) : null}
 
           {zone.timingNote ? (
-            <Text
-              style={[type.caption, { color: p.scheme === 'dark' ? '#E8A33D' : '#8F5300' }]}
-            >
+            <Text style={[type.footnote, { color: systemColor('orange', p) }]}>
               {zone.timingNote}
             </Text>
           ) : null}
 
-          <Divider spaced={false} />
+          <Separator />
 
           <Pressable
             onPress={() => setOpenOfficial((v) => !v)}
@@ -231,35 +239,32 @@ export function ZoneCard({
             accessibilityState={{ expanded: openOfficial }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 36 }}
           >
-            <Chevron open={openOfficial} color={p.accent} size={16} />
-            <Text style={[type.captionStrong, { color: p.accent }]}>
-              Detalle oficial de ENAIRE
-            </Text>
+            <Chevron open={openOfficial} color={p.tint} size={14} />
+            <Text style={[emphasize(type.footnote), { color: p.tint }]}>Detalle oficial de ENAIRE</Text>
           </Pressable>
 
           <Collapsible open={openOfficial}>
             <View style={{ gap: space.sm }}>
               {paragraphs.length > 0 ? (
                 paragraphs.map((para, i) => (
-                  <Text key={i} style={[type.caption, { color: p.text }]}>
+                  <Text key={i} style={[type.footnote, { color: p.label }]}>
                     {para}
                   </Text>
                 ))
               ) : (
-                <Text style={[type.caption, { color: p.textMuted, fontStyle: 'italic' }]}>
+                <Text style={[type.footnote, { color: p.labelSecondary, fontStyle: 'italic' }]}>
                   ENAIRE no publica un texto descriptivo para esta zona. La información disponible es
                   la de los campos estructurados que aparecen debajo.
                 </Text>
               )}
-              <Divider spaced={false} />
-              <View style={{ gap: 3 }}>
+              <View style={{ marginTop: space.xs, backgroundColor: p.surfaceSunken, borderRadius: radius.md }}>
                 <TechRow label="Identificador" value={zone.identifier} />
                 <TechRow label="Tipo (ED-318)" value={zone.type} />
                 <TechRow label="Motivos" value={zone.reasons.join(', ') || '—'} />
                 <TechRow label="Límites publicados" value={rawBandLabel(zone)} />
                 <TechRow label="Capa" value={layerLabel[zone.layer]} />
                 {zone.updatedAt ? (
-                  <TechRow label="Actualizada" value={zone.updatedAt.replace('T', ' ')} />
+                  <TechRow label="Actualizada" value={zone.updatedAt.replace('T', ' ')} last />
                 ) : null}
               </View>
             </View>
@@ -270,13 +275,24 @@ export function ZoneCard({
   );
 }
 
-function TechRow({ label, value }: { label: string; value: string }) {
+function TechRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   const p = usePalette();
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: space.md }}>
-      <Text style={[type.caption, { color: p.textFaint, fontSize: 12 }]}>{label}</Text>
+    <View
+      style={{
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        gap: space.md,
+        paddingHorizontal: space.md,
+        paddingVertical: space.sm,
+        borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+        borderBottomColor: p.separator,
+      }}
+    >
+      <Text style={[type.caption, { color: p.labelSecondary }]}>{label}</Text>
       <Text
-        style={[type.caption, { color: p.textMuted, fontSize: 12, flexShrink: 1, textAlign: 'right' }]}
+        style={[type.caption, tabular, { color: p.label, flexShrink: 1, textAlign: 'right' }]}
       >
         {value}
       </Text>

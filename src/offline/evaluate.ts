@@ -15,7 +15,8 @@
 import { dedupeZones, normalizeZone } from '../api/enaire';
 import { buildVerdict, evaluateZones } from '../logic/verdict';
 import type { Coords, QueryResult, Zone } from '../types';
-import { ELEVATION_UNCERTAINTY_M, loadPack, type OfflinePack } from './pack';
+import { loadPack } from './pack';
+import { elevationUncertaintyFor, type OfflinePack } from './model';
 import { bboxContains, interpolateElevation, pointInRings } from './geometry';
 
 export function packCovers(pack: OfflinePack, coords: Coords): boolean {
@@ -41,13 +42,14 @@ export async function checkPointOffline(
     }
   }
 
+  const uncertainty = elevationUncertaintyFor(pack.elevationStepKm);
   const interpolated = pack.elevation
     ? interpolateElevation(pack.elevation, coords.lat, coords.lon)
     : null;
 
   // Margen hacia el lado restrictivo: si el terreno real fuera más alto de lo
   // interpolado, las zonas referidas al nivel del mar empezarían más abajo.
-  const terrain = interpolated === null ? null : interpolated + ELEVATION_UNCERTAINTY_M;
+  const terrain = interpolated === null ? null : interpolated + uncertainty;
 
   const evaluated = evaluateZones(dedupeZones(zones), flightHeightAgl, terrain);
   const verdict = buildVerdict(evaluated, flightHeightAgl, []);
@@ -63,6 +65,6 @@ export async function checkPointOffline(
     failedLayers: [],
     offline: true,
     offlinePackDate: pack.createdAt,
-    elevationUncertaintyM: ELEVATION_UNCERTAINTY_M,
+    elevationUncertaintyM: uncertainty,
   };
 }

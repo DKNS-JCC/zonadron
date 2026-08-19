@@ -7,6 +7,27 @@ const KEY = 'zonadron.settings.v1';
 
 const VALID_DRONES: DroneProfileId[] = ['sub250', 'c1', 'c2', 'c3c4', 'otro'];
 
+export type BasemapId = 'mapa' | 'topo' | 'satelite';
+
+export const BASEMAPS: { id: BasemapId; label: string; icon: string; note: string }[] = [
+  { id: 'mapa', label: 'Mapa', icon: 'map-outline', note: 'Callejero de OpenStreetMap' },
+  { id: 'topo', label: 'Topográfico', icon: 'trail-sign-outline', note: 'MTN oficial del IGN, con curvas de nivel' },
+  { id: 'satelite', label: 'Satélite', icon: 'globe-outline', note: 'Ortofoto PNOA del IGN' },
+];
+
+const VALID_BASEMAPS: BasemapId[] = ['mapa', 'topo', 'satelite'];
+
+/** Claro, oscuro, o lo que diga el móvil. */
+export type AppearanceId = 'sistema' | 'claro' | 'oscuro';
+
+export const APPEARANCES: { id: AppearanceId; label: string; icon: string }[] = [
+  { id: 'sistema', label: 'Automático', icon: 'phone-portrait-outline' },
+  { id: 'claro', label: 'Claro', icon: 'sunny-outline' },
+  { id: 'oscuro', label: 'Oscuro', icon: 'moon-outline' },
+];
+
+const VALID_APPEARANCES: AppearanceId[] = ['sistema', 'claro', 'oscuro'];
+
 /**
  * Altura de vuelo prevista, en metros sobre el terreno (AGL).
  * 120 m es el límite general de la categoría abierta en el Reglamento (UE)
@@ -43,36 +64,47 @@ export const EMPTY_OPERATOR: OperatorProfile = {
 
 interface Settings {
   flightHeight: number;
-  showNotAffecting: boolean;
   /** Qué dron vuelas: sólo cambia qué reglas se te enseñan, nunca el veredicto. */
   drone: DroneProfileId;
   operator: OperatorProfile;
+  /** Pinta sobre el mapa la altura libre de cada celda (necesita paquete descargado). */
+  showCoverage: boolean;
+  /** Mapa base: callejero, topográfico del IGN o satélite (PNOA). */
+  basemap: BasemapId;
+  /** Aspecto de la app: automático (el del móvil), claro u oscuro. */
+  appearance: AppearanceId;
 }
 
 interface SettingsContextValue extends Settings {
   ready: boolean;
   setFlightHeight: (h: number) => void;
-  setShowNotAffecting: (v: boolean) => void;
   setDrone: (d: DroneProfileId) => void;
   setOperator: (patch: Partial<OperatorProfile>) => void;
+  setShowCoverage: (v: boolean) => void;
+  setBasemap: (b: BasemapId) => void;
+  setAppearance: (a: AppearanceId) => void;
 }
 
 const defaults: Settings = {
   flightHeight: DEFAULT_HEIGHT,
-  showNotAffecting: false,
   // La mayoría de la gente vuela un dron de menos de 250 g, así que es el punto
   // de partida más útil. Se cambia en la pestaña Normas.
   drone: 'sub250',
   operator: EMPTY_OPERATOR,
+  showCoverage: false,
+  basemap: 'mapa',
+  appearance: 'sistema',
 };
 
 const Ctx = createContext<SettingsContextValue>({
   ...defaults,
   ready: false,
   setFlightHeight: () => {},
-  setShowNotAffecting: () => {},
   setDrone: () => {},
   setOperator: () => {},
+  setShowCoverage: () => {},
+  setBasemap: () => {},
+  setAppearance: () => {},
 });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -92,9 +124,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 Number.isFinite(parsed?.flightHeight) && parsed.flightHeight > 0
                   ? Math.min(900, Number(parsed.flightHeight))
                   : DEFAULT_HEIGHT,
-              showNotAffecting: Boolean(parsed?.showNotAffecting),
               drone: VALID_DRONES.includes(parsed?.drone) ? parsed.drone : defaults.drone,
               operator: { ...EMPTY_OPERATOR, ...(parsed?.operator ?? {}) },
+              showCoverage: Boolean(parsed?.showCoverage),
+              basemap: VALID_BASEMAPS.includes(parsed?.basemap) ? parsed.basemap : 'mapa',
+              appearance: VALID_APPEARANCES.includes(parsed?.appearance)
+                ? parsed.appearance
+                : 'sistema',
             });
           } catch {
             /* valores por defecto */
@@ -117,9 +153,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       ...settings,
       ready,
       setFlightHeight: (h) => persist({ ...settings, flightHeight: Math.max(1, Math.min(900, Math.round(h))) }),
-      setShowNotAffecting: (v) => persist({ ...settings, showNotAffecting: v }),
       setDrone: (d) => persist({ ...settings, drone: d }),
       setOperator: (patch) => persist({ ...settings, operator: { ...settings.operator, ...patch } }),
+      setShowCoverage: (v) => persist({ ...settings, showCoverage: v }),
+      setBasemap: (b) => persist({ ...settings, basemap: b }),
+      setAppearance: (a) => persist({ ...settings, appearance: a }),
     }),
     [settings, ready, persist],
   );

@@ -17,14 +17,14 @@ import {
   SectionTitle,
   SkeletonRows,
 } from '../../src/components/ui';
-import { FadeInUp } from '../../src/components/motion';
+import { Appear } from '../../src/components/motion';
 import { HistoryList } from '../../src/components/HistoryList';
 import { usePalette } from '../../src/hooks/useTheme';
 import { useSettings } from '../../src/state/SettingsContext';
 import { useHistory } from '../../src/state/HistoryContext';
 import { checkPoint } from '../../src/logic/query';
 import { describePoint } from '../../src/api/geocode';
-import { space, type } from '../../src/theme';
+import { space, systemColor, type } from '../../src/theme';
 import type { Coords, QueryResult } from '../../src/types';
 
 type Phase = 'idle' | 'locating' | 'querying' | 'done' | 'error';
@@ -166,18 +166,23 @@ export default function HomeScreen() {
   return (
     <ScreenScroll
       refreshControl={
-        <RefreshControl refreshing={busy} onRefresh={locateAndCheck} tintColor={p.accent} />
+        <RefreshControl refreshing={busy} onRefresh={locateAndCheck} tintColor={p.tint} />
       }
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-        <Text style={[type.title, { color: p.text, flex: 1 }]}>¿Puedo volar aquí?</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.md, paddingHorizontal: space.xs }}>
+        <Text style={[type.largeTitle, { color: p.label, flex: 1 }]}>¿Puedo volar aquí?</Text>
         {result ? (
           <IconButton icon="locate" label="Comprobar mi ubicación otra vez" onPress={locateAndCheck} />
         ) : null}
       </View>
 
       {!result && !busy ? (
-        <Text style={[type.body, { color: p.textMuted, marginTop: -space.sm }]}>
+        <Text
+          style={[
+            type.subheadline,
+            { color: p.labelSecondary, marginTop: -space.sm, paddingHorizontal: space.xs },
+          ]}
+        >
           Comprueba tu punto exacto contra las Zonas Geográficas UAS oficiales de ENAIRE.
         </Text>
       ) : null}
@@ -205,17 +210,22 @@ export default function HomeScreen() {
       ) : null}
 
       {phase === 'error' && error ? (
-        <FadeInUp>
+        <Appear>
           <Card>
             <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'flex-start' }}>
-              <Ionicons name="alert-circle" size={22} color="#BE2318" style={{ marginTop: 1 }} />
+              <Ionicons
+                name="alert-circle"
+                size={22}
+                color={systemColor('red', p)}
+                style={{ marginTop: 1 }}
+              />
               <View style={{ flex: 1, gap: space.md }}>
-                <Text style={[type.body, { color: p.text }]}>{error}</Text>
+                <Text style={[type.callout, { color: p.label }]}>{error}</Text>
                 <GhostButton label="Reintentar" icon="refresh" onPress={locateAndCheck} />
               </View>
             </View>
           </Card>
-        </FadeInUp>
+        </Appear>
       ) : null}
 
       {busy && !result ? (
@@ -256,7 +266,7 @@ export default function HomeScreen() {
           <Card>
             <SectionTitle>Altura de vuelo</SectionTitle>
             <HeightControl value={flightHeight} onChange={setFlightHeight} />
-            <Text style={[type.caption, { color: p.textFaint, marginTop: space.md }]}>
+            <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
               Metros sobre el terreno. Las zonas que empiezan por encima de esta altura no cuentan:
               cambiarla cambia la respuesta de verdad.
             </Text>

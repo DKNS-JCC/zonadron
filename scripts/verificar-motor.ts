@@ -13,6 +13,10 @@ import { getTerrainElevation } from '../src/api/elevation';
 import { buildVerdict, evaluateZones } from '../src/logic/verdict';
 import { htmlToText } from '../src/logic/html';
 import { bboxContains, boxAround, interpolateElevation, pointInRings } from '../src/offline/geometry';
+import { computeCoverageGrid } from '../src/offline/coverage';
+import { findNearestFlyable } from '../src/offline/nearest';
+import { lightKind, shadowAzimuth, shadowRatio, sunDay, sunPosition } from '../src/logic/sun';
+import { horizonAt } from '../src/api/horizon';
 import type { RawZoneAttributes, VerdictLevel } from '../src/types';
 
 interface Case {
@@ -283,7 +287,119 @@ async function main() {
     check('y no contiene un punto a 100 km', !bboxContains(caja, 41.4, -3.7038));
   }
 
-  // 9. Los avisos generales se reconocen por identificador, no por capa entera.
+  // 9. Mapa de altura libre (con un paquete sintético).
+  {
+    // Un cuadrado de ~2 km con una zona que exige permiso desde 0 m en su mitad este.
+    const packBBox = { minLat: 40.0, maxLat: 40.02, minLon: -1.02, maxLon: -1.0 };
+    const zonaRings = [[[-1.01, 40.0], [-1.01, 40.02], [-1.0, 40.02], [-1.0, 40.0], [-1.01, 40.0]]];
+    const pack = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      center: { lat: 40.01, lon: -1.01 },
+      radiusKm: 2,
+      bbox: packBBox,
+      label: 'prueba',
+      elevation: null,
+      zones: [
+        {
+          layer: 'aero' as const,
+          rings: zonaRings,
+          attributes: {
+            identifier: 'TEST', type: 'REQ_AUTHORIZATION', uom: 'M',
+            lower: 0, lowerReference: 'AGL', upper: 900, upperReference: 'AGL', name: 'ZONA PRUEBA',
+          },
+        },
+      ],
+    };
+
+    const grid = computeCoverageGrid(pack, packBBox, 8);
+    const oeste = grid.values[3 * grid.cols + 1]; // mitad oeste, fuera de la zona
+    const este = grid.values[3 * grid.cols + 6]; // mitad este, dentro
+    check('en el mapa de altura libre, fuera de la zona se puede subir a 120 m', oeste === 120, `→ ${oeste}`);
+    check('y dentro de la zona la altura libre es cero', este === 0, `→ ${este}`);
+
+  }
+
+  // 10. Motor solar (sin red: todo se calcula en el móvil).
+  {
+    const lat = 40.9605, lon = -5.679;
+    const dia = sunDay(new Date('2026-08-18T12:00:00Z'), lat, lon);
+    const noon = sunPosition(dia.solarNoon!, lat, lon);
+    check('al mediodía solar el sol está justo al sur', Math.abs(noon.azimuth - 180) < 0.5, `→ ${noon.azimuth.toFixed(1)}°`);
+    check('el sol sale por el este y se pone por el oeste',
+      dia.sunriseAzimuth! < 110 && dia.sunsetAzimuth! > 250,
+      `→ ${dia.sunriseAzimuth?.toFixed(0)}° / ${dia.sunsetAzimuth?.toFixed(0)}°`);
+    check('la hora dorada de la tarde acaba en el ocaso',
+      dia.goldenEveningStart! < dia.sunset! && dia.sunset! < dia.blueEvening[0]!);
+    check('la hora azul va después del ocaso y antes del final del crepúsculo',
+      dia.blueEvening[0]! < dia.blueEvening[1]!);
+    check('con el sol a 45° la sombra mide lo mismo que el objeto',
+      Math.abs((shadowRatio(45) ?? 0) - 1) < 0.001, `→ ×${shadowRatio(45)?.toFixed(3)}`);
+    check('con el sol en el horizonte no hay sombra que medir', shadowRatio(0) === null);
+    check('la sombra cae al contrario que el sol', shadowAzimuth(90) === 270);
+    check('a 3° de altura es hora dorada', lightKind(3) === 'dorada');
+    check('a -5° es hora azul', lightKind(-5) === 'azul');
+    check('a -20° es de noche', lightKind(-20) === 'noche');
+  }
+
+  // 11. El horizonte del terreno se interpola entre azimuts medidos.
+  {
+    const perfil = {
+      byAzimuth: [
+        { azimuth: 270, angle: 0, distanceKm: 1 },
+        { azimuth: 280, angle: 10, distanceKm: 1 },
+      ],
+      originElevation: 700,
+      maxDistanceKm: 20,
+    };
+    check('en el azimut medido devuelve su ángulo', Math.abs(horizonAt(perfil, 280) - 10) < 0.01);
+    const medio = horizonAt(perfil, 275);
+    check('a mitad de camino interpola', medio > 3 && medio < 7, `→ ${medio.toFixed(1)}°`);
+  }
+
+  // 12. Punto volable más cercano a un objetivo fotográfico.
+  {
+    // Zona que exige permiso en la mitad este; el objetivo cae dentro de ella.
+    const packBBox = { minLat: 40.0, maxLat: 40.06, minLon: -1.06, maxLon: -1.0 };
+    const pack = {
+      version: 1,
+      createdAt: new Date().toISOString(),
+      center: { lat: 40.03, lon: -1.03 },
+      radiusKm: 3,
+      bbox: packBBox,
+      label: 'prueba',
+      elevation: null,
+      zones: [
+        {
+          layer: 'aero' as const,
+          rings: [[[-1.03, 40.0], [-1.03, 40.06], [-1.0, 40.06], [-1.0, 40.0], [-1.03, 40.0]]],
+          attributes: {
+            identifier: 'TEST', type: 'REQ_AUTHORIZATION', uom: 'M',
+            lower: 0, lowerReference: 'AGL', upper: 900, upperReference: 'AGL', name: 'ZONA',
+          },
+        },
+      ],
+    };
+
+    const dentro = findNearestFlyable(pack, { lat: 40.03, lon: -1.01 }, 120, 3, 48);
+    check('un objetivo dentro de la zona no se marca como volable', !dentro.targetIsFlyable);
+    check('y encuentra el punto libre más cercano', dentro.best !== null);
+    check(
+      'que está al oeste, que es donde acaba la zona',
+      dentro.best?.bearing === 'al oeste',
+      `→ ${dentro.best?.bearing} a ${dentro.best?.distanceM.toFixed(0)} m`,
+    );
+    check(
+      'a una distancia coherente con el borde de la zona',
+      (dentro.best?.distanceM ?? 0) > 1300 && (dentro.best?.distanceM ?? 0) < 2200,
+      `→ ${dentro.best?.distanceM.toFixed(0)} m`,
+    );
+
+    const fuera = findNearestFlyable(pack, { lat: 40.03, lon: -1.05 }, 120, 3, 48);
+    check('un objetivo fuera de la zona sí es volable de partida', fuera.targetIsFlyable);
+  }
+
+  // 13. Los avisos generales se reconocen por identificador, no por capa entera.
   {
     const aviso = normalizeZone({ identifier: 'NPDRID', type: 'REQ_AUTHORIZATION', uom: 'M' }, 'urbano', 0);
     const zonaReal = normalizeZone({ identifier: 'URB0001', type: 'REQ_AUTHORIZATION', uom: 'M', lower: 0, lowerReference: 'AGL' }, 'urbano', 1);

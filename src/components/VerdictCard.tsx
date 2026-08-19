@@ -2,18 +2,27 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
-import { radius, shadow, space, type, verdictStyles } from '../theme';
+import {
+  emphasize,
+  HIT_SLOP,
+  radius,
+  shadow,
+  space,
+  tabular,
+  type,
+  verdictStyles,
+} from '../theme';
 import type { QueryResult } from '../types';
 import { HeightControl } from './HeightControl';
-import { Chevron, Collapsible, FadeInUp } from './motion';
+import { Appear, Chevron, Collapsible, PressableScale } from './motion';
 import { timeAgo } from '../state/HistoryContext';
 
 /**
- * La respuesta. Ocupa el primer sitio de la pantalla y se lee de un vistazo:
- * color sólido, titular grande y blanco, y el resto subordinado.
+ * La respuesta.
  *
- * El control de altura vive DENTRO de la tarjeta, plegado. Antes iba encima, y
- * eso obligaba a pasar por un formulario para llegar a la respuesta.
+ * Ocupa el primer sitio de la pantalla y se lee de un vistazo: relleno sólido,
+ * titular grande y todo lo demás subordinado. El color va en una capa sólida, no
+ * sobre un material translúcido, para que el blanco se lea al sol.
  */
 export function VerdictCard({
   result,
@@ -30,47 +39,36 @@ export function VerdictCard({
   refreshing?: boolean;
   compact?: boolean;
 }) {
-  const p = usePalette();
   const [openHeight, setOpenHeight] = useState(false);
   const style = verdictStyles[result.verdict.level];
 
   return (
-    <FadeInUp animationKey={`${result.verdict.level}-${result.queriedAt}`}>
+    <Appear animationKey={`${result.verdict.level}-${result.queriedAt}`}>
       <View
         style={[
           {
-            backgroundColor: style.color,
+            backgroundColor: style.solid,
             borderRadius: radius.xl,
             padding: compact ? space.lg : space.xl,
             overflow: 'hidden',
           },
-          shadow,
+          shadow.panel,
         ]}
         accessible
         accessibilityRole="summary"
         accessibilityLabel={`${result.verdict.headline}. ${result.verdict.summary}`}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-          <View
-            style={{
-              width: compact ? 44 : 54,
-              height: compact ? 44 : 54,
-              borderRadius: 27,
-              backgroundColor: '#FFFFFF2E',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons
-              name={style.icon as keyof typeof Ionicons.glyphMap}
-              size={compact ? 26 : 32}
-              color="#fff"
-            />
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
+          <Ionicons
+            name={ICONS[result.verdict.level]}
+            size={compact ? 26 : 30}
+            color="#FFFFFF"
+            style={{ marginTop: 1 }}
+          />
           <Text
             style={[
-              type.title,
-              { color: '#fff', flex: 1, fontSize: compact ? 21 : 26, lineHeight: compact ? 25 : 31 },
+              compact ? type.title2 : type.title1,
+              { color: '#FFFFFF', flex: 1 },
             ]}
           >
             {result.verdict.headline}
@@ -80,19 +78,19 @@ export function VerdictCard({
               onPress={onRefresh}
               accessibilityRole="button"
               accessibilityLabel="Volver a consultar"
-              hitSlop={10}
-              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 4 })}
+              hitSlop={HIT_SLOP}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
             >
               {refreshing ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Ionicons name="refresh" size={21} color="#FFFFFFD9" />
+                <Ionicons name="refresh" size={20} color="#FFFFFFCC" />
               )}
             </Pressable>
           ) : null}
         </View>
 
-        <Text style={[type.body, { color: '#FFFFFFEA', marginTop: space.md }]}>
+        <Text style={[type.callout, { color: '#FFFFFFE6', marginTop: space.md }]}>
           {result.verdict.summary}
         </Text>
 
@@ -100,45 +98,45 @@ export function VerdictCard({
 
         {place ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.md }}>
-            <Ionicons name="location" size={14} color="#FFFFFFB8" />
-            <Text style={[type.caption, { color: '#FFFFFFB8', flex: 1 }]} numberOfLines={2}>
+            <Ionicons name="location" size={13} color="#FFFFFFB3" />
+            <Text style={[type.footnote, { color: '#FFFFFFB3', flex: 1 }]} numberOfLines={2}>
               {place}
             </Text>
           </View>
         ) : null}
 
-        {/* Altura: chip pulsable que despliega el selector */}
         <View style={{ marginTop: space.lg, gap: space.sm }}>
-          <Pressable
+          <PressableScale
             onPress={() => onHeightChange && setOpenHeight((v) => !v)}
             disabled={!onHeightChange}
             accessibilityRole={onHeightChange ? 'button' : undefined}
             accessibilityState={{ expanded: openHeight }}
             accessibilityLabel={`Altura de vuelo: ${result.flightHeightAgl} metros sobre el terreno. Tocar para cambiar.`}
-            style={({ pressed }) => ({
+            hitSlop={HIT_SLOP}
+            style={{
               flexDirection: 'row',
               alignItems: 'center',
               gap: space.sm,
               alignSelf: 'flex-start',
-              backgroundColor: pressed ? '#FFFFFF3D' : '#FFFFFF26',
-              borderRadius: radius.pill,
+              backgroundColor: '#FFFFFF26',
+              borderRadius: radius.sm,
               paddingLeft: space.md,
-              paddingRight: onHeightChange ? space.sm + 2 : space.md,
-              minHeight: 40,
-            })}
+              paddingRight: onHeightChange ? space.sm : space.md,
+              minHeight: 36,
+            }}
           >
-            <Ionicons name="swap-vertical" size={15} color="#fff" />
-            <Text style={[type.captionStrong, { color: '#fff', fontSize: 14 }]}>
+            <Ionicons name="swap-vertical" size={14} color="#FFFFFF" />
+            <Text style={[emphasize(type.footnote), { color: '#FFFFFF' }]}>
               hasta {result.flightHeightAgl} m sobre el terreno
             </Text>
-            {onHeightChange ? <Chevron open={openHeight} color="#FFFFFFCC" size={15} /> : null}
-          </Pressable>
+            {onHeightChange ? <Chevron open={openHeight} color="#FFFFFFCC" size={14} /> : null}
+          </PressableScale>
 
           {onHeightChange ? (
             <Collapsible open={openHeight}>
               <View style={{ paddingTop: space.sm }}>
                 <HeightControl value={result.flightHeightAgl} onChange={onHeightChange} onColor />
-                <Text style={[type.caption, { color: '#FFFFFFB8', marginTop: space.sm }]}>
+                <Text style={[type.footnote, { color: '#FFFFFFB3', marginTop: space.sm }]}>
                   Las zonas que empiezan por encima de esta altura dejan de contar. Cambiarla cambia
                   la respuesta de verdad.
                 </Text>
@@ -147,38 +145,44 @@ export function VerdictCard({
           ) : null}
         </View>
 
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            marginTop: space.md,
-          }}
-        >
-          <Ionicons name="time-outline" size={13} color="#FFFFFF9E" />
-          <Text style={[type.caption, { color: '#FFFFFF9E', fontSize: 12 }]}>
-            Consultado a ENAIRE {timeAgo(result.queriedAt)}
-          </Text>
-        </View>
+        <Text style={[type.caption, { color: '#FFFFFF99', marginTop: space.md }]}>
+          Consultado a ENAIRE {timeAgo(result.queriedAt)}
+        </Text>
       </View>
-    </FadeInUp>
+    </Appear>
   );
 }
 
+const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  LIBRE: 'checkmark-circle',
+  CONDICIONES: 'alert-circle',
+  AUTORIZACION: 'shield-half',
+  PROHIBIDO: 'close-circle',
+  DESCONOCIDO: 'help-circle',
+};
+
 /**
- * El techo libre: hasta dónde puedes subir sin pedirle permiso a nadie.
- *
- * Es la lectura que de verdad se usa en el campo. Antes había que ir probando
- * alturas en el selector hasta ver cuál dejaba de salir en rojo.
+ * El techo libre: hasta dónde se puede subir sin pedirle permiso a nadie. Es la
+ * lectura que de verdad se usa en el campo.
  */
 function MaxHeightBand({ result, compact }: { result: QueryResult; compact?: boolean }) {
   const { metres, limitedBy, legalLimit } = result.verdict.maxFreeHeight;
 
+  const band: React.ComponentProps<typeof View>['style'] = {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    backgroundColor: '#FFFFFF1F',
+    borderRadius: radius.md,
+    padding: space.md,
+    marginTop: space.lg,
+  };
+
   if (metres === null) {
     return (
-      <View style={bandStyle}>
-        <Ionicons name="help-circle" size={20} color="#FFFFFFD9" />
-        <Text style={[type.caption, { color: '#FFFFFFEA', flex: 1 }]}>
+      <View style={band}>
+        <Ionicons name="help-circle" size={19} color="#FFFFFFCC" />
+        <Text style={[type.footnote, { color: '#FFFFFFE6', flex: 1 }]}>
           {result.verdict.maxFreeHeight.label}
         </Text>
       </View>
@@ -187,29 +191,32 @@ function MaxHeightBand({ result, compact }: { result: QueryResult; compact?: boo
 
   if (metres <= 0) {
     return (
-      <View style={bandStyle}>
-        <Ionicons name="close-circle" size={20} color="#FFFFFFD9" />
-        <Text style={[type.captionStrong, { color: '#fff', flex: 1, fontSize: 14 }]}>
-          Ni siquiera a ras de suelo puedes volar aquí sin autorización.
+      <View style={band}>
+        <Ionicons name="close-circle" size={19} color="#FFFFFFCC" />
+        <Text style={[emphasize(type.footnote), { color: '#FFFFFF', flex: 1 }]}>
+          Ni a ras de suelo puedes volar aquí sin autorización.
         </Text>
       </View>
     );
   }
 
   return (
-    <View style={bandStyle}>
-      <Ionicons name="arrow-up-circle" size={compact ? 22 : 26} color="#FFFFFFE0" />
+    <View style={band}>
+      <Ionicons name="arrow-up-circle" size={compact ? 22 : 26} color="#FFFFFFE6" />
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5 }}>
-          <Text style={{ color: '#fff', fontSize: compact ? 24 : 30, fontWeight: '800', letterSpacing: -0.8 }}>
+          <Text
+            style={[
+              tabular,
+              { color: '#FFFFFF', fontSize: compact ? 26 : 32, fontWeight: '700', letterSpacing: -0.7 },
+            ]}
+          >
             {metres}
           </Text>
-          <Text style={[type.bodyStrong, { color: '#fff' }]}>m</Text>
-          <Text style={[type.caption, { color: '#FFFFFFC7', flex: 1 }]}>
-            sin pedir permiso
-          </Text>
+          <Text style={[emphasize(type.callout), { color: '#FFFFFF' }]}>m</Text>
+          <Text style={[type.footnote, { color: '#FFFFFFCC', flex: 1 }]}>sin pedir permiso</Text>
         </View>
-        <Text style={[type.caption, { color: '#FFFFFFC7', fontSize: 12 }]}>
+        <Text style={[type.caption, { color: '#FFFFFFCC' }]}>
           {legalLimit
             ? 'Es el límite general de la categoría abierta, no hay ninguna zona por debajo.'
             : `Por encima entras en ${limitedBy}.`}
@@ -219,45 +226,37 @@ function MaxHeightBand({ result, compact }: { result: QueryResult; compact?: boo
   );
 }
 
-const bandStyle = {
-  flexDirection: 'row' as const,
-  alignItems: 'center' as const,
-  gap: space.md,
-  backgroundColor: '#FFFFFF24',
-  borderRadius: radius.md,
-  padding: space.md,
-  marginTop: space.md,
-};
-
 /** Versión mínima para la hoja del mapa: una línea con color y titular. */
 export function VerdictPill({ result }: { result: QueryResult }) {
   const p = usePalette();
   const style = verdictStyles[result.verdict.level];
   const affecting = result.verdict.affecting.length;
+  const free = result.verdict.maxFreeHeight.metres;
+
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
       <View
         style={{
-          width: 38,
-          height: 38,
-          borderRadius: 19,
-          backgroundColor: style.color,
+          width: 34,
+          height: 34,
+          borderRadius: 17,
+          backgroundColor: style.solid,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <Ionicons name={style.icon as keyof typeof Ionicons.glyphMap} size={22} color="#fff" />
+        <Ionicons name={ICONS[result.verdict.level]} size={20} color="#FFFFFF" />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={[type.subtitle, { color: p.text }]} numberOfLines={1}>
+        <Text style={[emphasize(type.headline), { color: p.label }]} numberOfLines={1}>
           {result.verdict.headline}
         </Text>
-        <Text style={[type.caption, { color: p.textMuted }]} numberOfLines={1}>
-          {result.verdict.maxFreeHeight.metres !== null
-            ? result.verdict.maxFreeHeight.metres > 0
-              ? `Hasta ${result.verdict.maxFreeHeight.metres} m sin permiso · ${affecting} ${affecting === 1 ? 'zona' : 'zonas'}`
+        <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
+          {free !== null
+            ? free > 0
+              ? `Hasta ${free} m sin permiso · ${affecting} ${affecting === 1 ? 'zona' : 'zonas'}`
               : `Sin autorización, aquí no se vuela · ${affecting} ${affecting === 1 ? 'zona' : 'zonas'}`
-            : `${affecting} ${affecting === 1 ? 'zona te afecta' : 'zonas te afectan'} a ${result.flightHeightAgl} m`}
+            : `${affecting} ${affecting === 1 ? 'zona te afecta' : 'zonas te afectan'}`}
         </Text>
       </View>
     </View>

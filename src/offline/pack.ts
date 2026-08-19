@@ -18,50 +18,33 @@ import { boxAround, type BBox, type ElevationGrid } from './geometry';
 
 export { boxAround, bboxContains, interpolateElevation, pointInRings } from './geometry';
 export type { BBox, ElevationGrid } from './geometry';
+export {
+  DEFAULT_RADIUS_KM,
+  ELEVATION_UNCERTAINTY_M,
+  MAX_RADIUS_KM,
+  MIN_RADIUS_KM,
+  PACK_VERSION,
+  elevationStepKm,
+  elevationUncertaintyFor,
+} from './model';
+export type { OfflinePack, PackedZone, PackMeta } from './model';
 
-export const PACK_VERSION = 1;
-export const DEFAULT_RADIUS_KM = 25;
-/** Separación de la rejilla de elevaciones. */
-export const ELEVATION_STEP_KM = 1;
-/**
- * Margen de seguridad de la elevación interpolada. La rejilla es de 1 km, así
- * que entre dos nodos puede haber un cerro. Se aplica hacia el lado restrictivo.
- */
-export const ELEVATION_UNCERTAINTY_M = 30;
+import {
+  DEFAULT_RADIUS_KM,
+  ELEVATION_NODES_PER_SIDE,
+  PACK_VERSION,
+  elevationStepKm,
+  type OfflinePack,
+  type PackMeta,
+  type PackedZone,
+} from './model';
+
 
 /** El paquete vive en el almacenamiento de la app, no en la caché: no se borra solo. */
 function packFile(): File {
   const dir = new Directory(Paths.document, 'zonadron');
   if (!dir.exists) dir.create({ intermediates: true });
   return new File(dir, `pack-v${PACK_VERSION}.json`);
-}
-
-export interface PackedZone {
-  layer: LayerKey;
-  attributes: RawZoneAttributes;
-  /** Anillos en [lon, lat]. */
-  rings: number[][][];
-}
-
-export interface OfflinePack {
-  version: number;
-  createdAt: string;
-  center: { lat: number; lon: number };
-  radiusKm: number;
-  bbox: BBox;
-  zones: PackedZone[];
-  elevation: ElevationGrid | null;
-  label: string;
-}
-
-export interface PackMeta {
-  createdAt: string;
-  center: { lat: number; lon: number };
-  radiusKm: number;
-  bbox: OfflinePack['bbox'];
-  zoneCount: number;
-  bytes: number;
-  label: string;
 }
 
 const META_KEY = 'zonadron.pack.meta.v1';
@@ -113,15 +96,17 @@ async function fetchLayerZones(
 
 async function fetchElevationGrid(
   bbox: OfflinePack['bbox'],
+  stepKm: number,
   signal?: AbortSignal,
   onProgress?: (pct: number) => void,
 ): Promise<ElevationGrid | null> {
   const midLat = (bbox.minLat + bbox.maxLat) / 2;
-  const dLat = ELEVATION_STEP_KM / 111.32;
-  const dLon = ELEVATION_STEP_KM / (111.32 * Math.cos((midLat * Math.PI) / 180));
+  const dLat = stepKm / 111.32;
+  const dLon = stepKm / (111.32 * Math.cos((midLat * Math.PI) / 180));
 
-  const rows = Math.ceil((bbox.maxLat - bbox.minLat) / dLat) + 1;
-  const cols = Math.ceil((bbox.maxLon - bbox.minLon) / dLon) + 1;
+  // Se acota por si acaso: el coste son peticiones de 100 puntos.
+  const rows = Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((bbox.maxLat - bbox.minLat) / dLat) + 1);
+  const cols = Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((bbox.maxLon - bbox.minLon) / dLon) + 1);
 
   const lats: number[] = [];
   const lons: number[] = [];
@@ -180,7 +165,8 @@ export async function buildPack(
   }
   onProgress?.({ step: 'zonas', pct: 1 });
 
-  const elevation = await fetchElevationGrid(bbox, signal, (pct) =>
+  const stepKm = elevationStepKm(radiusKm);
+  const elevation = await fetchElevationGrid(bbox, stepKm, signal, (pct) =>
     onProgress?.({ step: 'elevacion', pct }),
   );
 
@@ -193,6 +179,7 @@ export async function buildPack(
     bbox,
     zones,
     elevation,
+    elevationStepKm: stepKm,
     label,
   };
 

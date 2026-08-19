@@ -3,14 +3,22 @@ import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenScroll } from '../../src/components/Screen';
-import { Banner, Card, EmptyState, ScreenTitle, SectionTitle, SkeletonRows } from '../../src/components/ui';
+import {
+  Banner,
+  Card,
+  EmptyState,
+  ScreenTitle,
+  SectionTitle,
+  Separator,
+  SkeletonRows,
+} from '../../src/components/ui';
 import { HistoryList } from '../../src/components/HistoryList';
-import { FadeInUp } from '../../src/components/motion';
+import { Appear } from '../../src/components/motion';
 import { noWebOutline } from '../../src/components/HeightControl';
 import { usePalette } from '../../src/hooks/useTheme';
 import { useHistory } from '../../src/state/HistoryContext';
 import { searchPlaces, type Place } from '../../src/api/geocode';
-import { radius, space, type } from '../../src/theme';
+import { radius, shadow, space, type, emphasize } from '../../src/theme';
 
 const DEBOUNCE_MS = 300;
 
@@ -90,35 +98,40 @@ export default function BuscarScreen() {
         subtitle="Una dirección, un municipio o unas coordenadas, para consultar ese punto."
       />
 
+      {/* Campo de búsqueda del sistema: una pastilla que se levanta del fondo
+          agrupado, sin marco. El foco se nota en el símbolo y en el cursor, no
+          engordando un borde de color. */}
       <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: space.md,
-          backgroundColor: p.card,
-          borderRadius: radius.pill,
-          paddingHorizontal: space.lg,
-          borderWidth: focused ? 2 : 1,
-          borderColor: focused ? p.accent : p.cardBorder,
-        }}
+        style={[
+          {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: space.sm,
+            backgroundColor: p.surface,
+            borderRadius: 10,
+            paddingHorizontal: space.md,
+            minHeight: 44,
+          },
+          shadow.chip,
+        ]}
       >
-        <Ionicons name="search" size={18} color={focused ? p.accent : p.textFaint} />
+        <Ionicons name="search" size={17} color={focused ? p.labelSecondary : p.labelTertiary} />
         <TextInput
           value={query}
           onChangeText={setQuery}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder="Ej. Playa de la Malvarrosa, o 39.47, -0.32"
-          placeholderTextColor={p.textFaint}
+          placeholderTextColor={p.labelTertiary}
           autoCorrect={false}
           returnKeyType="search"
           onSubmitEditing={submit}
           accessibilityLabel="Buscar un lugar"
-          style={[{ flex: 1, color: p.text, fontSize: 15, paddingVertical: 15 }, noWebOutline]}
+          style={[type.callout, { flex: 1, color: p.label, paddingVertical: 11 }, noWebOutline]}
         />
         {query.length > 0 ? (
           <Pressable onPress={() => setQuery('')} hitSlop={12} accessibilityLabel="Borrar búsqueda">
-            <Ionicons name="close-circle" size={19} color={p.textFaint} />
+            <Ionicons name="close-circle" size={17} color={p.labelTertiary} />
           </Pressable>
         ) : null}
       </View>
@@ -132,52 +145,53 @@ export default function BuscarScreen() {
       {error ? <Banner tone="warn">{error}</Banner> : null}
 
       {!loading && results.length > 0 ? (
-        <FadeInUp animationKey={results[0]?.id}>
+        <Appear animationKey={results[0]?.id}>
           <View style={{ gap: space.md }}>
             <SectionTitle>Resultados</SectionTitle>
             <View
-              style={{
-                backgroundColor: p.card,
-                borderRadius: radius.lg,
-                borderWidth: 1,
-                borderColor: p.cardBorder,
-                overflow: 'hidden',
-              }}
+              style={[
+                {
+                  backgroundColor: p.surface,
+                  borderRadius: radius.lg,
+                  overflow: 'hidden',
+                },
+                shadow.chip,
+              ]}
             >
               {results.map((place, i) => (
-                <Pressable
-                  key={place.id}
-                  onPress={() => open(place.lat, place.lon, place.name)}
-                  accessibilityRole="button"
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: space.md,
-                    paddingHorizontal: space.lg,
-                    paddingVertical: space.md,
-                    minHeight: 62,
-                    backgroundColor: pressed ? p.accentSoft : 'transparent',
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: p.divider,
-                  })}
-                >
-                  <Ionicons name="location-outline" size={20} color={p.accent} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[type.bodyStrong, { color: p.text }]} numberOfLines={1}>
-                      {place.name}
-                    </Text>
-                    {place.detail ? (
-                      <Text style={[type.caption, { color: p.textMuted }]} numberOfLines={1}>
-                        {place.detail}
+                <View key={place.id}>
+                  {i > 0 ? <Separator inset={space.lg + 20 + space.md} /> : null}
+                  <Pressable
+                    onPress={() => open(place.lat, place.lon, place.name)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: space.md,
+                      paddingHorizontal: space.lg,
+                      paddingVertical: space.md,
+                      minHeight: 60,
+                      backgroundColor: pressed ? p.surfaceSunken : 'transparent',
+                    })}
+                  >
+                    <Ionicons name="location-outline" size={20} color={p.labelSecondary} />
+                    <View style={{ flex: 1, gap: 1 }}>
+                      <Text style={[emphasize(type.callout), { color: p.label }]} numberOfLines={1}>
+                        {place.name}
                       </Text>
-                    ) : null}
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={p.textFaint} />
-                </Pressable>
+                      {place.detail ? (
+                        <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
+                          {place.detail}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={p.labelTertiary} />
+                  </Pressable>
+                </View>
               ))}
             </View>
           </View>
-        </FadeInUp>
+        </Appear>
       ) : null}
 
       {searched && !loading && results.length === 0 && !error ? (

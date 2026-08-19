@@ -1,18 +1,28 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, PanResponder, Pressable, View } from 'react-native';
+import { Animated, Dimensions, PanResponder, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePalette } from '../hooks/useTheme';
-import { radius, shadowStrong, space } from '../theme';
+import { radius, space } from '../theme';
+import { project, rubberband, SPRINGS } from '../ui/motion';
+import { useMotionPreferences } from '../ui/accessibility';
+import { Material } from './Material';
 
 export type SheetState = 'hidden' | 'peek' | 'expanded';
 
 /**
- * Hoja inferior mínima, hecha con `Animated` y `PanResponder` del propio React
- * Native. No se usa ninguna librería de gestos: la hoja sólo tiene dos posiciones
- * y no necesita más.
+ * Hoja inferior.
  *
- * El gesto vive únicamente en la cabecera (el asa), para que el contenido de
- * dentro pueda hacer scroll con normalidad.
+ * Tres detalles hacen que se sienta física en vez de correcta:
+ *
+ *  1. Al soltar, la animación continúa a la velocidad exacta que llevaba el
+ *     dedo. Sin eso se nota la costura entre arrastrar y animar.
+ *  2. El destino no es el punto de anclaje más cercano al sitio donde soltaste,
+ *     sino el más cercano a donde el impulso habría llevado la hoja. Es lo que
+ *     convierte un golpe de dedo en un lanzamiento.
+ *  3. En los topes la hoja resiste de forma progresiva en vez de frenar en seco:
+ *     un tope duro se lee como "se ha colgado".
+ *
+ * El gesto vive sólo en la cabecera para que el contenido pueda desplazarse.
  */
 export function BottomSheet({
   state,
@@ -23,18 +33,16 @@ export function BottomSheet({
 }: {
   state: SheetState;
   onStateChange: (s: SheetState) => void;
-  /** Suelo por si la cabecera aún no se ha medido. */
   minPeekHeight?: number;
   header: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const p = usePalette();
   const insets = useSafeAreaInsets();
+  const { reduceMotion } = useMotionPreferences();
   const screenHeight = Dimensions.get('window').height;
   const expandedHeight = Math.round(screenHeight * 0.82);
 
-  // La posición plegada se ajusta a la altura real de la cabecera, para que no
-  // asome un trozo del contenido de dentro por debajo.
   const [headerHeight, setHeaderHeight] = useState(minPeekHeight);
   const peekHeight = Math.max(minPeekHeight, headerHeight + insets.bottom);
 
@@ -50,44 +58,71 @@ export function BottomSheet({
   const translateY = useRef(new Animated.Value(offsets.hidden)).current;
   const currentOffset = useRef(offsets.hidden);
 
+  // El valor vivo: al interrumpir hay que arrancar de lo que se ve, no del
+  // destino lógico, o se produce un salto visible.
+  useEffect(() => {
+    const id = translateY.addListener(({ value }) => {
+      currentOffset.current = value;
+    });
+    return () => translateY.removeListener(id);
+  }, [translateY]);
+
   const animateTo = useCallback(
-    (next: SheetState) => {
+    (next: SheetState, velocity = 0) => {
       const to = offsets[next];
-      currentOffset.current = to;
+      if (reduceMotion) {
+        Animated.timing(translateY, { toValue: to, duration: 200, useNativeDriver: true }).start();
+        return;
+      }
       Animated.spring(translateY, {
         toValue: to,
+        velocity,
+        ...SPRINGS.sheet,
         useNativeDriver: true,
-        damping: 26,
-        stiffness: 240,
-        mass: 0.9,
       }).start();
     },
-    [offsets, translateY],
+    [offsets, translateY, reduceMotion],
   );
 
   useEffect(() => {
     animateTo(state);
   }, [state, animateTo]);
 
+  const grabOffset = useRef(0);
+
   const pan = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+      // Umbral pequeño antes de comprometerse con la dirección.
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
+      onPanResponderGrant: () => {
+        grabOffset.current = currentOffset.current;
+        translateY.stopAnimation();
+      },
       onPanResponderMove: (_, g) => {
-        const next = Math.min(
-          offsets.hidden,
-          Math.max(offsets.expanded, currentOffset.current + g.dy),
-        );
+        const raw = grabOffset.current + g.dy;
+        let next = raw;
+        // Resistencia progresiva por arriba: no hay nada más allá.
+        if (raw < offsets.expanded) {
+          next = offsets.expanded + rubberband(raw - offsets.expanded, expandedHeight);
+        } else if (raw > offsets.hidden) {
+          next = offsets.hidden + rubberband(raw - offsets.hidden, expandedHeight);
+        }
         translateY.setValue(next);
       },
       onPanResponderRelease: (_, g) => {
-        const projected = currentOffset.current + g.dy + g.vy * 90;
-        const distances: Array<[SheetState, number]> = [
+        // g.vy viene en px/ms.
+        const velocity = g.vy * 1000;
+        const projected = currentOffset.current + project(velocity);
+
+        const candidates: Array<[SheetState, number]> = [
           ['expanded', Math.abs(projected - offsets.expanded)],
           ['peek', Math.abs(projected - offsets.peek)],
         ];
-        distances.sort((a, b) => a[1] - b[1]);
-        onStateChange(distances[0][0]);
-        animateTo(distances[0][0]);
+        candidates.sort((a, b) => a[1] - b[1]);
+        const target = candidates[0][0];
+
+        onStateChange(target);
+        animateTo(target, velocity);
       },
     }),
   ).current;
@@ -95,46 +130,40 @@ export function BottomSheet({
   return (
     <Animated.View
       pointerEvents={state === 'hidden' ? 'none' : 'auto'}
-      style={[
-        {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: expandedHeight,
-          backgroundColor: p.bgElevated,
-          borderTopLeftRadius: radius.xl,
-          borderTopRightRadius: radius.xl,
-          borderWidth: 1,
-          borderBottomWidth: 0,
-          borderColor: p.cardBorder,
-          transform: [{ translateY }],
-          overflow: 'hidden',
-        },
-        shadowStrong,
-      ]}
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: expandedHeight,
+        transform: [{ translateY }],
+      }}
     >
-      <View {...pan.panHandlers} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
-        <Pressable
-          onPress={() => onStateChange(state === 'expanded' ? 'peek' : 'expanded')}
-          accessibilityRole="button"
-          accessibilityLabel={state === 'expanded' ? 'Plegar el detalle' : 'Ver el detalle'}
-          style={{ paddingTop: space.sm + 2, paddingBottom: space.sm }}
-        >
-          <View
-            style={{
-              alignSelf: 'center',
-              width: 40,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: p.cardBorder,
-              marginBottom: space.sm,
-            }}
-          />
-          <View style={{ paddingHorizontal: space.lg }}>{header}</View>
-        </Pressable>
-      </View>
-      <View style={{ flex: 1, paddingBottom: insets.bottom }}>{children}</View>
+      <Material weight="sheet" radius={radius.sheet} style={{ flex: 1 }}>
+        <View {...pan.panHandlers} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+          <Pressable
+            onPress={() => onStateChange(state === 'expanded' ? 'peek' : 'expanded')}
+            accessibilityRole="button"
+            accessibilityLabel={state === 'expanded' ? 'Plegar el detalle' : 'Ver el detalle'}
+            style={{ paddingTop: space.sm + 2, paddingBottom: space.sm }}
+          >
+            <View
+              style={{
+                alignSelf: 'center',
+                width: 36,
+                height: 5,
+                borderRadius: 2.5,
+                backgroundColor: p.labelTertiary,
+                marginBottom: space.sm,
+              }}
+            />
+            <View style={{ paddingHorizontal: space.lg }}>{header}</View>
+          </Pressable>
+        </View>
+        <View style={{ flex: 1, paddingBottom: insets.bottom }}>{children}</View>
+      </Material>
     </Animated.View>
   );
 }
+
+export const sheetHairline = StyleSheet.hairlineWidth;

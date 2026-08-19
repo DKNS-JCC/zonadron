@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
-import { radius, space, type } from '../theme';
+import { radius, space, systemColor, tabular, type, emphasize } from '../theme';
 import { findNearestBlockingZone, PROXIMITY_RADIUS_M, type NearbyZone } from '../api/proximity';
 import { Card, SectionTitle, SkeletonRows } from './ui';
 import type { Coords } from '../types';
@@ -42,7 +42,7 @@ export function ProximityCard({ coords }: { coords: Coords }) {
   if (failed) return null;
 
   const close = zone !== null && zone.distanceM < 300;
-  const tone = close ? (p.scheme === 'dark' ? '#E8A33D' : '#8F5300') : p.textMuted;
+  const tone = close ? systemColor('orange', p) : p.labelSecondary;
 
   return (
     <Card>
@@ -50,8 +50,8 @@ export function ProximityCard({ coords }: { coords: Coords }) {
 
       {zone === null ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-          <Ionicons name="checkmark-circle-outline" size={22} color="#07835A" />
-          <Text style={[type.body, { color: p.text, flex: 1 }]}>
+          <Ionicons name="checkmark-circle" size={24} color={systemColor('green', p)} />
+          <Text style={[type.callout, { color: p.label, flex: 1 }]}>
             No hay ninguna zona que exija permiso en {PROXIMITY_RADIUS_M / 1000} km a la redonda.
             Tienes sitio de sobra.
           </Text>
@@ -59,27 +59,16 @@ export function ProximityCard({ coords }: { coords: Coords }) {
       ) : (
         <View style={{ gap: space.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-            <View
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 21,
-                backgroundColor: tone + (p.scheme === 'dark' ? '2E' : '1C'),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name={close ? 'warning-outline' : 'resize-outline'} size={21} color={tone} />
-            </View>
+            <Ionicons name={close ? 'warning' : 'resize-outline'} size={26} color={tone} />
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 5 }}>
-                <Text style={{ color: tone, fontSize: 26, fontWeight: '800', letterSpacing: -0.6 }}>
+                <Text style={[type.title1, tabular, { color: close ? tone : p.label }]}>
                   {Math.round(zone.distanceM)}
                 </Text>
-                <Text style={[type.bodyStrong, { color: tone }]}>m</Text>
-                <Text style={[type.caption, { color: p.textMuted }]}>{zone.bearing}</Text>
+                <Text style={[emphasize(type.callout), { color: close ? tone : p.label }]}>m</Text>
+                <Text style={[type.footnote, { color: p.labelSecondary }]}>{zone.bearing}</Text>
               </View>
-              <Text style={[type.caption, { color: p.textMuted }]} numberOfLines={2}>
+              <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={2}>
                 hasta {zone.title}
               </Text>
             </View>
@@ -88,12 +77,12 @@ export function ProximityCard({ coords }: { coords: Coords }) {
           {close ? (
             <View
               style={{
-                backgroundColor: tone + (p.scheme === 'dark' ? '1F' : '14'),
+                backgroundColor: p.surfaceSunken,
                 borderRadius: radius.md,
                 padding: space.md,
               }}
             >
-              <Text style={[type.caption, { color: p.text }]}>
+              <Text style={[type.footnote, { color: p.label }]}>
                 Estás muy cerca del borde. Con viento o perdiendo de vista el dron es fácil entrar
                 sin darte cuenta: vuela hacia el lado contrario y deja margen.
               </Text>
@@ -102,7 +91,7 @@ export function ProximityCard({ coords }: { coords: Coords }) {
         </View>
       )}
 
-      <Text style={[type.caption, { color: p.textFaint, fontSize: 12, marginTop: space.md }]}>
+      <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
         Distancia al borde más próximo, calculada sobre la geometría de ENAIRE simplificada a unos
         10 m. Orientativa: no la uses para apurar.
       </Text>

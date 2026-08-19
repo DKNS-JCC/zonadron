@@ -10,6 +10,7 @@
  */
 
 import { ENAIRE_SERVICE, getLayerIds } from './enaire';
+import { bearingLabel, distanceToRings, pointInRings } from '../offline/geometry';
 import type { LayerKey } from '../types';
 
 /** Radio de búsqueda. Más allá de 2 km el dato deja de ser accionable. */
@@ -26,89 +27,9 @@ export interface NearbyZone {
   bearing: string;
 }
 
-const EARTH_R = 6371000;
-
-/** Metros por grado, en la latitud dada. */
-function metresPerDegree(lat: number) {
-  const latRad = (lat * Math.PI) / 180;
-  return {
-    x: (Math.PI / 180) * EARTH_R * Math.cos(latRad),
-    y: (Math.PI / 180) * EARTH_R,
-  };
-}
-
-/** Distancia de un punto a un segmento, en un plano local en metros. */
-function pointToSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number) {
-  const dx = bx - ax;
-  const dy = by - ay;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return { dist: Math.hypot(px - ax, py - ay), x: ax, y: ay };
-  let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * dx;
-  const cy = ay + t * dy;
-  return { dist: Math.hypot(px - cx, py - cy), x: cx, y: cy };
-}
-
-const COMPASS = [
-  'al norte', 'al noreste', 'al este', 'al sureste',
-  'al sur', 'al suroeste', 'al oeste', 'al noroeste',
-];
-
-function bearingLabel(dx: number, dy: number): string {
-  // dx hacia el este, dy hacia el norte, ambos en metros.
-  const angle = (Math.atan2(dx, dy) * 180) / Math.PI; // 0 = norte
-  const normalized = (angle + 360) % 360;
-  return COMPASS[Math.round(normalized / 45) % 8];
-}
-
 interface RawFeature {
   attributes: Record<string, unknown>;
   geometry?: { rings?: number[][][] };
-}
-
-/**
- * Distancia mínima del punto al borde de un polígono. Devuelve también el punto
- * más cercano, para poder dar el rumbo.
- */
-function distanceToRings(
-  lat: number,
-  lon: number,
-  rings: number[][][],
-): { dist: number; dx: number; dy: number } | null {
-  const scale = metresPerDegree(lat);
-  let best: { dist: number; dx: number; dy: number } | null = null;
-
-  for (const ring of rings) {
-    for (let i = 0; i < ring.length - 1; i++) {
-      const a = ring[i];
-      const b = ring[i + 1];
-      if (!a || !b) continue;
-      const ax = (a[0] - lon) * scale.x;
-      const ay = (a[1] - lat) * scale.y;
-      const bx = (b[0] - lon) * scale.x;
-      const by = (b[1] - lat) * scale.y;
-      const r = pointToSegment(0, 0, ax, ay, bx, by);
-      if (!best || r.dist < best.dist) best = { dist: r.dist, dx: r.x, dy: r.y };
-    }
-  }
-  return best;
-}
-
-/** true si el punto cae dentro del polígono (regla par-impar). */
-function pointInRings(lat: number, lon: number, rings: number[][][]): boolean {
-  let inside = false;
-  for (const ring of rings) {
-    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-      const xi = ring[i][0];
-      const yi = ring[i][1];
-      const xj = ring[j][0];
-      const yj = ring[j][1];
-      const intersects = yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi;
-      if (intersects) inside = !inside;
-    }
-  }
-  return inside;
 }
 
 const BLOCKING = new Set(['PROHIBITED', 'REQ_AUTHORIZATION']);

@@ -3,10 +3,10 @@ import { Pressable, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
-import { radius, space, type } from '../theme';
+import { radius, space, type, emphasize } from '../theme';
 import { DRONE_PROFILES, getDroneProfile } from '../logic/drone';
 import { useSettings } from '../state/SettingsContext';
-import { Card, Chip, Divider, SectionTitle } from './ui';
+import { Card, Chip, Separator } from './ui';
 import { Chevron, Collapsible } from './motion';
 
 /**
@@ -37,24 +37,27 @@ export function DroneCard({ compact }: { compact?: boolean }) {
           alignItems: 'center',
           gap: space.md,
           padding: space.lg,
-          minHeight: 60,
-          backgroundColor: pressed ? p.accentSoft : 'transparent',
+          minHeight: 64,
+          backgroundColor: pressed ? p.surfaceSunken : 'transparent',
         })}
       >
-        <Ionicons name="hardware-chip-outline" size={20} color={p.accent} />
-        <View style={{ flex: 1 }}>
-          <Text style={[type.captionStrong, { color: p.textMuted }]}>TU DRON</Text>
-          <Text style={[type.subtitle, { color: p.text }]}>{profile.label}</Text>
+        <Ionicons name="hardware-chip-outline" size={22} color={p.labelSecondary} />
+        <View style={{ flex: 1, gap: 1 }}>
+          <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
+            Tu dron
+          </Text>
+          <Text style={[emphasize(type.callout), { color: p.label }]}>{profile.label}</Text>
         </View>
         {profile.subcategory !== '—' ? (
-          <Chip label={profile.subcategory} color={p.accent} filled />
+          <Chip label={profile.subcategory} color={p.tint} filled />
         ) : null}
-        <Chevron open={compact ? open : picking} color={p.textFaint} size={16} />
+        <Chevron open={compact ? open : picking} color={p.labelTertiary} size={15} />
       </Pressable>
 
       {/* Selector */}
       <Collapsible open={picking}>
-        <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.sm }}>
+        <Separator inset={space.lg} />
+        <View style={{ padding: space.lg, gap: space.sm }}>
           {DRONE_PROFILES.map((d) => {
             const active = d.id === drone;
             return (
@@ -67,26 +70,24 @@ export function DroneCard({ compact }: { compact?: boolean }) {
                 }}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
-                style={{
+                style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: space.md,
                   padding: space.md,
                   borderRadius: radius.md,
-                  borderWidth: active ? 2 : 1,
-                  borderColor: active ? p.accent : p.cardBorder,
-                  backgroundColor: active ? p.accentSoft : 'transparent',
+                  backgroundColor: active ? p.tintSoft : pressed ? p.surfaceSunken : 'transparent',
                   minHeight: 56,
-                }}
+                })}
               >
                 <Ionicons
                   name={active ? 'radio-button-on' : 'radio-button-off'}
-                  size={19}
-                  color={active ? p.accent : p.textFaint}
+                  size={20}
+                  color={active ? p.tint : p.labelTertiary}
                 />
-                <View style={{ flex: 1 }}>
-                  <Text style={[type.bodyStrong, { color: p.text }]}>{d.label}</Text>
-                  <Text style={[type.caption, { color: p.textMuted }]}>{d.examples}</Text>
+                <View style={{ flex: 1, gap: 1 }}>
+                  <Text style={[emphasize(type.callout), { color: p.label }]}>{d.label}</Text>
+                  <Text style={[type.footnote, { color: p.labelSecondary }]}>{d.examples}</Text>
                 </View>
                 {d.subcategory !== '—' ? <Chip label={d.subcategory} /> : null}
               </Pressable>
@@ -98,21 +99,23 @@ export function DroneCard({ compact }: { compact?: boolean }) {
       {/* Reglas que te aplican */}
       {profile.rules.length > 0 ? (
         <Collapsible open={compact ? open : !picking}>
-          <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg }}>
-            <Divider spaced={false} />
-            <View style={{ paddingTop: space.md, gap: space.sm }}>
-              <SectionTitle>Lo que te aplica a ti</SectionTitle>
+          <Separator inset={space.lg} />
+          <View style={{ padding: space.lg, gap: space.md }}>
+            <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
+              Lo que te aplica a ti
+            </Text>
+            <View style={{ gap: space.sm }}>
               {profile.rules.map((r, i) => (
                 <View key={i} style={{ flexDirection: 'row', gap: space.sm + 2 }}>
-                  <Text style={[type.body, { color: p.accent }]}>•</Text>
-                  <Text style={[type.body, { color: p.text, flex: 1 }]}>{r}</Text>
+                  <Text style={[type.callout, { color: p.labelTertiary }]}>•</Text>
+                  <Text style={[type.callout, { color: p.label, flex: 1 }]}>{r}</Text>
                 </View>
               ))}
-              <Text style={[type.caption, { color: p.textFaint, marginTop: space.sm }]}>
-                Las zonas geográficas UAS aplican igual a todos los drones: pesar poco no exime de
-                ninguna. Esto sólo cambia las reglas generales que te enseña la app.
-              </Text>
             </View>
+            <Text style={[type.footnote, { color: p.labelTertiary }]}>
+              Las zonas geográficas UAS aplican igual a todos los drones: pesar poco no exime de
+              ninguna. Esto sólo cambia las reglas generales que te enseña la app.
+            </Text>
           </View>
         </Collapsible>
       ) : null}

@@ -5,13 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenScroll } from '../src/components/Screen';
 import { ResultView } from '../src/components/ResultView';
 import { Card, GhostButton, SkeletonRows } from '../src/components/ui';
-import { FadeInUp } from '../src/components/motion';
+import { Appear } from '../src/components/motion';
 import { usePalette } from '../src/hooks/useTheme';
 import { useSettings } from '../src/state/SettingsContext';
 import { useHistory } from '../src/state/HistoryContext';
 import { checkPoint } from '../src/logic/query';
 import { describePoint } from '../src/api/geocode';
-import { space, type } from '../src/theme';
+import { space, systemColor, type } from '../src/theme';
 import type { QueryResult } from '../src/types';
 
 export default function ResultadoScreen() {
@@ -82,7 +82,9 @@ export default function ResultadoScreen() {
     return (
       <ScreenScroll>
         <Card>
-          <Text style={[type.body, { color: p.text }]}>No se han recibido coordenadas válidas.</Text>
+          <Text style={[type.callout, { color: p.label }]}>
+            No se han recibido coordenadas válidas.
+          </Text>
         </Card>
       </ScreenScroll>
     );
@@ -93,7 +95,7 @@ export default function ResultadoScreen() {
       <Stack.Screen options={{ title: place ?? 'Punto consultado' }} />
       <ScreenScroll
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={() => run(flightHeight)} tintColor={p.accent} />
+          <RefreshControl refreshing={loading} onRefresh={() => run(flightHeight)} tintColor={p.tint} />
         }
       >
         {loading && !result ? (
@@ -103,17 +105,22 @@ export default function ResultadoScreen() {
         ) : null}
 
         {error ? (
-          <FadeInUp>
+          <Appear>
             <Card>
               <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'flex-start' }}>
-                <Ionicons name="alert-circle" size={22} color="#BE2318" style={{ marginTop: 1 }} />
+                <Ionicons
+                  name="alert-circle"
+                  size={22}
+                  color={systemColor('red', p)}
+                  style={{ marginTop: 1 }}
+                />
                 <View style={{ flex: 1, gap: space.md }}>
-                  <Text style={[type.body, { color: p.text }]}>{error}</Text>
+                  <Text style={[type.callout, { color: p.label }]}>{error}</Text>
                   <GhostButton label="Reintentar" icon="refresh" onPress={() => run(flightHeight)} />
                 </View>
               </View>
             </Card>
-          </FadeInUp>
+          </Appear>
         ) : null}
 
         {result ? (

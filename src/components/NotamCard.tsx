@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
-import { radius, space, type } from '../theme';
+import { radius, space, systemColor, type, emphasize } from '../theme';
 import { getNotamsAt, type Notam } from '../api/notam';
-import { Card, Chip, SectionTitle, SkeletonRows } from './ui';
+import { Card, Chip, SectionTitle, Separator, SkeletonRows } from './ui';
 import { Chevron, Collapsible } from './motion';
 import type { Coords } from '../types';
 
@@ -44,16 +44,14 @@ export function NotamCard({ coords }: { coords: Coords }) {
     return (
       <Card>
         <SectionTitle>Avisos temporales (NOTAM)</SectionTitle>
-        <Text style={[type.caption, { color: p.textMuted }]}>
+        <Text style={[type.callout, { color: p.label }]}>
           No se han podido consultar los NOTAM. Compruébalos en el visor oficial antes de volar.
         </Text>
         <Pressable
           onPress={() => Linking.openURL(ENAIRE_NOTAM_URL).catch(() => {})}
-          style={{ marginTop: space.sm }}
+          style={{ marginTop: space.sm, minHeight: 36, justifyContent: 'center' }}
         >
-          <Text style={[type.caption, { color: p.accent, textDecorationLine: 'underline' }]}>
-            Abrir ENAIRE Drones
-          </Text>
+          <Text style={[emphasize(type.subheadline), { color: p.tint }]}>Abrir ENAIRE Drones</Text>
         </Pressable>
       </Card>
     );
@@ -62,7 +60,7 @@ export function NotamCard({ coords }: { coords: Coords }) {
   const list = notams ?? [];
   const active = list.filter((n) => n.activeNow);
   const upcoming = list.filter((n) => !n.activeNow);
-  const warn = p.scheme === 'dark' ? '#E8A33D' : '#8F5300';
+  const warn = systemColor('orange', p);
 
   return (
     <Card>
@@ -70,28 +68,33 @@ export function NotamCard({ coords }: { coords: Coords }) {
 
       {list.length === 0 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-          <Ionicons name="checkmark-circle-outline" size={22} color="#07835A" />
-          <Text style={[type.body, { color: p.text, flex: 1 }]}>
+          <Ionicons name="checkmark-circle" size={24} color={systemColor('green', p)} />
+          <Text style={[type.callout, { color: p.label, flex: 1 }]}>
             No hay ningún NOTAM publicado sobre este punto.
           </Text>
         </View>
       ) : (
         <View style={{ gap: space.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-            <Ionicons name="megaphone" size={22} color={warn} />
-            <Text style={[type.body, { color: p.text, flex: 1 }]}>
+            <Ionicons name="megaphone" size={24} color={warn} />
+            <Text style={[type.callout, { color: p.label, flex: 1 }]}>
               {active.length > 0
                 ? `${active.length} ${active.length === 1 ? 'aviso en vigor' : 'avisos en vigor'} sobre este punto${upcoming.length ? ` y ${upcoming.length} más por venir` : ''}.`
                 : `${upcoming.length} ${upcoming.length === 1 ? 'aviso programado' : 'avisos programados'} sobre este punto.`}
             </Text>
           </View>
-          {list.slice(0, 6).map((n) => (
-            <NotamRow key={n.id + n.fromLabel} notam={n} />
-          ))}
+          <View style={{ backgroundColor: p.surfaceSunken, borderRadius: radius.md, overflow: 'hidden' }}>
+            {list.slice(0, 6).map((n, i) => (
+              <View key={n.id + n.fromLabel}>
+                {i > 0 ? <Separator inset={space.md} /> : null}
+                <NotamRow notam={n} />
+              </View>
+            ))}
+          </View>
         </View>
       )}
 
-      <Text style={[type.caption, { color: p.textFaint, fontSize: 12, marginTop: space.md }]}>
+      <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
         Fuente: servicio de NOTAM para UAS de ENAIRE. El horario viene en texto libre y no se
         interpreta: léelo. Un NOTAM en vigor puede prohibir el vuelo aunque las zonas salgan en verde.
       </Text>
@@ -102,46 +105,54 @@ export function NotamCard({ coords }: { coords: Coords }) {
 function NotamRow({ notam }: { notam: Notam }) {
   const p = usePalette();
   const [open, setOpen] = useState(false);
-  const warn = p.scheme === 'dark' ? '#E8A33D' : '#8F5300';
+  const warn = systemColor('orange', p);
 
   return (
-    <View
-      style={{
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: notam.activeNow ? warn + '66' : p.cardBorder,
-        backgroundColor: notam.activeNow ? warn + (p.scheme === 'dark' ? '14' : '0D') : 'transparent',
-        overflow: 'hidden',
-      }}
-    >
+    <View>
       <Pressable
         onPress={() => setOpen((v) => !v)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md, minHeight: 52 }}
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space.sm,
+          padding: space.md,
+          minHeight: 52,
+          opacity: pressed ? 0.6 : 1,
+        })}
       >
-        <View style={{ flex: 1, gap: 3 }}>
+        <View
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: notam.activeNow ? warn : p.labelTertiary,
+          }}
+        />
+        <View style={{ flex: 1, gap: 2 }}>
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <Text style={[type.captionStrong, { color: p.text }]}>{notam.id}</Text>
-            <Chip label={notam.activeNow ? 'En vigor' : 'Programado'} color={notam.activeNow ? warn : p.textMuted} />
+            <Text style={[emphasize(type.subheadline), { color: p.label }]}>{notam.id}</Text>
+            <Chip
+              label={notam.activeNow ? 'En vigor' : 'Programado'}
+              color={notam.activeNow ? warn : p.labelSecondary}
+            />
           </View>
-          <Text style={[type.caption, { color: p.textMuted, fontSize: 12 }]} numberOfLines={1}>
+          <Text style={[type.caption, { color: p.labelSecondary }]} numberOfLines={1}>
             {notam.fromLabel} → {notam.toLabel}
           </Text>
         </View>
-        <Chevron open={open} color={p.textFaint} size={16} />
+        <Chevron open={open} color={p.labelTertiary} size={15} />
       </Pressable>
 
       <Collapsible open={open}>
         <View style={{ paddingHorizontal: space.md, paddingBottom: space.md, gap: space.sm }}>
-          {notam.schedule ? (
-            <Row label="Horario" value={notam.schedule} />
-          ) : null}
+          {notam.schedule ? <Row label="Horario" value={notam.schedule} /> : null}
           {notam.levels ? <Row label="Alturas" value={notam.levels} /> : null}
           {notam.lowerM !== null && notam.upperM !== null ? (
             <Row label="Equivale a" value={`${notam.lowerM} – ${notam.upperM} m`} />
           ) : null}
-          <Text style={[type.caption, { color: p.text }]}>{notam.text}</Text>
+          <Text style={[type.footnote, { color: p.label }]}>{notam.text}</Text>
         </View>
       </Collapsible>
     </View>
@@ -152,8 +163,8 @@ function Row({ label, value }: { label: string; value: string }) {
   const p = usePalette();
   return (
     <View style={{ flexDirection: 'row', gap: space.sm }}>
-      <Text style={[type.caption, { color: p.textFaint, fontSize: 12, width: 68 }]}>{label}</Text>
-      <Text style={[type.caption, { color: p.textMuted, fontSize: 12, flex: 1 }]}>{value}</Text>
+      <Text style={[type.caption, { color: p.labelTertiary, width: 68 }]}>{label}</Text>
+      <Text style={[type.caption, { color: p.labelSecondary, flex: 1 }]}>{value}</Text>
     </View>
   );
 }

@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MapFrame, type MapFrameHandle } from './MapFrame';
-import { usePalette } from '../hooks/useTheme';
+import { Material } from './Material';
+import { usePalette, useScheme } from '../hooks/useTheme';
 import { buildMapHtml } from '../map/mapHtml';
 import { getLayerIds } from '../api/enaire';
-import { radius, space, type } from '../theme';
+import { radius, shadow, space, type, emphasize } from '../theme';
 import type { Coords } from '../types';
 
 const FALLBACK_IDS = { aero: 2, urbano: 3, infraestructuras: 0 };
@@ -29,7 +29,7 @@ export function MiniMap({
   height?: number;
 }) {
   const p = usePalette();
-  const scheme = useColorScheme();
+  const scheme = useScheme();
   const mapRef = useRef<MapFrameHandle>(null);
   const [layerIds, setLayerIds] = useState<typeof FALLBACK_IDS | null>(null);
 
@@ -66,43 +66,43 @@ export function MiniMap({
       disabled={!onOpen}
       accessibilityRole={onOpen ? 'button' : 'image'}
       accessibilityLabel={`Mapa del punto consultado: ${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`}
-      style={{
-        height,
-        borderRadius: radius.lg,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: p.cardBorder,
-        backgroundColor: p.card,
-      }}
+      style={[
+        {
+          height,
+          borderRadius: radius.lg,
+          overflow: 'hidden',
+          backgroundColor: p.surface,
+        },
+        shadow.chip,
+      ]}
     >
       {html ? (
         <MapFrame ref={mapRef} html={html} onMessage={() => {}} />
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={[type.caption, { color: p.textMuted }]}>Cargando el mapa…</Text>
+          <Text style={[type.footnote, { color: p.labelSecondary }]}>Cargando el mapa…</Text>
         </View>
       )}
 
       {onOpen ? (
         <View
-          style={{
-            position: 'absolute',
-            right: space.sm,
-            bottom: space.sm,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: p.tabBar,
-            borderWidth: 1,
-            borderColor: p.cardBorder,
-            borderRadius: radius.pill,
-            paddingHorizontal: space.md,
-            paddingVertical: 7,
-          }}
+          style={{ position: 'absolute', right: space.sm, bottom: space.sm }}
           pointerEvents="none"
         >
-          <Ionicons name="expand-outline" size={14} color={p.accent} />
-          <Text style={[type.caption, { color: p.accent, fontWeight: '700' }]}>Ver en el mapa</Text>
+          <Material weight="chrome" radius={radius.pill}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                paddingHorizontal: space.md,
+                paddingVertical: 7,
+              }}
+            >
+              <Ionicons name="expand-outline" size={13} color={p.tint} />
+              <Text style={[emphasize(type.footnote), { color: p.tint }]}>Ver en el mapa</Text>
+            </View>
+          </Material>
         </View>
       ) : null}
     </Pressable>

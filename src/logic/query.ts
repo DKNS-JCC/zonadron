@@ -1,5 +1,6 @@
 import { QUERY_BUDGET_MS, queryZonesAt } from '../api/enaire';
 import { ELEVATION_SOURCE, getTerrainElevation } from '../api/elevation';
+import { getNotamsAt } from '../api/notam';
 import type { Coords, QueryResult } from '../types';
 import { buildVerdict, evaluateZones } from './verdict';
 import { checkPointOffline } from '../offline/evaluate';
@@ -22,6 +23,11 @@ export async function checkPoint(
   const onAbort = () => budget.abort();
   signal?.addEventListener('abort', onAbort);
 
+  // Aparte del Promise.all: un NOTAM caído no puede tirar la comprobación de
+  // zonas (son servicios independientes), así que se falla en silencio a null
+  // en vez de dejar que su rechazo aborte todo lo demás.
+  const notamsPromise = getNotamsAt(coords.lat, coords.lon, budget.signal).catch(() => null);
+
   try {
     const [zonesResult, terrainElevation] = await Promise.all([
       queryZonesAt(coords.lat, coords.lon, budget.signal),
@@ -40,6 +46,7 @@ export async function checkPoint(
       verdict,
       queriedAt: new Date().toISOString(),
       failedLayers: zonesResult.failedLayers,
+      notams: await notamsPromise,
     };
   } catch (err) {
     if (signal?.aborted) throw err;

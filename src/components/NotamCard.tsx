@@ -1,46 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
 import { radius, space, systemColor, type, emphasize } from '../theme';
-import { getNotamsAt, type Notam } from '../api/notam';
-import { Card, Chip, SectionTitle, Separator, SkeletonRows } from './ui';
+import type { Notam } from '../api/notam';
+import { Card, Chip, SectionTitle, Separator } from './ui';
 import { Chevron, Collapsible } from './motion';
-import type { Coords } from '../types';
 
 const ENAIRE_NOTAM_URL = 'https://drones.enaire.es/';
 
 /**
  * Avisos temporales. Son los que te pillan por sorpresa: ejercicios militares,
  * espectáculos aéreos, zonas activadas sólo unos días.
+ *
+ * `notams` viene ya resuelto desde `checkPoint()` (src/logic/query.ts): se
+ * pide una sola vez por consulta, junto con las zonas, para que este panel y
+ * el aviso de la tarjeta de veredicto (VerdictCard) cuenten siempre lo mismo.
+ * undefined o null significa que no se ha podido consultar; no que no haya.
  */
-export function NotamCard({ coords }: { coords: Coords }) {
+export function NotamCard({ notams }: { notams: Notam[] | null | undefined }) {
   const p = usePalette();
-  const [notams, setNotams] = useState<Notam[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setFailed(false);
-    getNotamsAt(coords.lat, coords.lon, controller.signal)
-      .then((n) => !controller.signal.aborted && setNotams(n))
-      .catch(() => !controller.signal.aborted && setFailed(true))
-      .finally(() => !controller.signal.aborted && setLoading(false));
-    return () => controller.abort();
-  }, [coords.lat, coords.lon]);
-
-  if (loading) {
-    return (
-      <Card>
-        <SectionTitle>Avisos temporales (NOTAM)</SectionTitle>
-        <SkeletonRows rows={1} />
-      </Card>
-    );
-  }
-
-  if (failed) {
+  if (notams == null) {
     return (
       <Card>
         <SectionTitle>Avisos temporales (NOTAM)</SectionTitle>
@@ -57,7 +38,7 @@ export function NotamCard({ coords }: { coords: Coords }) {
     );
   }
 
-  const list = notams ?? [];
+  const list = notams;
   const active = list.filter((n) => n.activeNow);
   const upcoming = list.filter((n) => !n.activeNow);
   const warn = systemColor('orange', p);

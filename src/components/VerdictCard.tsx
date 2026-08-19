@@ -31,6 +31,9 @@ export function VerdictCard({
   onHeightChange,
   onRefresh,
   refreshing,
+  isFavorite,
+  onToggleFavorite,
+  protectedArea,
   compact,
 }: {
   result: QueryResult;
@@ -40,10 +43,28 @@ export function VerdictCard({
   onHeightChange?: (h: number) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  /**
+   * Espacio protegido estricto (parque, reserva) que cubre el punto, si lo hay.
+   * No cambia el nivel del veredicto —el dato que se guarda y se comparte
+   * sigue siendo el de ENAIRE— pero sí cómo se pinta: ver `softened`.
+   */
+  protectedArea?: { name: string; designation: string | null } | null;
   compact?: boolean;
 }) {
   const [openHeight, setOpenHeight] = useState(false);
-  const style = verdictStyles[result.verdict.level];
+
+  /**
+   * Un verde de «todo correcto» dentro de un parque nacional es engañoso: la
+   * pregunta que hace el usuario es «¿puedo volar aquí?», no «¿qué dice
+   * ENAIRE?». Cuando el veredicto sería LIBRE pero hay una figura estricta
+   * encima, la tarjeta se pinta como CONDICIONES y lo explica. El veredicto en
+   * sí no se toca: sigue siendo LIBRE en el historial, en el diario y al
+   * compartir, porque ENAIRE efectivamente no restringe este punto.
+   */
+  const softened = Boolean(protectedArea) && result.verdict.level === 'LIBRE';
+  const style = softened ? verdictStyles.CONDICIONES : verdictStyles[result.verdict.level];
 
   return (
     <Appear animationKey={`${result.verdict.level}-${result.queriedAt}`}>
@@ -59,11 +80,16 @@ export function VerdictCard({
         ]}
         accessible
         accessibilityRole="summary"
-        accessibilityLabel={`${result.verdict.headline}. ${result.verdict.summary}`}
+        accessibilityLabel={
+          softened
+            ? `${result.verdict.headline}, pero estás en ${protectedArea!.name}. ${result.verdict.summary}`
+            : `${result.verdict.headline}. ${result.verdict.summary}`
+        }
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
           <Ionicons
-            name={ICONS[result.verdict.level]}
+            // Un tic de «correcto» sobre fondo naranja se contradice a sí mismo.
+            name={softened ? 'alert-circle' : ICONS[result.verdict.level]}
             size={compact ? 26 : 30}
             color="#FFFFFF"
             style={{ marginTop: 1 }}
@@ -76,6 +102,18 @@ export function VerdictCard({
           >
             {result.verdict.headline}
           </Text>
+          {onToggleFavorite ? (
+            <Pressable
+              onPress={onToggleFavorite}
+              accessibilityRole="button"
+              accessibilityLabel={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+              accessibilityState={{ selected: isFavorite }}
+              hitSlop={HIT_SLOP}
+              style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+            >
+              <Ionicons name={isFavorite ? 'star' : 'star-outline'} size={20} color="#FFFFFFCC" />
+            </Pressable>
+          ) : null}
           {onRefresh ? (
             <Pressable
               onPress={onRefresh}
@@ -96,6 +134,54 @@ export function VerdictCard({
         <Text style={[type.callout, { color: '#FFFFFFE6', marginTop: space.md }]}>
           {result.verdict.summary}
         </Text>
+
+        {/* Por qué esto no está en verde. Sin esta línea el naranja sería un
+            misterio: ENAIRE no restringe el punto, pero el parque sí puede. */}
+        {softened ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: space.sm,
+              alignItems: 'flex-start',
+              backgroundColor: '#FFFFFF26',
+              borderRadius: radius.md,
+              padding: space.md,
+              marginTop: space.md,
+            }}
+          >
+            <Ionicons name="leaf" size={16} color="#FFFFFF" style={{ marginTop: 1 }} />
+            <Text style={[type.footnote, { color: '#FFFFFF', flex: 1 }]}>
+              ENAIRE no restringe este punto, pero estás en {protectedArea!.name}
+              {protectedArea!.designation ? ` (${protectedArea!.designation})` : ''}, donde volar
+              suele estar prohibido o exigir permiso del gestor. Mira más abajo.
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Un NOTAM en vigor puede prohibir el vuelo aunque las zonas salgan en
+            verde: no se interpreta su horario en texto libre (ver NotamCard),
+            pero que exista uno activo ahora sí es un hecho, y tiene que verse
+            aquí y no sólo al final de la pantalla. */}
+        {activeNotamCount(result) > 0 ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              alignSelf: 'flex-start',
+              backgroundColor: '#FFFFFF',
+              borderRadius: radius.sm,
+              paddingHorizontal: space.sm,
+              paddingVertical: 5,
+              marginTop: space.md,
+            }}
+          >
+            <Ionicons name="megaphone" size={13} color="#8A4B00" />
+            <Text style={[emphasize(type.caption2), { color: '#8A4B00' }]}>
+              {activeNotamCount(result) === 1 ? '1 NOTAM en vigor' : `${activeNotamCount(result)} NOTAM en vigor`} · revisa abajo
+            </Text>
+          </View>
+        ) : null}
 
         <MaxHeightBand result={result} compact={compact} />
 
@@ -158,6 +244,11 @@ export function VerdictCard({
       </View>
     </Appear>
   );
+}
+
+/** NOTAM en vigor ahora mismo. undefined/null: sin consultar (offline o fallo). */
+function activeNotamCount(result: QueryResult): number {
+  return result.notams?.filter((n) => n.activeNow).length ?? 0;
 }
 
 const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {

@@ -191,4 +191,13 @@ export interface QueryResult {
   offlinePackDate?: string;
   /** Incertidumbre de la elevación usada (m). Sólo en modo sin cobertura. */
   elevationUncertaintyM?: number;
+  /**
+   * NOTAM sobre el punto. undefined: no se ha intentado consultar (modo sin
+   * cobertura, donde no se guardan porque cambian a diario). null: se
+   * intentó y falló. Array (posiblemente vacío): consulta correcta.
+   * No condicionan `verdict` — su horario es texto libre y no se interpreta,
+   * ver src/api/notam.ts — pero si hay alguno en vigor tiene que poder verse
+   * sin tener que llegar hasta el final de la pantalla.
+   */
+  notams?: import('./api/notam').Notam[] | null;
 }

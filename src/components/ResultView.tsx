@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, Share, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
@@ -11,13 +12,20 @@ import { Chevron, Collapsible, Appear } from './motion';
 import { layerLabel } from '../logic/labels';
 import { ENAIRE_DRONES_URL } from '../api/enaire';
 import { ELEVATION_SOURCE } from '../api/elevation';
-import { buildShareText, enaireViewerUrl } from '../logic/share';
+import { buildShareText, drivingDirectionsUrl, enaireViewerUrl } from '../logic/share';
 import { DroneCard } from './DroneCard';
 import { MiniMap } from './MiniMap';
 import { WeatherCard } from './WeatherCard';
 import { ProximityCard } from './ProximityCard';
+import { ProtectedAreaCard } from './ProtectedAreaCard';
 import { NotamCard } from './NotamCard';
-import { space, type, emphasize } from '../theme';
+import { useFavorites } from '../state/FavoritesContext';
+import { useFlightLog } from '../state/FlightLogContext';
+import { useSettings } from '../state/SettingsContext';
+import { useProtectedAreas } from '../hooks/useProtectedAreas';
+import { isStrictFigure } from '../api/protected';
+import { getDroneProfile } from '../logic/drone';
+import { space, systemColor, type, emphasize } from '../theme';
 
 export function ResultView({
   result,
@@ -44,10 +52,30 @@ export function ResultView({
   const router = useRouter();
   const [showOthers, setShowOthers] = useState(false);
   const [showData, setShowData] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const { logFlight } = useFlightLog();
+  const { drone, operator } = useSettings();
+  const [justLogged, setJustLogged] = useState(false);
+
+  // Sin conexión no se consulta el inventario ambiental: no está en el paquete.
+  const protectedAreas = useProtectedAreas(result.coords);
+  const strictArea = result.offline
+    ? null
+    : (protectedAreas?.find((a) => isStrictFigure(a.designation)) ?? null);
 
   const affecting = result.verdict.affecting;
   const others = result.verdict.notAffecting;
   const expired = result.zones.filter((z) => z.timing === 'CADUCADA');
+
+  const logThisFlight = () => {
+    const droneLabel = operator.droneModel.trim() || getDroneProfile(drone).label;
+    logFlight(result, place ?? null, droneLabel);
+    setJustLogged(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  };
+
+  // Un resultado nuevo es una consulta nueva: el botón vuelve a su estado normal.
+  useEffect(() => setJustLogged(false), [result.queriedAt]);
 
   const queriedAt = useMemo(
     () =>
@@ -71,6 +99,9 @@ export function ResultView({
         onHeightChange={onHeightChange}
         onRefresh={onRefresh}
         refreshing={refreshing}
+        isFavorite={isFavorite(result.coords.lat, result.coords.lon)}
+        onToggleFavorite={() => toggleFavorite(result, place ?? null)}
+        protectedArea={strictArea}
       />
 
       {result.offline ? (
@@ -102,6 +133,26 @@ export function ResultView({
       ) : null}
 
       {showMap ? <MiniMap coords={result.coords} onOpen={onOpenMap} /> : null}
+
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
+        <View style={{ flex: 1 }}>
+          <GhostButton
+            label="Cómo llegar"
+            icon="navigate-outline"
+            onPress={() =>
+              Linking.openURL(drivingDirectionsUrl(result.coords.lat, result.coords.lon)).catch(() => {})
+            }
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <GhostButton
+            label={justLogged ? 'Registrado' : 'Registrar vuelo'}
+            icon={justLogged ? 'checkmark-circle' : 'book-outline'}
+            onPress={logThisFlight}
+            color={justLogged ? systemColor('green', p) : undefined}
+          />
+        </View>
+      </View>
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <View style={{ flex: 1 }}>
@@ -202,9 +253,13 @@ export function ResultView({
         </View>
       ) : null}
 
-      {!result.offline ? <NotamCard coords={result.coords} /> : null}
+      {!result.offline ? <NotamCard notams={result.notams} /> : null}
 
       {!result.offline ? <ProximityCard coords={result.coords} /> : null}
+
+      {/* Va antes del tiempo porque es una restricción, no una condición: si el
+          parque no te deja volar, da igual que haga buen día. */}
+      {!result.offline ? <ProtectedAreaCard areas={protectedAreas} /> : null}
 
       {!result.offline ? <WeatherCard coords={result.coords} /> : null}
 

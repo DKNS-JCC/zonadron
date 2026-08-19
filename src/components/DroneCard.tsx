@@ -17,7 +17,18 @@ import { Chevron, Collapsible } from './motion';
  * a todos los drones, y decir lo contrario sería justo el tipo de error que esta
  * app no se puede permitir.
  */
-export function DroneCard({ compact }: { compact?: boolean }) {
+export function DroneCard({
+  compact,
+  showRules = true,
+}: {
+  compact?: boolean;
+  /**
+   * En Ajustes lo que se viene a hacer es *elegir* el dron; las reglas que te
+   * aplican son material de consulta y ya están en Normas, así que allí se
+   * omiten para no convertir la pantalla en un muro de texto.
+   */
+  showRules?: boolean;
+}) {
   const p = usePalette();
   const { drone, setDrone } = useSettings();
   const profile = getDroneProfile(drone);
@@ -97,7 +108,7 @@ export function DroneCard({ compact }: { compact?: boolean }) {
       </Collapsible>
 
       {/* Reglas que te aplican */}
-      {profile.rules.length > 0 ? (
+      {showRules && profile.rules.length > 0 ? (
         <Collapsible open={compact ? open : !picking}>
           <Separator inset={space.lg} />
           <View style={{ padding: space.lg, gap: space.md }}>

@@ -78,6 +78,20 @@ export function buildMapHtml(opts: MapOptions): string {
     else if (window.parent && window.parent !== window) window.parent.postMessage(payload, '*');
   };
 
+  // Cualquier texto que venga de un mensaje y acabe en un divIcon pasa por
+  // aquí antes. Hoy sólo se le pasan cadenas propias (horas, distancias
+  // formateadas), pero el sumidero es innerHTML vía L.divIcon: si el día de
+  // mañana alguien enchufa ahí un nombre de sitio o un texto de ENAIRE, esto
+  // es lo único que evita que se ejecute como HTML.
+  var esc = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+
   var INTERACTIVE = ${interactive ? 'true' : 'false'};
   var map = L.map('map', {
     zoomControl: false,
@@ -265,7 +279,7 @@ export function buildMapHtml(opts: MapOptions): string {
           icon: L.divIcon({
             className: '',
             html: '<div style="white-space:nowrap;font:600 11px -apple-system,sans-serif;color:' + ray.color +
-                  ';text-shadow:0 0 3px #000,0 0 3px #000,0 0 6px #000">' + ray.label + '</div>',
+                  ';text-shadow:0 0 3px #000,0 0 3px #000,0 0 6px #000">' + esc(ray.label) + '</div>',
             iconSize: [0, 0]
           })
         }).addTo(map);
@@ -348,7 +362,7 @@ export function buildMapHtml(opts: MapOptions): string {
           html: '<div style="width:100%;height:100%;display:flex;align-items:center;' +
                 'justify-content:center;white-space:nowrap;background:#07835A;color:#fff;' +
                 'font:700 12px -apple-system,sans-serif;border-radius:999px;' +
-                'box-shadow:0 2px 6px rgba(0,0,0,.35)">' + msg.label + '</div>',
+                'box-shadow:0 2px 6px rgba(0,0,0,.35)">' + esc(msg.label) + '</div>',
           iconSize: [74, 24],
           iconAnchor: [37, 12]
         })

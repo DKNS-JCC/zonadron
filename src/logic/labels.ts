@@ -1,4 +1,4 @@
-import type { LayerKey, VerticalRef, ZoneType } from '../types';
+import type { LayerKey, VerdictLevel, VerticalRef, ZoneType } from '../types';
 
 /** Traducción de los códigos ED-318 a lenguaje llano en español. */
 
@@ -88,3 +88,11 @@ export const verticalRefShort: Record<VerticalRef, string> = {
 export function readableReasons(reasons: string[]): string[] {
   return reasons.map((r) => reasonLabel[r] ?? r);
 }
+
+export const verdictLevelLabel: Record<VerdictLevel, string> = {
+  LIBRE: 'Puedes volar',
+  CONDICIONES: 'Con condiciones',
+  AUTORIZACION: 'Necesitas autorización',
+  PROHIBIDO: 'No puedes volar',
+  DESCONOCIDO: 'Sin comprobar del todo',
+};

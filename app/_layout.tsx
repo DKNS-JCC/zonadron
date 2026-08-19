@@ -4,6 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SettingsProvider } from '../src/state/SettingsContext';
 import { HistoryProvider } from '../src/state/HistoryContext';
+import { FavoritesProvider } from '../src/state/FavoritesContext';
+import { FlightLogProvider } from '../src/state/FlightLogContext';
 import { usePalette, useScheme } from '../src/hooks/useTheme';
 
 export default function RootLayout() {
@@ -11,9 +13,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <SettingsProvider>
         <HistoryProvider>
-          {/* El aspecto se lee de los ajustes, así que la pila de navegación
-              tiene que ir por dentro del proveedor para enterarse del cambio. */}
-          <Navegacion />
+          <FavoritesProvider>
+            <FlightLogProvider>
+              {/* El aspecto se lee de los ajustes, así que la pila de navegación
+                  tiene que ir por dentro del proveedor para enterarse del cambio. */}
+              <Navegacion />
+            </FlightLogProvider>
+          </FavoritesProvider>
         </HistoryProvider>
       </SettingsProvider>
     </SafeAreaProvider>
@@ -49,6 +55,8 @@ function Navegacion() {
           options={{ presentation: 'modal', headerShown: true, title: 'Elegir zona' }}
         />
         <Stack.Screen name="luz" options={{ headerShown: true, title: 'Luz y sombras' }} />
+        <Stack.Screen name="diario" options={{ headerShown: true, title: 'Diario de vuelos' }} />
+        <Stack.Screen name="normas" options={{ headerShown: true, title: 'Normas y fuentes' }} />
       </Stack>
     </>
   );

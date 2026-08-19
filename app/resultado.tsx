@@ -4,15 +4,17 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenScroll } from '../src/components/Screen';
 import { ResultView } from '../src/components/ResultView';
-import { Card, GhostButton, SkeletonRows } from '../src/components/ui';
+import { Banner, Card, GhostButton, SkeletonRows } from '../src/components/ui';
 import { Appear } from '../src/components/motion';
 import { usePalette } from '../src/hooks/useTheme';
 import { useSettings } from '../src/state/SettingsContext';
 import { useHistory } from '../src/state/HistoryContext';
+import { useFavorites } from '../src/state/FavoritesContext';
 import { checkPoint } from '../src/logic/query';
 import { describePoint } from '../src/api/geocode';
+import { verdictLevelLabel } from '../src/logic/labels';
 import { space, systemColor, type } from '../src/theme';
-import type { QueryResult } from '../src/types';
+import type { QueryResult, VerdictLevel } from '../src/types';
 
 export default function ResultadoScreen() {
   const p = usePalette();
@@ -20,6 +22,7 @@ export default function ResultadoScreen() {
   const params = useLocalSearchParams<{ lat?: string; lon?: string; label?: string }>();
   const { flightHeight, setFlightHeight } = useSettings();
   const { remember } = useHistory();
+  const { checkForChange } = useFavorites();
 
   const lat = Number(params.lat);
   const lon = Number(params.lon);
@@ -29,6 +32,9 @@ export default function ResultadoScreen() {
   const [place, setPlace] = useState<string | null>(params.label ?? null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Si este punto es un favorito y el veredicto ya no es el que había cuando
+  // se guardó, aquí se queda el nivel de entonces para poder avisar.
+  const [changedFrom, setChangedFrom] = useState<VerdictLevel | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const placeRef = useRef<string | null>(params.label ?? null);
 
@@ -40,11 +46,13 @@ export default function ResultadoScreen() {
       abortRef.current = controller;
       setLoading(true);
       setError(null);
+      setChangedFrom(null);
       try {
         const res = await checkPoint({ lat, lon }, height, controller.signal);
         if (controller.signal.aborted) return;
         setResult(res);
         remember(res, placeRef.current);
+        setChangedFrom(checkForChange(res));
       } catch (err) {
         if (controller.signal.aborted) return;
         setResult(null);
@@ -53,7 +61,7 @@ export default function ResultadoScreen() {
         if (!controller.signal.aborted) setLoading(false);
       }
     },
-    [lat, lon, valid, remember],
+    [lat, lon, valid, remember, checkForChange],
   );
 
   useEffect(() => {
@@ -121,6 +129,13 @@ export default function ResultadoScreen() {
               </View>
             </Card>
           </Appear>
+        ) : null}
+
+        {result && changedFrom ? (
+          <Banner tone="warn" icon="star">
+            Esto ha cambiado desde que lo guardaste en favoritos: antes era «{verdictLevelLabel[changedFrom]}»,
+            ahora es «{verdictLevelLabel[result.verdict.level]}».
+          </Banner>
         ) : null}
 
         {result ? (

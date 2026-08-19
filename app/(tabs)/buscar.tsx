@@ -89,7 +89,8 @@ export default function BuscarScreen() {
     });
   };
 
-  const showRecents = query.trim().length === 0 && entries.length > 0;
+  const showIdle = query.trim().length === 0;
+  const showRecents = showIdle && entries.length > 0;
 
   return (
     <ScreenScroll>
@@ -205,7 +206,7 @@ export default function BuscarScreen() {
         </View>
       ) : null}
 
-      {query.trim().length === 0 && entries.length === 0 ? (
+      {showIdle && entries.length === 0 ? (
         <EmptyState
           icon="search-outline"
           title="Busca cualquier punto de España"

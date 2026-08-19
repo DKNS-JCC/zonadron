@@ -5,14 +5,7 @@ import { usePalette } from '../hooks/useTheme';
 import { radius, shadow, space, type, verdictStyles, emphasize } from '../theme';
 import { Separator } from './ui';
 import { timeAgo, useHistory } from '../state/HistoryContext';
-
-const LEVEL_TEXT: Record<string, string> = {
-  LIBRE: 'Puedes volar',
-  CONDICIONES: 'Con condiciones',
-  AUTORIZACION: 'Necesitas autorización',
-  PROHIBIDO: 'No puedes volar',
-  DESCONOCIDO: 'Sin comprobar del todo',
-};
+import { verdictLevelLabel } from '../logic/labels';
 
 /**
  * Últimos puntos consultados. Es lo que hace que abrir la app tenga sentido a
@@ -51,7 +44,7 @@ export function HistoryList({
             <Pressable
               onPress={() => onOpen(e.lat, e.lon, e.label)}
               accessibilityRole="button"
-              accessibilityLabel={`${e.label ?? 'Punto guardado'}. ${LEVEL_TEXT[e.level]}. Consultado ${timeAgo(e.at)}.`}
+              accessibilityLabel={`${e.label ?? 'Punto guardado'}. ${verdictLevelLabel[e.level]}. Consultado ${timeAgo(e.at)}.`}
               style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -68,7 +61,7 @@ export function HistoryList({
                   {e.label ?? `${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}`}
                 </Text>
                 <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
-                  {LEVEL_TEXT[e.level]} · a {e.height} m · {timeAgo(e.at)}
+                  {verdictLevelLabel[e.level]} · a {e.height} m · {timeAgo(e.at)}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={p.labelTertiary} />

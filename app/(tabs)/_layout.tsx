@@ -100,9 +100,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="info"
+        name="cuaderno"
         options={{
-          title: 'Normas',
+          title: 'Cuaderno',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'book' : 'book-outline'} size={23} color={color} />
           ),

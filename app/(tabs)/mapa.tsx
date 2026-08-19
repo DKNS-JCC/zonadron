@@ -1,55 +1,36 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
-import * as Haptics from 'expo-haptics';
+import React, { useCallback, useMemo, useRef } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MapFrame, type MapFrameHandle } from '../../src/components/MapFrame';
-import { BottomSheet, type SheetState } from '../../src/components/BottomSheet';
+import { BottomSheet } from '../../src/components/BottomSheet';
 import { ResultView } from '../../src/components/ResultView';
 import { VerdictPill } from '../../src/components/VerdictCard';
-import { Chip, GhostButton, IconButton, Separator, SkeletonRows } from '../../src/components/ui';
-import { Collapsible, PressableScale } from '../../src/components/motion';
+import { Chip, IconButton, SkeletonRows } from '../../src/components/ui';
+import { PressableScale } from '../../src/components/motion';
 import { Material } from '../../src/components/Material';
 import { usePalette, useScheme } from '../../src/hooks/useTheme';
 import { useSettings } from '../../src/state/SettingsContext';
 import { buildMapHtml } from '../../src/map/mapHtml';
-import { getLayerIds } from '../../src/api/enaire';
-import { checkPoint } from '../../src/logic/query';
-import {
-  FALLBACK_CENTER,
-  ensureLocationPermission,
-  getPreciseFix,
-  getQuickFix,
-  loadRememberedCoords,
-  rememberCoords,
-} from '../../src/logic/location';
-import { describePoint } from '../../src/api/geocode';
-import { layerColor, layerDescription, layerLabel } from '../../src/logic/labels';
-import { computeCoverageGrid, coverageColor, COVERAGE_LEGEND } from '../../src/offline/coverage';
-import { findNearestFlyable, type NearestFlyableResult } from '../../src/offline/nearest';
-import { loadPack } from '../../src/offline/pack';
-import { BASEMAPS } from '../../src/state/SettingsContext';
-import { radius, shadow, space, tabular, type, verdictStyles, verdictTint, emphasize } from '../../src/theme';
-import type { Coords, LayerKey, QueryResult } from '../../src/types';
+import { useMapLocation } from '../../src/screens/mapa/useMapLocation';
+import { useCrosshairQuery } from '../../src/screens/mapa/useCrosshairQuery';
+import { useMapLayers } from '../../src/screens/mapa/useMapLayers';
+import { usePhotoTarget } from '../../src/screens/mapa/usePhotoTarget';
+import { LegendPanel } from '../../src/screens/mapa/LegendPanel';
+import { PhotoTargetPanel } from '../../src/screens/mapa/PhotoTargetPanel';
+import { radius, space, type, verdictStyles, emphasize } from '../../src/theme';
 
-const ALL_LAYERS: LayerKey[] = ['aero', 'urbano', 'infraestructuras'];
-
-/** Metros hasta el kilómetro, y a partir de ahí en kilómetros con un decimal. */
-function formatDistance(metres: number): string {
-  if (metres < 1000) return `${Math.round(metres)} m`;
-  return `${(metres / 1000).toFixed(1).replace('.', ',')} km`;
-}
-
-/** Espera antes de consultar tras mover el mapa. Suficiente para no encadenar. */
-const MOVE_DEBOUNCE_MS = 700;
-
+/**
+ * Pantalla de mapa.
+ *
+ * El estado se reparte en cuatro hooks independientes (src/screens/mapa/),
+ * cada uno dueño de su propia máquina de estado: dónde está centrado el mapa
+ * y quién manda sobre eso (useMapLocation), qué hay bajo la cruz y su consulta
+ * (useCrosshairQuery), qué capas y mapa base se pintan (useMapLayers), y el
+ * objetivo fotográfico (usePhotoTarget). Este componente sólo los compone y
+ * reparte los mensajes del WebView entre ellos — ver `onMessage`.
+ */
 export default function MapaScreen() {
   const p = usePalette();
   const scheme = useScheme();
@@ -63,352 +44,56 @@ export default function MapaScreen() {
   const paramLon = Number(params.lon);
   const hasParams = Number.isFinite(paramLat) && Number.isFinite(paramLon);
 
-  const { flightHeight, setFlightHeight, showCoverage, basemap, setBasemap } = useSettings();
-
-  const [layerIds, setLayerIds] = useState<{ aero: number; urbano: number; infraestructuras: number } | null>(null);
-  // La capa "urbano" de ENAIRE cubre España entera (son las FIR, ver
-  // ADVISORY_LAYERS): pintada por defecto taparía todo el mapa sin aportar nada.
-  const [visible, setVisible] = useState<Record<LayerKey, boolean>>({
-    aero: true,
-    urbano: false,
-    infraestructuras: true,
-  });
-  const initialVisible = useRef(visible);
-  const [legendOpen, setLegendOpen] = useState(false);
-  const [coverageState, setCoverageState] = useState<'off' | 'calculando' | 'on' | 'sin-paquete'>('off');
-  const [photo, setPhoto] = useState<
-    | { state: 'buscando' }
-    | { state: 'sin-paquete' }
-    | { state: 'listo'; target: Coords; result: NearestFlyableResult }
-    | null
-  >(null);
-  const viewRef = useRef<{ lat: number; lon: number; zoom: number } | null>(null);
-
-  // Centro con el que se construye el mapa. Se resuelve con lo que ya se sabe
-  // (la última posición guardada) para poder pintar en el primer fotograma; la
-  // posición real llega después y recentra sola. Ver src/logic/location.ts.
-  const [initialCenter, setInitialCenter] = useState<{ lat: number; lon: number; zoom: number } | null>(
-    hasParams ? { lat: paramLat, lon: paramLon, zoom: 14 } : null,
-  );
-  // Mientras nadie haya tocado el mapa, los fixes que van llegando lo recentran.
-  // En cuanto el usuario mueve, manda él y no se le vuelve a mover la vista.
-  const autoCenterRef = useRef(!hasParams);
-  // El mapa avisa de 'movestart' tanto si mueves tú como si movemos nosotros;
-  // esta ventana distingue una cosa de la otra.
-  const programmaticUntil = useRef(0);
-
-  const [result, setResult] = useState<QueryResult | null>(null);
-  const [place, setPlace] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<SheetState>('hidden');
-
-  const abortRef = useRef<AbortController | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const centerRef = useRef<Coords | null>(null);
-  const heightRef = useRef(flightHeight);
-  heightRef.current = flightHeight;
-
-  useEffect(() => {
-    let alive = true;
-    getLayerIds()
-      .then((ids) => alive && setLayerIds(ids))
-      .catch(() => alive && setLayerIds({ aero: 2, urbano: 3, infraestructuras: 0 }));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  // El HTML se construye una sola vez: el tema se cambia por mensaje.
-  const html = useMemo(
-    () =>
-      layerIds && initialCenter
-        ? buildMapHtml({
-            lat: initialCenter.lat,
-            lon: initialCenter.lon,
-            zoom: initialCenter.zoom,
-            layerIds,
-            visible: initialVisible.current,
-            dark: scheme === 'dark',
-          })
-        : null,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [layerIds, initialCenter],
-  );
+  const { flightHeight, setFlightHeight } = useSettings();
 
   const send = useCallback((msg: object) => {
     mapRef.current?.post(msg);
   }, []);
 
-  /** Recentra el mapa marcando que el movimiento lo hemos hecho nosotros. */
-  const centerOn = useCallback(
-    (coords: Coords, zoom: number) => {
-      programmaticUntil.current = Date.now() + 1500;
-      send({ type: 'center', lat: coords.lat, lon: coords.lon, zoom });
-    },
-    [send],
-  );
+  const location = useMapLocation(send, hasParams, paramLat, paramLon);
+  const crosshair = useCrosshairQuery(flightHeight);
+  const layers = useMapLayers(send, scheme);
+  const photo = usePhotoTarget(send, crosshair.centerRef, flightHeight);
 
-  /**
-   * Ubicación en tres escalones, del más rápido al más preciso: primero se
-   * siembra el mapa con la última posición guardada para que se construya ya
-   * —el WebView, Leaflet y los tiles de ENAIRE tardan lo suyo y ese tiempo se
-   * solapa con el del GPS—, luego entra el fix cacheado del sistema, y por
-   * último el fix real. Cada uno sustituye al anterior si nadie ha tocado nada.
-   */
-  useEffect(() => {
-    if (hasParams) return;
-    let alive = true;
-    (async () => {
-      const remembered = await loadRememberedCoords();
-      if (!alive) return;
-      // Sin nada guardado se encuadra España entera: es más honesto que plantar
-      // al usuario en Madrid como si supiéramos que está ahí.
-      setInitialCenter(
-        remembered
-          ? { lat: remembered.lat, lon: remembered.lon, zoom: 13 }
-          : { lat: FALLBACK_CENTER.lat, lon: FALLBACK_CENTER.lon, zoom: 6 },
-      );
-
-      const granted = await ensureLocationPermission();
-      if (!alive || !granted) return;
-
-      const quick = await getQuickFix();
-      if (!alive) return;
-      if (quick && autoCenterRef.current) centerOn(quick.coords, 14);
-
-      try {
-        const precise = await getPreciseFix();
-        if (!alive) return;
-        rememberCoords(precise.coords);
-        if (autoCenterRef.current) centerOn(precise.coords, 15);
-        if (precise.accuracy) {
-          send({
-            type: 'accuracy',
-            lat: precise.coords.lat,
-            lon: precise.coords.lon,
-            radius: precise.accuracy,
-          });
-        }
-      } catch {
-        /* el usuario siempre puede mover el mapa a mano */
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-    // Sólo al arrancar.
+  // El HTML se construye una sola vez: el tema se cambia por mensaje.
+  const html = useMemo(
+    () =>
+      layers.layerIds && location.initialCenter
+        ? buildMapHtml({
+            lat: location.initialCenter.lat,
+            lon: location.initialCenter.lon,
+            zoom: location.initialCenter.zoom,
+            layerIds: layers.layerIds,
+            visible: layers.initialVisible.current,
+            dark: scheme === 'dark',
+          })
+        : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    send({ type: 'theme', dark: scheme === 'dark' });
-  }, [scheme, send]);
-
-  useEffect(() => {
-    send({ type: 'basemap', base: basemap });
-  }, [basemap, send]);
-
-  // Si se llega con coordenadas y el mapa ya estaba abierto, se recentra.
-  useEffect(() => {
-    if (hasParams) send({ type: 'center', lat: paramLat, lon: paramLon, zoom: 14 });
-  }, [hasParams, paramLat, paramLon, send]);
-
-  const query = useCallback(
-    async (coords: Coords, height: number) => {
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setBusy(true);
-      setError(null);
-      setSheet((s) => (s === 'hidden' ? 'peek' : s));
-      try {
-        const res = await checkPoint(coords, height, controller.signal);
-        if (controller.signal.aborted) return;
-        setResult(res);
-        Haptics.selectionAsync().catch(() => {});
-        describePoint(coords.lat, coords.lon, controller.signal)
-          .then((name) => !controller.signal.aborted && setPlace(name))
-          .catch(() => {});
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        setResult(null);
-        setError(err instanceof Error ? err.message : 'No se ha podido consultar este punto.');
-      } finally {
-        if (!controller.signal.aborted) setBusy(false);
-      }
-    },
-    [],
+    [layers.layerIds, location.initialCenter],
   );
 
-  const scheduleQuery = useCallback(
-    (coords: Coords) => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => query(coords, heightRef.current), MOVE_DEBOUNCE_MS);
-    },
-    [query],
-  );
-
-  useEffect(
-    () => () => {
-      abortRef.current?.abort();
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    },
-    [],
-  );
-
-  const toggleLayer = useCallback(
-    (key: LayerKey) => {
-      Haptics.selectionAsync().catch(() => {});
-      setVisible((prev) => {
-        const next = { ...prev, [key]: !prev[key] };
-        send({ type: 'layers', visible: next });
-        return next;
-      });
-    },
-    [send],
-  );
-
-  /**
-   * Pinta la altura libre de cada celda del área visible. Se calcula con el
-   * paquete descargado: sin él no hay geometría en el móvil y no se puede.
-   */
-  const paintCoverage = useCallback(async () => {
-    const view = viewRef.current;
-    if (!view) return;
-    setCoverageState('calculando');
-    const pack = await loadPack();
-    if (!pack) {
-      setCoverageState('sin-paquete');
-      send({ type: 'coverageOff' });
-      return;
-    }
-    // Área visible aproximada a partir del centro y el zoom.
-    const spanLat = 360 / Math.pow(2, view.zoom) * 1.2;
-    const spanLon = spanLat / Math.cos((view.lat * Math.PI) / 180);
-    const area = {
-      minLat: view.lat - spanLat / 2,
-      maxLat: view.lat + spanLat / 2,
-      minLon: view.lon - spanLon / 2,
-      maxLon: view.lon + spanLon / 2,
-    };
-    const grid = computeCoverageGrid(pack, area, 48);
-    if (grid.bbox.maxLat <= grid.bbox.minLat || grid.bbox.maxLon <= grid.bbox.minLon) {
-      setCoverageState('sin-paquete');
-      send({ type: 'coverageOff' });
-      return;
-    }
-    send({
-      type: 'coverage',
-      bbox: grid.bbox,
-      rows: grid.rows,
-      cols: grid.cols,
-      colors: grid.values.map(coverageColor),
-    });
-    setCoverageState('on');
-  }, [send]);
-
-  useEffect(() => {
-    if (!showCoverage) {
-      send({ type: 'coverageOff' });
-      setCoverageState('off');
-    }
-  }, [showCoverage, send]);
-
-  /**
-   * Marca lo que quieres fotografiar y busca desde dónde puedes volar sin
-   * pedir permiso. Necesita el paquete descargado: la búsqueda mira miles de
-   * puntos y eso no se le puede preguntar a ENAIRE uno a uno.
-   */
-  const markPhotoTarget = useCallback(async () => {
-    const target = centerRef.current;
-    if (!target) return;
-    Haptics.selectionAsync().catch(() => {});
-    setPhoto({ state: 'buscando' });
-    send({ type: 'target', target: { lat: target.lat, lon: target.lon }, spot: null, label: '' });
-
-    const pack = await loadPack();
-    if (!pack) {
-      setPhoto({ state: 'sin-paquete' });
-      return;
-    }
-
-    const result = findNearestFlyable(pack, target, heightRef.current, 6, 64);
-    setPhoto({ state: 'listo', target, result });
-
-    const spot = result.best ?? result.anyHeight;
-    if (spot && !result.targetIsFlyable) {
-      send({
-        type: 'target',
-        target: { lat: target.lat, lon: target.lon },
-        spot: { lat: spot.coords.lat, lon: spot.coords.lon },
-        label: formatDistance(spot.distanceM),
-      });
-    }
-  }, [send]);
-
-  const clearPhoto = useCallback(() => {
-    setPhoto(null);
-    send({ type: 'targetOff' });
-  }, [send]);
-
-  const goToMyLocation = useCallback(async () => {
-    const granted = await ensureLocationPermission();
-    if (!granted) return;
-    // El fix cacheado mueve el mapa al instante; el bueno lo corrige después.
-    const quick = await getQuickFix();
-    if (quick) centerOn(quick.coords, 15);
-    try {
-      const precise = await getPreciseFix();
-      rememberCoords(precise.coords);
-      centerOn(precise.coords, 15);
-      if (precise.accuracy) {
-        send({
-          type: 'accuracy',
-          lat: precise.coords.lat,
-          lon: precise.coords.lon,
-          radius: precise.accuracy,
-        });
-      }
-    } catch {
-      /* silencioso: el usuario puede mover el mapa a mano */
-    }
-  }, [send, centerOn]);
-
+  /** Reparte cada mensaje del mapa al hook al que le importa. */
   const onMessage = useCallback(
     (data: unknown) => {
       const msg = data as { type?: string; lat?: number; lon?: number };
       if (msg.type === 'movestart') {
-        // Si el movimiento no lo hemos provocado nosotros, manda el usuario:
-        // se acabaron los recentrados automáticos.
-        if (Date.now() > programmaticUntil.current) autoCenterRef.current = false;
-        if (debounceRef.current) clearTimeout(debounceRef.current);
-        abortRef.current?.abort();
-        setBusy(true);
+        location.notifyUserMoved();
+        crosshair.onMoveStart();
         return;
       }
       if ((msg.type === 'move' || msg.type === 'ready') && msg.lat != null && msg.lon != null) {
         const coords = { lat: msg.lat, lon: msg.lon };
-        centerRef.current = coords;
-        viewRef.current = { lat: msg.lat, lon: msg.lon, zoom: (msg as any).zoom ?? 12 };
-        setPlace(null);
-        scheduleQuery(coords);
-        if (showCoverage) paintCoverage();
+        crosshair.onMapMoved(coords);
+        layers.onViewChanged({ lat: msg.lat, lon: msg.lon, zoom: (msg as any).zoom ?? 12 });
       }
     },
-    [scheduleQuery, showCoverage, paintCoverage],
+    [location, crosshair, layers],
   );
 
-  // Cambiar la altura recalcula el punto que está bajo la cruz.
-  useEffect(() => {
-    if (result && centerRef.current) query(centerRef.current, flightHeight);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flightHeight]);
-
-  const tint = result
+  const tint = crosshair.result
     ? p.scheme === 'dark'
-      ? verdictStyles[result.verdict.level].onDark
-      : verdictStyles[result.verdict.level].onLight
+      ? verdictStyles[crosshair.result.verdict.level].onDark
+      : verdictStyles[crosshair.result.verdict.level].onLight
     : p.labelSecondary;
 
   return (
@@ -435,270 +120,54 @@ export default function MapaScreen() {
               gap: space.sm + 2,
             }}
           >
-            {busy ? (
+            {crosshair.busy ? (
               <ActivityIndicator size="small" color={p.labelSecondary} />
             ) : (
               <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: tint }} />
             )}
             <Text style={[emphasize(type.subheadline), { color: p.label, flex: 1 }]} numberOfLines={1}>
-              {busy
+              {crosshair.busy
                 ? 'Consultando el punto de la cruz…'
-                : error
+                : crosshair.error
                   ? 'No se ha podido consultar'
-                  : result
-                    ? result.verdict.headline
+                  : crosshair.result
+                    ? crosshair.result.verdict.headline
                     : 'Mueve el mapa para consultar un punto'}
             </Text>
             <IconButton
               icon="sunny-outline"
               label="Luz y sombras en este punto"
               onPress={() =>
-                centerRef.current &&
+                crosshair.centerRef.current &&
                 router.push({
                   pathname: '/luz',
-                  params: { lat: String(centerRef.current.lat), lon: String(centerRef.current.lon) },
+                  params: { lat: String(crosshair.centerRef.current.lat), lon: String(crosshair.centerRef.current.lon) },
                 })
               }
             />
             <IconButton
-              icon={legendOpen ? 'layers' : 'layers-outline'}
+              icon={layers.legendOpen ? 'layers' : 'layers-outline'}
               label="Capas del mapa"
-              onPress={() => setLegendOpen((v) => !v)}
+              onPress={() => layers.setLegendOpen((v) => !v)}
             />
           </View>
         </Material>
 
-        <Collapsible open={legendOpen}>
-          <Material weight="panel" radius={radius.lg}>
-            <View style={{ padding: space.lg, gap: space.lg }}>
-              <View style={{ gap: space.sm }}>
-                <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-                  Mapa base
-                </Text>
-                {/* Control segmentado: una pista hundida y una pastilla que marca lo elegido. */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    backgroundColor: p.surfaceSunken,
-                    borderRadius: 10,
-                    padding: 2,
-                    gap: 2,
-                  }}
-                >
-                  {BASEMAPS.map((b) => {
-                    const active = basemap === b.id;
-                    return (
-                      <PressableScale
-                        key={b.id}
-                        onPress={() => {
-                          Haptics.selectionAsync().catch(() => {});
-                          setBasemap(b.id);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        style={[
-                          {
-                            flex: 1,
-                            alignItems: 'center',
-                            gap: 3,
-                            paddingVertical: space.sm,
-                            borderRadius: 8,
-                            backgroundColor: active ? p.surface : 'transparent',
-                          },
-                          active ? (shadow.chip as object) : {},
-                        ]}
-                      >
-                        <Ionicons
-                          name={b.icon as any}
-                          size={17}
-                          color={active ? p.tint : p.labelSecondary}
-                        />
-                        <Text
-                          style={[
-                            emphasize(type.caption2, active ? '600' : '500'),
-                            { color: active ? p.label : p.labelSecondary },
-                          ]}
-                        >
-                          {b.label}
-                        </Text>
-                      </PressableScale>
-                    );
-                  })}
-                </View>
-                <Text style={[type.caption, { color: p.labelTertiary }]}>
-                  {BASEMAPS.find((b) => b.id === basemap)?.note}
-                </Text>
-              </View>
-
-              <View style={{ gap: space.sm }}>
-                <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-                  Zonas sobre el mapa
-                </Text>
-                <View style={{ backgroundColor: p.surfaceSunken, borderRadius: radius.md, overflow: 'hidden' }}>
-                  {ALL_LAYERS.map((key, i) => (
-                    <View key={key}>
-                      {i > 0 ? <Separator inset={space.md + 14 + space.md} /> : null}
-                      <Pressable
-                        onPress={() => toggleLayer(key)}
-                        accessibilityRole="switch"
-                        accessibilityState={{ checked: visible[key] }}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row',
-                          gap: space.md,
-                          alignItems: 'center',
-                          paddingHorizontal: space.md,
-                          paddingVertical: space.sm + 2,
-                          minHeight: 48,
-                          opacity: pressed ? 0.6 : 1,
-                        })}
-                      >
-                        <View
-                          style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: 4,
-                            backgroundColor: visible[key] ? layerColor[key] : 'transparent',
-                            borderWidth: visible[key] ? 0 : 1.5,
-                            borderColor: p.labelTertiary,
-                          }}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={[emphasize(type.subheadline), { color: p.label }]}>
-                            {layerLabel[key]}
-                          </Text>
-                          <Text style={[type.caption, { color: p.labelSecondary }]}>
-                            {layerDescription[key]}
-                          </Text>
-                        </View>
-                        {visible[key] ? (
-                          <Ionicons name="checkmark" size={19} color={p.tint} />
-                        ) : null}
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-                <Text style={[type.caption, { color: p.labelTertiary }]}>
-                  El dibujo de las zonas se pide directamente al servicio de ENAIRE: es el mismo que
-                  verías en su visor oficial, con sus mismos colores.
-                </Text>
-              </View>
-
-              {showCoverage ? (
-                <View style={{ gap: space.sm }}>
-                  <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-                    Altura libre {coverageState === 'calculando' ? '· calculando…' : ''}
-                  </Text>
-                  {coverageState === 'sin-paquete' ? (
-                    <Text style={[type.caption, { color: p.labelSecondary }]}>
-                      Necesitas descargar esta zona en Ajustes → Volar sin cobertura. El cálculo se hace
-                      en el móvil, no se puede pedir celda a celda a ENAIRE.
-                    </Text>
-                  ) : (
-                    <>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                        {COVERAGE_LEGEND.map((l) => (
-                          <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                            <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: l.color }} />
-                            <Text style={[type.caption2, { color: p.labelSecondary }]}>{l.label}</Text>
-                          </View>
-                        ))}
-                      </View>
-                      <Text style={[type.caption, { color: p.labelTertiary }]}>
-                        Celdas de la zona descargada, orientativas. Antes de despegar comprueba el punto
-                        exacto: el borde real de una zona no cae donde acaba una celda.
-                      </Text>
-                    </>
-                  )}
-                </View>
-              ) : null}
-            </View>
-          </Material>
-        </Collapsible>
+        <LegendPanel
+          open={layers.legendOpen}
+          basemap={layers.basemap}
+          setBasemap={layers.setBasemap}
+          visible={layers.visible}
+          toggleLayer={layers.toggleLayer}
+          showCoverage={layers.showCoverage}
+          coverageState={layers.coverageState}
+        />
       </View>
 
       {/* Resultado del objetivo fotográfico */}
-      {photo ? (
+      {photo.photo ? (
         <View style={{ position: 'absolute', top: insets.top + 72, left: space.md, right: space.md }}>
-          <Material weight="panel" radius={radius.lg}>
-            <View style={{ padding: space.lg, gap: space.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <Ionicons name="camera" size={15} color={p.labelSecondary} />
-                <Text
-                  style={[
-                    type.sectionHeader,
-                    { color: p.labelSecondary, textTransform: 'uppercase', flex: 1 },
-                  ]}
-                >
-                  Objetivo marcado
-                </Text>
-                <IconButton icon="close" label="Quitar el objetivo" onPress={clearPhoto} color={p.labelTertiary} />
-              </View>
-
-              {photo.state === 'buscando' ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                  <ActivityIndicator size="small" color={p.labelSecondary} />
-                  <Text style={[type.callout, { color: p.label }]}>Buscando desde dónde puedes volar…</Text>
-                </View>
-              ) : photo.state === 'sin-paquete' ? (
-                <Text style={[type.callout, { color: p.label }]}>
-                  Para esto necesitas la zona descargada: la búsqueda mira miles de puntos y eso no se
-                  le puede preguntar a ENAIRE uno a uno. Descárgala en Ajustes → Volar sin cobertura.
-                </Text>
-              ) : photo.result.targetIsFlyable ? (
-                <>
-                  <Text style={[type.title3, { color: verdictTint('LIBRE', p) }]}>
-                    Puedes volar desde el propio objetivo
-                  </Text>
-                  <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                    No necesitas moverte: ahí mismo se puede despegar sin pedir autorización.
-                  </Text>
-                </>
-              ) : photo.result.best || photo.result.anyHeight ? (
-                (() => {
-                  const spot = photo.result.best ?? photo.result.anyHeight!;
-                  const exact = Boolean(photo.result.best);
-                  return (
-                    <>
-                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-                        <Text
-                          style={[
-                            type.largeTitle,
-                            tabular,
-                            { color: p.label },
-                          ]}
-                        >
-                          {formatDistance(spot.distanceM)}
-                        </Text>
-                        <Text style={[type.title3, { color: p.labelSecondary }]}>{spot.bearing}</Text>
-                      </View>
-                      <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                        Desde ahí puedes subir hasta {spot.freeHeightM} m sin autorización
-                        {exact ? '.' : `, que es menos de los ${flightHeight} m que querías.`}
-                        {spot.distanceM > 500
-                          ? ' Ojo: queda lejos para tener el objetivo a la vista.'
-                          : ''}
-                      </Text>
-                      <GhostButton
-                        label="Consultar ese punto"
-                        icon="arrow-forward"
-                        onPress={() =>
-                          router.push({
-                            pathname: '/resultado',
-                            params: { lat: String(spot.coords.lat), lon: String(spot.coords.lon) },
-                          })
-                        }
-                      />
-                    </>
-                  );
-                })()
-              ) : (
-                <Text style={[type.callout, { color: p.label }]}>
-                  No hay ningún punto donde volar sin autorización en {photo.result.searchedKm} km a la
-                  redonda, dentro de la zona que tienes descargada.
-                </Text>
-              )}
-            </View>
-          </Material>
+          <PhotoTargetPanel photo={photo.photo} flightHeight={flightHeight} onClear={photo.clearPhoto} />
         </View>
       ) : null}
 
@@ -707,32 +176,32 @@ export default function MapaScreen() {
         style={{
           position: 'absolute',
           right: space.md,
-          bottom: sheet === 'hidden' ? insets.bottom + 90 : 190,
+          bottom: crosshair.sheet === 'hidden' ? insets.bottom + 90 : 190,
           gap: space.sm,
         }}
       >
         <MapButton
           icon="camera-outline"
           label="Quiero fotografiar esto: buscar desde dónde volar"
-          onPress={markPhotoTarget}
+          onPress={photo.markPhotoTarget}
         />
-        <MapButton icon="locate" label="Centrar en mi ubicación" onPress={goToMyLocation} />
+        <MapButton icon="locate" label="Centrar en mi ubicación" onPress={location.goToMyLocation} />
       </View>
 
       <BottomSheet
-        state={sheet}
-        onStateChange={setSheet}
+        state={crosshair.sheet}
+        onStateChange={crosshair.setSheet}
         minPeekHeight={140}
         header={
-          result ? (
+          crosshair.result ? (
             <View style={{ gap: space.sm }}>
-              <VerdictPill result={result} />
-              {place ? (
+              <VerdictPill result={crosshair.result} />
+              {crosshair.place ? (
                 <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
-                  {place}
+                  {crosshair.place}
                 </Text>
               ) : null}
-              <Chip label={`hasta ${result.flightHeightAgl} m`} color={p.tint} icon="swap-vertical" />
+              <Chip label={`hasta ${crosshair.result.flightHeightAgl} m`} color={p.tint} icon="swap-vertical" />
             </View>
           ) : (
             // La píldora de arriba ya dice en vivo si está consultando, si ha
@@ -740,7 +209,7 @@ export default function MapaScreen() {
             // no cabe: el porqué del error.
             <View style={{ paddingBottom: space.sm }}>
               <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                {error ?? 'El resultado aparecerá aquí.'}
+                {crosshair.error ?? 'El resultado aparecerá aquí.'}
               </Text>
             </View>
           )
@@ -750,14 +219,16 @@ export default function MapaScreen() {
           contentContainerStyle={{ padding: space.lg, paddingBottom: space.xxxl, gap: space.lg }}
           showsVerticalScrollIndicator={false}
         >
-          {result ? (
+          {crosshair.result ? (
             <ResultView
-              result={result}
-              place={place}
+              result={crosshair.result}
+              place={crosshair.place}
               showMap={false}
               onHeightChange={setFlightHeight}
-              onRefresh={() => centerRef.current && query(centerRef.current, flightHeight)}
-              refreshing={busy}
+              onRefresh={() =>
+                crosshair.centerRef.current && crosshair.query(crosshair.centerRef.current, flightHeight)
+              }
+              refreshing={crosshair.busy}
             />
           ) : (
             <SkeletonRows rows={3} />

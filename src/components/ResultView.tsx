@@ -22,6 +22,7 @@ import { space, type, emphasize } from '../theme';
 export function ResultView({
   result,
   place,
+  accuracy,
   onHeightChange,
   onRefresh,
   refreshing,
@@ -30,6 +31,8 @@ export function ResultView({
 }: {
   result: QueryResult;
   place?: string | null;
+  /** Precisión de la posición, en metros. Se enseña sin dar la nota. */
+  accuracy?: number | null;
   onHeightChange?: (h: number) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -64,6 +67,7 @@ export function ResultView({
       <VerdictCard
         result={result}
         place={place}
+        accuracy={accuracy}
         onHeightChange={onHeightChange}
         onRefresh={onRefresh}
         refreshing={refreshing}
@@ -88,7 +92,9 @@ export function ResultView({
         </Banner>
       ) : null}
 
-      {result.terrainElevation === null ? (
+      {/* Sin conexión el aviso de arriba ya explica de dónde sale la elevación:
+          repetirlo aquí sería apilar dos avisos naranjas diciendo lo mismo. */}
+      {result.terrainElevation === null && !result.offline ? (
         <Banner tone="warn">
           No se ha podido obtener la elevación del terreno en este punto. Las zonas con límites
           referidos al nivel del mar se muestran como si te afectaran, por prudencia.
@@ -230,6 +236,9 @@ export function ResultView({
               label="Coordenadas"
               value={`${result.coords.lat.toFixed(5)}, ${result.coords.lon.toFixed(5)}`}
             />
+            {accuracy != null ? (
+              <InfoRow label="Precisión de la posición" value={`±${Math.round(accuracy)} m`} />
+            ) : null}
             <InfoRow
               label="Elevación del terreno"
               value={
@@ -260,17 +269,24 @@ export function ResultView({
         </Collapsible>
       </Card>
 
-      <Banner>
-        Esta app consulta en directo los servicios oficiales de ENAIRE (zonas geográficas UAS y
-        NOTAM), pero no los sustituye: los horarios de los NOTAM vienen en texto libre y hay que
-        leerlos. La responsabilidad del vuelo siempre es del piloto.{' '}
+      {/* Nota al pie, no aviso: sale en todas las consultas y siempre dice lo
+          mismo, así que va en letra pequeña y apagada en vez de en una caja. */}
+      <Text
+        style={[
+          type.caption,
+          { color: p.labelTertiary, paddingHorizontal: space.xs, lineHeight: 17 },
+        ]}
+      >
+        Consulta en directo los servicios oficiales de ENAIRE, pero no los sustituye: los horarios de
+        los NOTAM vienen en texto libre y hay que leerlos. La responsabilidad del vuelo siempre es del
+        piloto.{' '}
         <Text
-          style={{ color: p.tint, fontWeight: '600' }}
+          style={{ color: p.labelSecondary, fontWeight: '600' }}
           onPress={() => Linking.openURL(ENAIRE_DRONES_URL).catch(() => {})}
         >
           Abrir ENAIRE Drones
         </Text>
-      </Banner>
+      </Text>
     </View>
   );
 }

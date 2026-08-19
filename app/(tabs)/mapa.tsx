@@ -6,7 +6,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,6 +22,14 @@ import { useSettings } from '../../src/state/SettingsContext';
 import { buildMapHtml } from '../../src/map/mapHtml';
 import { getLayerIds } from '../../src/api/enaire';
 import { checkPoint } from '../../src/logic/query';
+import {
+  FALLBACK_CENTER,
+  ensureLocationPermission,
+  getPreciseFix,
+  getQuickFix,
+  loadRememberedCoords,
+  rememberCoords,
+} from '../../src/logic/location';
 import { describePoint } from '../../src/api/geocode';
 import { layerColor, layerDescription, layerLabel } from '../../src/logic/labels';
 import { computeCoverageGrid, coverageColor, COVERAGE_LEGEND } from '../../src/offline/coverage';
@@ -77,34 +84,18 @@ export default function MapaScreen() {
   >(null);
   const viewRef = useRef<{ lat: number; lon: number; zoom: number } | null>(null);
 
-  // Centro inicial del mapa: se resuelve con la ubicación del usuario antes de
-  // pintar nada. Madrid sólo entra como último recurso si no hay permiso o falla el GPS.
+  // Centro con el que se construye el mapa. Se resuelve con lo que ya se sabe
+  // (la última posición guardada) para poder pintar en el primer fotograma; la
+  // posición real llega después y recentra sola. Ver src/logic/location.ts.
   const [initialCenter, setInitialCenter] = useState<{ lat: number; lon: number; zoom: number } | null>(
     hasParams ? { lat: paramLat, lon: paramLon, zoom: 14 } : null,
   );
-
-  useEffect(() => {
-    if (hasParams) return;
-    let alive = true;
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          if (alive) setInitialCenter({ lat: 40.4168, lon: -3.7038, zoom: 11 });
-          return;
-        }
-        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        if (alive) setInitialCenter({ lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 14 });
-      } catch {
-        if (alive) setInitialCenter({ lat: 40.4168, lon: -3.7038, zoom: 11 });
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-    // Sólo al arrancar.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Mientras nadie haya tocado el mapa, los fixes que van llegando lo recentran.
+  // En cuanto el usuario mueve, manda él y no se le vuelve a mover la vista.
+  const autoCenterRef = useRef(!hasParams);
+  // El mapa avisa de 'movestart' tanto si mueves tú como si movemos nosotros;
+  // esta ventana distingue una cosa de la otra.
+  const programmaticUntil = useRef(0);
 
   const [result, setResult] = useState<QueryResult | null>(null);
   const [place, setPlace] = useState<string | null>(null);
@@ -147,6 +138,67 @@ export default function MapaScreen() {
 
   const send = useCallback((msg: object) => {
     mapRef.current?.post(msg);
+  }, []);
+
+  /** Recentra el mapa marcando que el movimiento lo hemos hecho nosotros. */
+  const centerOn = useCallback(
+    (coords: Coords, zoom: number) => {
+      programmaticUntil.current = Date.now() + 1500;
+      send({ type: 'center', lat: coords.lat, lon: coords.lon, zoom });
+    },
+    [send],
+  );
+
+  /**
+   * Ubicación en tres escalones, del más rápido al más preciso: primero se
+   * siembra el mapa con la última posición guardada para que se construya ya
+   * —el WebView, Leaflet y los tiles de ENAIRE tardan lo suyo y ese tiempo se
+   * solapa con el del GPS—, luego entra el fix cacheado del sistema, y por
+   * último el fix real. Cada uno sustituye al anterior si nadie ha tocado nada.
+   */
+  useEffect(() => {
+    if (hasParams) return;
+    let alive = true;
+    (async () => {
+      const remembered = await loadRememberedCoords();
+      if (!alive) return;
+      // Sin nada guardado se encuadra España entera: es más honesto que plantar
+      // al usuario en Madrid como si supiéramos que está ahí.
+      setInitialCenter(
+        remembered
+          ? { lat: remembered.lat, lon: remembered.lon, zoom: 13 }
+          : { lat: FALLBACK_CENTER.lat, lon: FALLBACK_CENTER.lon, zoom: 6 },
+      );
+
+      const granted = await ensureLocationPermission();
+      if (!alive || !granted) return;
+
+      const quick = await getQuickFix();
+      if (!alive) return;
+      if (quick && autoCenterRef.current) centerOn(quick.coords, 14);
+
+      try {
+        const precise = await getPreciseFix();
+        if (!alive) return;
+        rememberCoords(precise.coords);
+        if (autoCenterRef.current) centerOn(precise.coords, 15);
+        if (precise.accuracy) {
+          send({
+            type: 'accuracy',
+            lat: precise.coords.lat,
+            lon: precise.coords.lon,
+            radius: precise.accuracy,
+          });
+        }
+      } catch {
+        /* el usuario siempre puede mover el mapa a mano */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+    // Sólo al arrancar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -301,28 +353,35 @@ export default function MapaScreen() {
   }, [send]);
 
   const goToMyLocation = useCallback(async () => {
+    const granted = await ensureLocationPermission();
+    if (!granted) return;
+    // El fix cacheado mueve el mapa al instante; el bueno lo corrige después.
+    const quick = await getQuickFix();
+    if (quick) centerOn(quick.coords, 15);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      send({ type: 'center', lat: pos.coords.latitude, lon: pos.coords.longitude, zoom: 15 });
-      if (pos.coords.accuracy) {
+      const precise = await getPreciseFix();
+      rememberCoords(precise.coords);
+      centerOn(precise.coords, 15);
+      if (precise.accuracy) {
         send({
           type: 'accuracy',
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          radius: pos.coords.accuracy,
+          lat: precise.coords.lat,
+          lon: precise.coords.lon,
+          radius: precise.accuracy,
         });
       }
     } catch {
       /* silencioso: el usuario puede mover el mapa a mano */
     }
-  }, [send]);
+  }, [send, centerOn]);
 
   const onMessage = useCallback(
     (data: unknown) => {
       const msg = data as { type?: string; lat?: number; lon?: number };
       if (msg.type === 'movestart') {
+        // Si el movimiento no lo hemos provocado nosotros, manda el usuario:
+        // se acabaron los recentrados automáticos.
+        if (Date.now() > programmaticUntil.current) autoCenterRef.current = false;
         if (debounceRef.current) clearTimeout(debounceRef.current);
         abortRef.current?.abort();
         setBusy(true);
@@ -359,9 +418,7 @@ export default function MapaScreen() {
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md }}>
           <ActivityIndicator color={p.tint} />
-          <Text style={[type.footnote, { color: p.labelSecondary }]}>
-            {initialCenter ? 'Preparando el mapa oficial…' : 'Localizándote…'}
-          </Text>
+          <Text style={[type.footnote, { color: p.labelSecondary }]}>Preparando el mapa oficial…</Text>
         </View>
       )}
 
@@ -675,20 +732,15 @@ export default function MapaScreen() {
                   {place}
                 </Text>
               ) : null}
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <Chip label={`hasta ${result.flightHeightAgl} m`} color={p.tint} icon="swap-vertical" />
-                <Text style={[type.footnote, { color: p.labelTertiary, flex: 1 }]}>
-                  {sheet === 'expanded' ? 'Desliza hacia abajo para volver al mapa' : 'Desliza hacia arriba para ver el detalle'}
-                </Text>
-              </View>
+              <Chip label={`hasta ${result.flightHeightAgl} m`} color={p.tint} icon="swap-vertical" />
             </View>
           ) : (
-            <View style={{ gap: space.sm, paddingBottom: space.sm }}>
-              <Text style={[type.headline, { color: p.label }]}>
-                {busy ? 'Consultando…' : error ? 'No se ha podido consultar' : 'Mueve la cruz'}
-              </Text>
+            // La píldora de arriba ya dice en vivo si está consultando, si ha
+            // fallado o si hay que mover la cruz. Aquí sólo se añade lo que allí
+            // no cabe: el porqué del error.
+            <View style={{ paddingBottom: space.sm }}>
               <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                {error ?? 'El resultado del punto bajo la cruz aparecerá aquí.'}
+                {error ?? 'El resultado aparecerá aquí.'}
               </Text>
             </View>
           )

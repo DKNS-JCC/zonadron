@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Platform, Pressable, RefreshControl, Text, View } from 'react-native';
-import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +22,16 @@ import { usePalette } from '../../src/hooks/useTheme';
 import { useSettings } from '../../src/state/SettingsContext';
 import { useHistory } from '../../src/state/HistoryContext';
 import { checkPoint } from '../../src/logic/query';
+import {
+  REFINE_THRESHOLD_M,
+  VERDICT_MAX_ACCURACY_M,
+  distanceM,
+  ensureLocationPermission,
+  getPreciseFix,
+  getQuickFix,
+  hasLocationPermission,
+  rememberCoords,
+} from '../../src/logic/location';
 import { describePoint } from '../../src/api/geocode';
 import { space, systemColor, type } from '../../src/theme';
 import type { Coords, QueryResult } from '../../src/types';
@@ -49,12 +58,17 @@ export default function HomeScreen() {
   const lastCoords = useRef<Coords | null>(null);
   const placeRef = useRef<string | null>(null);
 
+  /**
+   * Consulta un punto y pinta el resultado. En modo `silent` no toca el estado
+   * de carga ni borra lo que hay: es el refinado que corre por detrás cuando ya
+   * hay un veredicto en pantalla y sólo queremos sustituirlo si mejora.
+   */
   const runQuery = useCallback(
-    async (coords: Coords, height: number) => {
+    async (coords: Coords, height: number, silent = false) => {
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-      setPhase('querying');
+      if (!silent) setPhase('querying');
       setError(null);
       setStale(false);
       try {
@@ -63,7 +77,8 @@ export default function HomeScreen() {
         setResult(res);
         setPhase('done');
         remember(res, placeRef.current);
-        if (Platform.OS !== 'web') {
+        // El refinado no vuelve a vibrar: es el mismo sitio, ya avisamos.
+        if (Platform.OS !== 'web' && !silent) {
           const notify =
             res.verdict.level === 'PROHIBIDO' || res.verdict.level === 'AUTORIZACION'
               ? Haptics.NotificationFeedbackType.Warning
@@ -81,6 +96,9 @@ export default function HomeScreen() {
           .catch(() => {});
       } catch (err) {
         if (controller.signal.aborted) return;
+        // Si falla el refinado, lo que hay en pantalla sigue siendo válido —es
+        // el mismo punto, medido algo peor—, así que se calla y no se toca nada.
+        if (silent) return;
         // Un resultado viejo en pantalla junto a un error es peor que ningún
         // resultado: el usuario creería que el verde corresponde a lo que ve.
         setResult(null);
@@ -91,26 +109,51 @@ export default function HomeScreen() {
     [remember],
   );
 
+  /**
+   * Localiza y consulta. El fix cacheado del sistema, si es lo bastante fino,
+   * arranca la consulta a ENAIRE de inmediato en vez de esperar al GPS: así la
+   * ida y vuelta a la red se solapa con el tiempo que tarda en fijar posición.
+   * Cuando llega el fix bueno se recalcula, pero sólo si te has movido de sitio
+   * —repetir la consulta por veinte metros sería gastar red para nada.
+   */
   const locateAndCheck = useCallback(async () => {
     setPhase('locating');
     setError(null);
     setPlace(null);
     placeRef.current = null;
+
+    const granted = await ensureLocationPermission();
+    if (!granted) {
+      setError(
+        'Necesito acceso a tu ubicación para comprobar dónde estás. Puedes activarlo en los ajustes del móvil, o usar las pestañas Mapa y Buscar para consultar un punto a mano.',
+      );
+      setPhase('error');
+      return;
+    }
+
+    const quick = await getQuickFix();
+    const quickIsUsable =
+      quick !== null && quick.accuracy !== null && quick.accuracy <= VERDICT_MAX_ACCURACY_M;
+    if (quick && quickIsUsable) {
+      lastCoords.current = quick.coords;
+      setAccuracy(quick.accuracy);
+      runQuery(quick.coords, flightHeight);
+    }
+
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError(
-          'Necesito acceso a tu ubicación para comprobar dónde estás. Puedes activarlo en los ajustes del móvil, o usar las pestañas Mapa y Buscar para consultar un punto a mano.',
-        );
-        setPhase('error');
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      const coords: Coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-      lastCoords.current = coords;
-      setAccuracy(pos.coords.accuracy ?? null);
-      await runQuery(coords, flightHeight);
+      const precise = await getPreciseFix();
+      rememberCoords(precise.coords);
+      const moved =
+        !quickIsUsable || !quick || distanceM(quick.coords, precise.coords) > REFINE_THRESHOLD_M;
+      lastCoords.current = precise.coords;
+      setAccuracy(precise.accuracy);
+      // Con un veredicto ya en pantalla el refinado es silencioso: no vuelve a
+      // salir la rueda ni parpadea nada, el resultado se sustituye y ya está.
+      if (moved) await runQuery(precise.coords, flightHeight, quickIsUsable);
     } catch (err) {
+      // Si el fix rápido ya lanzó la consulta, no se pisa con un error: hay algo
+      // en pantalla y es correcto.
+      if (quickIsUsable) return;
       setError(
         err instanceof Error
           ? `No se ha podido obtener tu ubicación: ${err.message}`
@@ -124,9 +167,9 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!ready) return;
     let alive = true;
-    Location.getForegroundPermissionsAsync()
-      .then(({ status }) => {
-        if (alive && status === 'granted') locateAndCheck();
+    hasLocationPermission()
+      .then((granted) => {
+        if (alive && granted) locateAndCheck();
       })
       .catch(() => {});
     return () => {
@@ -236,15 +279,10 @@ export default function HomeScreen() {
 
       {result ? (
         <>
-          {accuracy !== null && accuracy > 50 ? (
-            <Banner tone="warn">
-              Tu posición tiene una precisión de ±{Math.round(accuracy)} m. Si estás cerca del borde
-              de una zona, confirma el punto en el mapa.
-            </Banner>
-          ) : null}
           <ResultView
             result={result}
             place={place}
+            accuracy={accuracy}
             onHeightChange={setFlightHeight}
             onRefresh={locateAndCheck}
             refreshing={busy}

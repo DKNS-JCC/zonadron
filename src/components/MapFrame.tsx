@@ -19,10 +19,27 @@ export interface MapFrameProps {
 export const MapFrame = React.forwardRef<MapFrameHandle, MapFrameProps>(
   ({ html, onMessage, style }, ref) => {
     const webRef = React.useRef<WebView>(null);
+    // Hasta que Leaflet no ha arrancado dentro del WebView no hay nadie
+    // escuchando, y un postMessage temprano se pierde sin dejar rastro. Los
+    // mensajes se guardan y se sueltan de golpe cuando el mapa dice 'ready'.
+    const ready = React.useRef(false);
+    const pending = React.useRef<object[]>([]);
 
     React.useImperativeHandle(ref, () => ({
-      post: (message: object) => webRef.current?.postMessage(JSON.stringify(message)),
+      post: (message: object) => {
+        if (!ready.current) {
+          pending.current.push(message);
+          return;
+        }
+        webRef.current?.postMessage(JSON.stringify(message));
+      },
     }));
+
+    // Un html nuevo es un mapa nuevo: vuelve a estar sordo hasta su 'ready'.
+    React.useEffect(() => {
+      ready.current = false;
+      pending.current = [];
+    }, [html]);
 
     return (
       <WebView
@@ -31,7 +48,14 @@ export const MapFrame = React.forwardRef<MapFrameHandle, MapFrameProps>(
         originWhitelist={['*']}
         onMessage={(event) => {
           try {
-            onMessage(JSON.parse(event.nativeEvent.data));
+            const data = JSON.parse(event.nativeEvent.data);
+            if ((data as { type?: string })?.type === 'ready' && !ready.current) {
+              ready.current = true;
+              const queued = pending.current;
+              pending.current = [];
+              for (const msg of queued) webRef.current?.postMessage(JSON.stringify(msg));
+            }
+            onMessage(data);
           } catch {
             /* mensaje no reconocido */
           }

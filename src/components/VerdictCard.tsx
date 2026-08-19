@@ -27,6 +27,7 @@ import { timeAgo } from '../state/HistoryContext';
 export function VerdictCard({
   result,
   place,
+  accuracy,
   onHeightChange,
   onRefresh,
   refreshing,
@@ -34,6 +35,8 @@ export function VerdictCard({
 }: {
   result: QueryResult;
   place?: string | null;
+  /** Precisión de la posición, en metros. */
+  accuracy?: number | null;
   onHeightChange?: (h: number) => void;
   onRefresh?: () => void;
   refreshing?: boolean;
@@ -96,11 +99,15 @@ export function VerdictCard({
 
         <MaxHeightBand result={result} compact={compact} />
 
-        {place ? (
+        {/* El lugar, y colgando de él la precisión: es un matiz de dónde estás,
+            no una alarma, así que va en el mismo tono tenue y sin icono propio. */}
+        {place || accuracy != null ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.md }}>
             <Ionicons name="location" size={13} color="#FFFFFFB3" />
             <Text style={[type.footnote, { color: '#FFFFFFB3', flex: 1 }]} numberOfLines={2}>
               {place}
+              {place && accuracy != null ? ' · ' : ''}
+              {accuracy != null ? `±${Math.round(accuracy)} m` : ''}
             </Text>
           </View>
         ) : null}

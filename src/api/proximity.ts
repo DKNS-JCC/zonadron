@@ -9,7 +9,8 @@
  * enormes, y la distancia se calcula en el móvil.
  */
 
-import { ENAIRE_SERVICE, getLayerIds } from './enaire';
+import { getLayerIds } from './enaire';
+import { ENAIRE_SERVICE, fetchArcgisJson } from './arcgisClient';
 import { bearingLabel, distanceToRings, pointInRings } from '../offline/geometry';
 import type { LayerKey } from '../types';
 
@@ -58,15 +59,7 @@ async function queryLayerNearby(
     f: 'json',
   });
 
-  const res = await fetch(`${ENAIRE_SERVICE}/${layerId}/query?${params}`, {
-    signal,
-    headers: { Accept: 'application/json' },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const text = await res.text();
-  if (text.trim().startsWith('<')) throw new Error('El servicio de ENAIRE ha rechazado la petición');
-  const json = JSON.parse(text);
-  if (json?.error) throw new Error(json.error?.message ?? 'Error del servicio');
+  const json = await fetchArcgisJson(`${ENAIRE_SERVICE}/${layerId}/query?${params}`, signal);
 
   const out: NearbyZone[] = [];
   for (const f of (json.features ?? []) as RawFeature[]) {

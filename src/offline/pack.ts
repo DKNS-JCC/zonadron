@@ -12,7 +12,9 @@
 
 import { Directory, File, Paths } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ENAIRE_SERVICE, getLayerIds, LAYER_KEYS } from '../api/enaire';
+import { getLayerIds, LAYER_KEYS } from '../api/enaire';
+import { ENAIRE_SERVICE, fetchArcgisJson } from '../api/arcgisClient';
+import { elevations } from '../api/openMeteo';
 import type { LayerKey, RawZoneAttributes } from '../types';
 import { boxAround, type BBox, type ElevationGrid } from './geometry';
 
@@ -79,15 +81,9 @@ async function fetchLayerZones(
     f: 'json',
   });
 
-  const res = await fetch(`${ENAIRE_SERVICE}/${layerId}/query?${params}`, {
-    signal,
-    headers: { Accept: 'application/json' },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} al descargar ${layer}`);
-  const text = await res.text();
-  if (text.trim().startsWith('<')) throw new Error('El servicio de ENAIRE ha rechazado la descarga');
-  const json = JSON.parse(text);
-  if (json?.error) throw new Error(json.error?.message ?? 'Error del servicio de ENAIRE');
+  // Timeout más largo que el de una consulta interactiva: esto es una descarga
+  // de fondo, no alguien esperando de pie en el campo a que responda el móvil.
+  const json = await fetchArcgisJson(`${ENAIRE_SERVICE}/${layerId}/query?${params}`, signal, 15000);
 
   return (json.features ?? [])
     .filter((f: any) => Array.isArray(f?.geometry?.rings))
@@ -108,32 +104,22 @@ async function fetchElevationGrid(
   const rows = Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((bbox.maxLat - bbox.minLat) / dLat) + 1);
   const cols = Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((bbox.maxLon - bbox.minLon) / dLon) + 1);
 
-  const lats: number[] = [];
-  const lons: number[] = [];
+  const points: { lat: number; lon: number }[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      lats.push(bbox.minLat + r * dLat);
-      lons.push(bbox.minLon + c * dLon);
+      points.push({ lat: bbox.minLat + r * dLat, lon: bbox.minLon + c * dLon });
     }
   }
 
-  const values: number[] = [];
-  const CHUNK = 100; // límite de la API
-  for (let i = 0; i < lats.length; i += CHUNK) {
-    if (signal?.aborted) throw new Error('Descarga cancelada');
-    const la = lats.slice(i, i + CHUNK).join(',');
-    const lo = lons.slice(i, i + CHUNK).join(',');
-    const res = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${la}&longitude=${lo}`, {
-      signal,
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    const chunk = Array.isArray(json?.elevation) ? json.elevation : [];
-    if (chunk.length !== Math.min(CHUNK, lats.length - i)) return null;
-    values.push(...chunk.map((v: unknown) => Number(v)));
-    onProgress?.(values.length / lats.length);
-  }
+  // Mismo cliente espaciado y con reintentos que usa el resto de la app para
+  // Open-Meteo. Sin él, una rejilla de 25 km dispara ~28 peticiones seguidas y
+  // el primer 429 tira toda la descarga sin decir por qué.
+  const values = await elevations(points, signal, onProgress);
+  // elevations() traga cualquier error, incluida la cancelación, y devuelve
+  // null: hay que distinguirla aquí o cancelar a mitad de la rejilla acabaría
+  // guardando un paquete "completo" sin elevación en vez de abortar.
+  if (signal?.aborted) throw new Error('Descarga cancelada');
+  if (!values) return null;
 
   return { lat0: bbox.minLat, lon0: bbox.minLon, dLat, dLon, rows, cols, values };
 }
@@ -197,8 +183,13 @@ export async function buildPack(
     zoneCount: zones.length,
     bytes: json.length,
     label,
+    elevationComplete: elevation !== null,
   };
   await AsyncStorage.setItem(META_KEY, JSON.stringify(meta));
+  // Si no se actualiza aquí, loadPack() sigue devolviendo el paquete anterior
+  // hasta que se cierra la app: todas las consultas offline responderían con
+  // la zona vieja aunque el fichero de disco ya sea el nuevo.
+  cached = pack;
   onProgress?.({ step: 'guardando', pct: 1 });
   return meta;
 }

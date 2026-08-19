@@ -151,9 +151,16 @@ export default function DescargarScreen() {
     try {
       const label =
         (await describePoint(center.lat, center.lon).catch(() => null)) ?? 'Zona descargada';
-      await buildPack(center, label, radiusKm, setProgress, controller.signal);
+      const meta = await buildPack(center, label, radiusKm, setProgress, controller.signal);
       if (controller.signal.aborted) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      // Si falta la elevación el paquete es utilizable pero más restrictivo de
+      // lo necesario: no es el mismo éxito que una descarga completa. El
+      // porqué se explica de forma persistente en la tarjeta de Ajustes.
+      Haptics.notificationAsync(
+        meta.elevationComplete
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
+      ).catch(() => {});
       router.back();
     } catch (err) {
       if (controller.signal.aborted) return;

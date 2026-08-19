@@ -13,9 +13,9 @@ import type { LayerKey, RawZoneAttributes, VerticalRef, Zone, ZoneType } from '.
 import { htmlToText } from '../logic/html';
 import { parseReferenceElevation } from '../logic/reference';
 import { layerLabel } from '../logic/labels';
+import { ENAIRE_SERVICE, fetchArcgisJson } from './arcgisClient';
 
-export const ENAIRE_SERVICE =
-  'https://servais.enaire.es/insigniads/rest/services/NSF_SRV/SRV_UAS_ZG_data_V2/MapServer';
+export { ENAIRE_SERVICE };
 
 export const ENAIRE_DRONES_URL = 'https://drones.enaire.es/';
 export const ENAIRE_AIP_UAS_URL = 'https://aip.enaire.es/AIP/UAS-es.html';
@@ -95,7 +95,7 @@ async function resolveLayerIds(): Promise<Record<LayerKey, number>> {
       infraestructuras: LAYER_DEFS.infraestructuras.fallbackId,
     };
     try {
-      const res = await fetchJson(`${ENAIRE_SERVICE}?f=json`, undefined, 9000);
+      const res = await fetchArcgisJson(`${ENAIRE_SERVICE}?f=json`, undefined, 9000);
       const layers: Array<{ id: number; name: string }> = res?.layers ?? [];
       const resolved = { ...fallback };
       for (const key of LAYER_KEYS) {
@@ -115,74 +115,10 @@ async function resolveLayerIds(): Promise<Record<LayerKey, number>> {
   return layerIdPromise;
 }
 
-/* ------------------------------------------------------------------ */
-/* Utilidades HTTP                                                      */
-/* ------------------------------------------------------------------ */
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/** Error que merece la pena reintentar (red, timeout, 5xx, rechazo por carga). */
-class TransientError extends Error {}
 
 /** Tiempo máximo que se le concede a una consulta completa antes de rendirse. */
 export const QUERY_BUDGET_MS = 25000;
-
-async function fetchJsonOnce(url: string, signal?: AbortSignal, timeoutMs = 20000): Promise<any> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  const onAbort = () => controller.abort();
-  signal?.addEventListener('abort', onAbort);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) {
-      // 5xx y 429 son transitorios; un 4xx distinto no va a mejorar reintentando.
-      if (res.status >= 500 || res.status === 429) throw new TransientError(`HTTP ${res.status}`);
-      throw new Error(`HTTP ${res.status}`);
-    }
-    const text = await res.text();
-    // Cuando el servicio rechaza una petición devuelve una página HTML, no JSON.
-    // Suele pasar por peticiones simultáneas, así que se considera transitorio.
-    if (text.trim().startsWith('<')) {
-      throw new TransientError('El servicio de ENAIRE ha rechazado la petición');
-    }
-    const json = JSON.parse(text);
-    if (json?.error) {
-      throw new Error(json.error?.message ?? 'Error del servicio de ENAIRE');
-    }
-    return json;
-  } finally {
-    clearTimeout(timer);
-    signal?.removeEventListener('abort', onAbort);
-  }
-}
-
-/**
- * Reintento corto y acotado. Sólo se reintentan errores transitorios, y nunca
- * se duerme después del último intento: una consulta que va a fallar debe
- * fallar rápido, porque el usuario está esperando de pie en el campo.
- */
-async function fetchJson(url: string, signal?: AbortSignal, timeoutMs = 9000): Promise<any> {
-  let lastError: unknown;
-  const attempts = 4;
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    if (signal?.aborted) throw new Error('Consulta cancelada');
-    try {
-      return await fetchJsonOnce(url, signal, timeoutMs);
-    } catch (err) {
-      lastError = err;
-      if (signal?.aborted) throw err;
-      const transient =
-        err instanceof TransientError ||
-        (err instanceof Error && /abort|network|timeout|fetch/i.test(err.message));
-      if (!transient || attempt === attempts - 1) break;
-      await sleep(300 * (attempt + 1));
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error('Error del servicio de ENAIRE');
-}
 
 /* ------------------------------------------------------------------ */
 /* Normalización de atributos                                           */
@@ -332,7 +268,7 @@ async function queryLayer(
   });
 
   try {
-    const json = await fetchJson(`${ENAIRE_SERVICE}/${layerId}/query?${params}`, signal);
+    const json = await fetchArcgisJson(`${ENAIRE_SERVICE}/${layerId}/query?${params}`, signal);
     const features: Array<{ attributes: RawZoneAttributes }> = json?.features ?? [];
     const zones = features.map((f, i) => normalizeZone(f.attributes ?? {}, layerKey, i));
     return { layer: layerKey, zones: dedupeZones(zones) };

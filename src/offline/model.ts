@@ -64,4 +64,7 @@ export interface PackMeta {
   zoneCount: number;
   bytes: number;
   label: string;
+  /** false si la rejilla de elevaciones no se pudo descargar: sin ella, toda
+   *  zona referida al nivel del mar se trata como si te afectara. */
+  elevationComplete: boolean;
 }

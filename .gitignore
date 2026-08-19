@@ -39,3 +39,17 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# build artifacts (published as GitHub Releases, not committed)
+*.apk
+*.aab
+*.ipa
+
+# signing key — never commit, the app can never be updated again if this leaks
+*.keystore
+/firma/
+
+# scratch / cleanup staging
+/_to_delete/
+/_to_delete_entrega/
+/_to_delete_entrega2/

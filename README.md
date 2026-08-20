@@ -171,6 +171,19 @@ for the full result.
 Type an address, a town, a landmark — or paste coordinates like
 `39.47, -0.32` — and check a point without going there. Useful the night before.
 
+### Sharing a pin from Maps
+
+Open the spot in **Google Maps** or **Apple Maps**, hit share and pick Zona
+Dron: the app opens on that point with the check already running. It reads the
+pin's coordinates from the link, following the short `maps.app.goo.gl` form
+when that is what Maps hands over.
+
+This needs the installed app — the APK or the IPA — not Expo Go. And on iPhone
+it depends on how the app was signed: Apple passes the shared link to the app
+through an App Group, and a free Apple ID cannot provision one, so a sideloaded
+build may open without receiving the link. If that happens the app says so
+instead of failing silently; copy the link and paste it into Search.
+
 ### Notebook
 
 Your saved places, your flight log and the rules, in one tab.
@@ -257,6 +270,7 @@ Follows the system by default, and can be forced either way in Settings.
 - Spanish and English interface, following the phone or set by hand.
 - OpenStreetMap as the base map.
 - Topographic mapping and orthophotography from Spain's National Geographic Institute (IGN).
+- Share a pin from Google Maps or Apple Maps straight into the app.
 - Query history, saved places and a personal flight log.
 - Result sharing.
 - Generation of an authorization request using operator data.

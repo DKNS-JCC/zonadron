@@ -734,4 +734,8 @@ export const en: Messages = {
   'sharedPoint.failedTitle': 'That place could not be read',
   'sharedPoint.failedBody':
     'The shared link carries no coordinates we can check. Share the pin from Google Maps or Apple Maps, or paste the coordinates into Search.',
+
+  'sharedPoint.emptyTitle': 'The shared place did not arrive',
+  'sharedPoint.emptyBody':
+    'The app was opened from the share menu but received no link. On iPhone this happens when the app is sideloaded with a free Apple ID: Apple does not let the share extension hand data to the app. Copy the link and paste it into Search.',
 };

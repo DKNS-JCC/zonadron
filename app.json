@@ -68,7 +68,7 @@
       [
         "expo-share-intent",
         {
-          "iosShareExtensionName": "Zona Dron",
+          "iosShareExtensionName": "Zona Dron UAS",
           "iosActivationRules": {
             "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
             "NSExtensionActivationSupportsText": true

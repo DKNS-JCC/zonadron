@@ -173,6 +173,19 @@ hacia arriba para ver el resultado completo.
 Escribe una dirección, un municipio, un sitio conocido —o pega unas coordenadas
 como `39.47, -0.32`— y consulta un punto sin ir hasta allí. Útil la noche antes.
 
+### Compartir una chincheta desde Maps
+
+Abre el sitio en **Google Maps** o en **Apple Maps**, dale a compartir y elige
+Zona Dron: la app se abre en ese punto y lo comprueba sola. Saca las
+coordenadas de la chincheta del enlace, siguiendo el enlace corto
+`maps.app.goo.gl` cuando es lo que manda Maps.
+
+Hace falta la app instalada —el APK o el IPA—, no vale Expo Go. Y en iPhone
+depende de cómo esté firmada: Apple le pasa el enlace a la app a través de un
+grupo de apps, y un Apple ID gratuito no puede crear uno, así que una
+instalación por sideload puede abrirse sin recibir el enlace. Si pasa, la app
+te lo dice en vez de quedarse callada; copia el enlace y pégalo en Buscar.
+
 ### Cuaderno
 
 Tus sitios guardados, tu diario de vuelos y la normativa, en una pestaña.
@@ -263,6 +276,7 @@ Sigue al sistema por defecto, y se puede forzar en Ajustes.
 - Interfaz en español y en inglés, siguiendo al móvil o a mano.
 - OpenStreetMap como mapa base.
 - Cartografía topográfica y ortofoto del Instituto Geográfico Nacional (IGN).
+- Compartir una chincheta desde Google Maps o Apple Maps directamente a la app.
 - Historial de consultas, sitios guardados y diario de vuelos personal.
 - Compartir resultados.
 - Generación de una solicitud de autorización con tus datos de operador.

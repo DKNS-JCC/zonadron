@@ -733,4 +733,8 @@ export const es = {
   'sharedPoint.failedTitle': 'No hemos podido leer ese sitio',
   'sharedPoint.failedBody':
     'El enlace compartido no lleva coordenadas que podamos comprobar. Comparte la chincheta desde Google Maps o Apple Maps, o pega las coordenadas en Buscar.',
+
+  'sharedPoint.emptyTitle': 'No ha llegado el sitio compartido',
+  'sharedPoint.emptyBody':
+    'La app se ha abierto desde el menú de compartir, pero no ha recibido el enlace. En iPhone esto pasa cuando la app está instalada por sideload con un Apple ID gratuito: Apple no deja que la extensión de compartir le pase datos a la app. Copia el enlace y pégalo en Buscar.',
 };

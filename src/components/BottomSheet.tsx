@@ -6,6 +6,7 @@ import { radius, space } from '../theme';
 import { project, rubberband, SPRINGS } from '../ui/motion';
 import { useMotionPreferences } from '../ui/accessibility';
 import { Material } from './Material';
+import { t } from '../i18n';
 
 export type SheetState = 'hidden' | 'peek' | 'expanded';
 
@@ -144,7 +145,7 @@ export function BottomSheet({
           <Pressable
             onPress={() => onStateChange(state === 'expanded' ? 'peek' : 'expanded')}
             accessibilityRole="button"
-            accessibilityLabel={state === 'expanded' ? 'Plegar el detalle' : 'Ver el detalle'}
+            accessibilityLabel={state === 'expanded' ? t('sheet.collapse') : t('sheet.expand')}
             style={{ paddingTop: space.sm + 2, paddingBottom: space.sm }}
           >
             <View

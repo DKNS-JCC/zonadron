@@ -6,6 +6,7 @@ import { radius, shadow, space, type, verdictStyles, emphasize } from '../theme'
 import { Separator } from './ui';
 import { timeAgo, useHistory } from '../state/HistoryContext';
 import { verdictLevelLabel } from '../logic/labels';
+import { t } from '../i18n';
 
 /**
  * Últimos puntos consultados. Es lo que hace que abrir la app tenga sentido a
@@ -44,7 +45,12 @@ export function HistoryList({
             <Pressable
               onPress={() => onOpen(e.lat, e.lon, e.label)}
               accessibilityRole="button"
-              accessibilityLabel={`${e.label ?? 'Punto guardado'}. ${verdictLevelLabel[e.level]}. Consultado ${timeAgo(e.at)}.`}
+              accessibilityLabel={t(
+                'history.a11y',
+                e.label ?? t('history.savedPoint'),
+                verdictLevelLabel(e.level),
+                timeAgo(e.at),
+              )}
               style={({ pressed }) => ({
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -61,7 +67,7 @@ export function HistoryList({
                   {e.label ?? `${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}`}
                 </Text>
                 <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
-                  {verdictLevelLabel[e.level]} · a {e.height} m · {timeAgo(e.at)}
+                  {t('history.line', verdictLevelLabel(e.level), e.height, timeAgo(e.at))}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={p.labelTertiary} />
@@ -80,7 +86,7 @@ export function HistoryList({
           backgroundColor: pressed ? p.surfaceSunken : 'transparent',
         })}
       >
-        <Text style={[type.subheadline, { color: p.labelSecondary }]}>Borrar historial</Text>
+        <Text style={[type.subheadline, { color: p.labelSecondary }]}>{t('history.clear')}</Text>
       </Pressable>
     </View>
   );

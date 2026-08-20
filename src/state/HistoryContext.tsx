@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { dateLocale, t } from '../i18n';
 import type { QueryResult, VerdictLevel } from '../types';
 
 const KEY = 'zonadron.history.v1';
@@ -104,14 +105,14 @@ export function useHistory() {
 /** "hace 3 min", "hace 2 h", "ayer"… en lenguaje llano. */
 export function timeAgo(iso: string, now: number = Date.now()): string {
   const diff = now - new Date(iso).getTime();
-  if (!Number.isFinite(diff) || diff < 0) return 'ahora';
+  if (!Number.isFinite(diff) || diff < 0) return t('timeAgo.now');
   const min = Math.floor(diff / 60000);
-  if (min < 1) return 'ahora mismo';
-  if (min < 60) return `hace ${min} min`;
+  if (min < 1) return t('timeAgo.justNow');
+  if (min < 60) return t('timeAgo.minutes', min);
   const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h} h`;
+  if (h < 24) return t('timeAgo.hours', h);
   const d = Math.floor(h / 24);
-  if (d === 1) return 'ayer';
-  if (d < 30) return `hace ${d} días`;
-  return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  if (d === 1) return t('timeAgo.yesterday');
+  if (d < 30) return t('timeAgo.days', d);
+  return new Date(iso).toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' });
 }

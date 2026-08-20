@@ -1,3 +1,4 @@
+import { decimal, t } from '../i18n';
 import type { FlightWeather, HourlySample } from '../api/weather';
 import { getDroneProfile, type DroneProfileId } from './drone';
 
@@ -30,7 +31,7 @@ export interface WeatherAssessment {
 }
 
 function fmt(n: number) {
-  return n.toFixed(1).replace('.', ',');
+  return decimal(n);
 }
 
 export function assessWeather(
@@ -51,26 +52,27 @@ export function assessWeather(
     if (gust >= limits.danger) {
       worsen('danger');
       notes.push(
-        `Rachas de ${fmt(gust)} m/s: por encima de lo que aguanta ${getDroneProfile(drone).label.toLowerCase()} (unos ${fmt(limits.danger)} m/s).`,
+        t(
+          'weather.note.gustDanger',
+          fmt(gust),
+          getDroneProfile(drone).label.toLowerCase(),
+          fmt(limits.danger),
+        ),
       );
     } else if (gust >= limits.caution) {
       worsen('caution');
-      notes.push(
-        `Rachas de ${fmt(gust)} m/s. Se vuela, pero el dron irá justo y la batería durará menos.`,
-      );
+      notes.push(t('weather.note.gustCaution', fmt(gust)));
     }
   }
 
   if (weather.precipitationMm !== null && weather.precipitationMm > 0) {
     worsen('danger');
-    notes.push(`Está lloviendo (${fmt(weather.precipitationMm)} mm). La mayoría de drones no son estancos.`);
+    notes.push(t('weather.note.rain', fmt(weather.precipitationMm)));
   }
 
   if (weather.visibilityM !== null && weather.visibilityM < 5000) {
     worsen('caution');
-    notes.push(
-      `Visibilidad de ${Math.round(weather.visibilityM / 1000)} km. Volar en alcance visual exige verlo bien en todo momento.`,
-    );
+    notes.push(t('weather.note.visibility', Math.round(weather.visibilityM / 1000)));
   }
 
   let minutesToSunset: number | null = null;
@@ -80,22 +82,22 @@ export function assessWeather(
       minutesToSunset = Math.round((sunset.getTime() - now.getTime()) / 60000);
       if (minutesToSunset < 0) {
         worsen('caution');
-        notes.push('Ya ha anochecido: el vuelo nocturno tiene requisitos añadidos.');
+        notes.push(t('weather.note.night'));
       } else if (minutesToSunset < 45) {
         worsen('caution');
-        notes.push(`Quedan ${minutesToSunset} min para el ocaso.`);
+        notes.push(t('weather.note.sunsetSoon', minutesToSunset));
       }
     }
   }
 
   const headline =
     level === 'danger'
-      ? 'Mejor no volar ahora'
+      ? t('weather.headline.danger')
       : level === 'caution'
-        ? 'Se puede volar con cuidado'
-        : 'Buenas condiciones para volar';
+        ? t('weather.headline.caution')
+        : t('weather.headline.ok');
 
-  if (notes.length === 0) notes.push('Viento flojo, sin lluvia y con buena visibilidad.');
+  if (notes.length === 0) notes.push(t('weather.note.allGood'));
 
   return { level, headline, notes, minutesToSunset };
 }

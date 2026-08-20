@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { t } from '../i18n';
 import {
   emphasize,
   HIT_SLOP,
@@ -82,8 +83,13 @@ export function VerdictCard({
         accessibilityRole="summary"
         accessibilityLabel={
           softened
-            ? `${result.verdict.headline}, pero estás en ${protectedArea!.name}. ${result.verdict.summary}`
-            : `${result.verdict.headline}. ${result.verdict.summary}`
+            ? t(
+                'verdictCard.a11ySoftened',
+                result.verdict.headline,
+                protectedArea!.name,
+                result.verdict.summary,
+              )
+            : t('verdictCard.a11y', result.verdict.headline, result.verdict.summary)
         }
       >
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: space.md }}>
@@ -106,7 +112,9 @@ export function VerdictCard({
             <Pressable
               onPress={onToggleFavorite}
               accessibilityRole="button"
-              accessibilityLabel={isFavorite ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+              accessibilityLabel={
+                isFavorite ? t('verdictCard.favoriteRemove') : t('verdictCard.favoriteAdd')
+              }
               accessibilityState={{ selected: isFavorite }}
               hitSlop={HIT_SLOP}
               style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
@@ -118,7 +126,7 @@ export function VerdictCard({
             <Pressable
               onPress={onRefresh}
               accessibilityRole="button"
-              accessibilityLabel="Volver a consultar"
+              accessibilityLabel={t('verdictCard.refresh')}
               hitSlop={HIT_SLOP}
               style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
             >
@@ -151,9 +159,11 @@ export function VerdictCard({
           >
             <Ionicons name="leaf" size={16} color="#FFFFFF" style={{ marginTop: 1 }} />
             <Text style={[type.footnote, { color: '#FFFFFF', flex: 1 }]}>
-              ENAIRE no restringe este punto, pero estás en {protectedArea!.name}
-              {protectedArea!.designation ? ` (${protectedArea!.designation})` : ''}, donde volar
-              suele estar prohibido o exigir permiso del gestor. Mira más abajo.
+              {t(
+                'verdictCard.protectedNote',
+                protectedArea!.name,
+                protectedArea!.designation ? ` (${protectedArea!.designation})` : '',
+              )}
             </Text>
           </View>
         ) : null}
@@ -178,7 +188,7 @@ export function VerdictCard({
           >
             <Ionicons name="megaphone" size={13} color="#8A4B00" />
             <Text style={[emphasize(type.caption2), { color: '#8A4B00' }]}>
-              {activeNotamCount(result) === 1 ? '1 NOTAM en vigor' : `${activeNotamCount(result)} NOTAM en vigor`} · revisa abajo
+              {t('verdictCard.notams', activeNotamCount(result))}
             </Text>
           </View>
         ) : null}
@@ -204,7 +214,7 @@ export function VerdictCard({
             disabled={!onHeightChange}
             accessibilityRole={onHeightChange ? 'button' : undefined}
             accessibilityState={{ expanded: openHeight }}
-            accessibilityLabel={`Altura de vuelo: ${result.flightHeightAgl} metros sobre el terreno. Tocar para cambiar.`}
+            accessibilityLabel={t('verdictCard.heightA11y', result.flightHeightAgl)}
             hitSlop={HIT_SLOP}
             style={{
               flexDirection: 'row',
@@ -220,7 +230,7 @@ export function VerdictCard({
           >
             <Ionicons name="swap-vertical" size={14} color="#FFFFFF" />
             <Text style={[emphasize(type.footnote), { color: '#FFFFFF' }]}>
-              hasta {result.flightHeightAgl} m sobre el terreno
+              {t('verdictCard.heightLabel', result.flightHeightAgl)}
             </Text>
             {onHeightChange ? <Chevron open={openHeight} color="#FFFFFFCC" size={14} /> : null}
           </PressableScale>
@@ -230,8 +240,7 @@ export function VerdictCard({
               <View style={{ paddingTop: space.sm }}>
                 <HeightControl value={result.flightHeightAgl} onChange={onHeightChange} onColor />
                 <Text style={[type.footnote, { color: '#FFFFFFB3', marginTop: space.sm }]}>
-                  Las zonas que empiezan por encima de esta altura dejan de contar. Cambiarla cambia
-                  la respuesta de verdad.
+                  {t('verdictCard.heightHint')}
                 </Text>
               </View>
             </Collapsible>
@@ -239,7 +248,7 @@ export function VerdictCard({
         </View>
 
         <Text style={[type.caption, { color: '#FFFFFF99', marginTop: space.md }]}>
-          Consultado a ENAIRE {timeAgo(result.queriedAt)}
+          {t('verdictCard.queriedAt', timeAgo(result.queriedAt))}
         </Text>
       </View>
     </Appear>
@@ -292,7 +301,7 @@ function MaxHeightBand({ result, compact }: { result: QueryResult; compact?: boo
       <View style={band}>
         <Ionicons name="close-circle" size={19} color="#FFFFFFCC" />
         <Text style={[emphasize(type.footnote), { color: '#FFFFFF', flex: 1 }]}>
-          Ni a ras de suelo puedes volar aquí sin autorización.
+          {t('verdictCard.noHeight')}
         </Text>
       </View>
     );
@@ -312,12 +321,14 @@ function MaxHeightBand({ result, compact }: { result: QueryResult; compact?: boo
             {metres}
           </Text>
           <Text style={[emphasize(type.callout), { color: '#FFFFFF' }]}>m</Text>
-          <Text style={[type.footnote, { color: '#FFFFFFCC', flex: 1 }]}>sin pedir permiso</Text>
+          <Text style={[type.footnote, { color: '#FFFFFFCC', flex: 1 }]}>
+            {t('verdictCard.freeSuffix')}
+          </Text>
         </View>
         <Text style={[type.caption, { color: '#FFFFFFCC' }]}>
           {legalLimit
-            ? 'Es el límite general de la categoría abierta, no hay ninguna zona por debajo.'
-            : `Por encima entras en ${limitedBy}.`}
+            ? t('verdictCard.freeLegal')
+            : t('verdictCard.freeLimitedBy', limitedBy ?? '')}
         </Text>
       </View>
     </View>
@@ -352,9 +363,9 @@ export function VerdictPill({ result }: { result: QueryResult }) {
         <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
           {free !== null
             ? free > 0
-              ? `Hasta ${free} m sin permiso · ${affecting} ${affecting === 1 ? 'zona' : 'zonas'}`
-              : `Sin autorización, aquí no se vuela · ${affecting} ${affecting === 1 ? 'zona' : 'zonas'}`
-            : `${affecting} ${affecting === 1 ? 'zona te afecta' : 'zonas te afectan'}`}
+              ? t('verdictPill.free', free, affecting)
+              : t('verdictPill.blocked', affecting)
+            : t('verdictPill.zones', affecting)}
         </Text>
       </View>
     </View>

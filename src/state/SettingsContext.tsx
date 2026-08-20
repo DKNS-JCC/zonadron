@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLocales } from 'expo-localization';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { resolveLocale, setLocale, t, type LanguageId, type Locale } from '../i18n';
 import type { DroneProfileId } from '../logic/drone';
 
 const KEY = 'zonadron.settings.v1';
@@ -9,24 +11,72 @@ const VALID_DRONES: DroneProfileId[] = ['sub250', 'c1', 'c2', 'c3c4', 'otro'];
 
 export type BasemapId = 'mapa' | 'topo' | 'satelite';
 
-export const BASEMAPS: { id: BasemapId; label: string; icon: string; note: string }[] = [
-  { id: 'mapa', label: 'Mapa', icon: 'map-outline', note: 'Callejero de OpenStreetMap' },
-  { id: 'topo', label: 'Topográfico', icon: 'trail-sign-outline', note: 'MTN oficial del IGN, con curvas de nivel' },
-  { id: 'satelite', label: 'Satélite', icon: 'globe-outline', note: 'Ortofoto PNOA del IGN' },
+export const BASEMAPS: { id: BasemapId; icon: string }[] = [
+  { id: 'mapa', icon: 'map-outline' },
+  { id: 'topo', icon: 'trail-sign-outline' },
+  { id: 'satelite', icon: 'globe-outline' },
 ];
+
+export function basemapLabel(id: BasemapId): string {
+  return id === 'topo' ? t('basemap.topo') : id === 'satelite' ? t('basemap.satelite') : t('basemap.mapa');
+}
+
+export function basemapNote(id: BasemapId): string {
+  return id === 'topo'
+    ? t('basemap.note.topo')
+    : id === 'satelite'
+      ? t('basemap.note.satelite')
+      : t('basemap.note.mapa');
+}
 
 const VALID_BASEMAPS: BasemapId[] = ['mapa', 'topo', 'satelite'];
 
 /** Claro, oscuro, o lo que diga el móvil. */
 export type AppearanceId = 'sistema' | 'claro' | 'oscuro';
 
-export const APPEARANCES: { id: AppearanceId; label: string; icon: string }[] = [
-  { id: 'sistema', label: 'Automático', icon: 'phone-portrait-outline' },
-  { id: 'claro', label: 'Claro', icon: 'sunny-outline' },
-  { id: 'oscuro', label: 'Oscuro', icon: 'moon-outline' },
+export const APPEARANCES: { id: AppearanceId; icon: string }[] = [
+  { id: 'sistema', icon: 'phone-portrait-outline' },
+  { id: 'claro', icon: 'sunny-outline' },
+  { id: 'oscuro', icon: 'moon-outline' },
 ];
 
+export function appearanceLabel(id: AppearanceId): string {
+  return id === 'claro'
+    ? t('settings.appearance.claro')
+    : id === 'oscuro'
+      ? t('settings.appearance.oscuro')
+      : t('settings.appearance.sistema');
+}
+
 const VALID_APPEARANCES: AppearanceId[] = ['sistema', 'claro', 'oscuro'];
+
+/**
+ * Idioma de la interfaz. Los textos oficiales de ENAIRE, los NOTAM y los
+ * espacios protegidos siguen llegando en español: son la norma, no la app.
+ */
+export const LANGUAGES: { id: LanguageId; icon: string }[] = [
+  { id: 'sistema', icon: 'phone-portrait-outline' },
+  { id: 'es', icon: 'chatbox-outline' },
+  { id: 'en', icon: 'chatbox-outline' },
+];
+
+/** El nombre de cada idioma va en su propio idioma; sólo «automático» se traduce. */
+export function languageLabel(id: LanguageId): string {
+  if (id === 'es') return 'Español';
+  if (id === 'en') return 'English';
+  return t('settings.language.system');
+}
+
+const VALID_LANGUAGES: LanguageId[] = ['sistema', 'es', 'en'];
+
+/** Idioma del móvil, tal y como lo declara el sistema. */
+function deviceLanguageTag(): string | null {
+  try {
+    return getLocales()[0]?.languageCode ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Altura de vuelo prevista, en metros sobre el terreno (AGL).
@@ -73,16 +123,21 @@ interface Settings {
   basemap: BasemapId;
   /** Aspecto de la app: automático (el del móvil), claro u oscuro. */
   appearance: AppearanceId;
+  /** Idioma de la interfaz: el del móvil, español o inglés. */
+  language: LanguageId;
 }
 
 interface SettingsContextValue extends Settings {
   ready: boolean;
+  /** Idioma ya resuelto: 'sistema' convertido a uno real. */
+  locale: Locale;
   setFlightHeight: (h: number) => void;
   setDrone: (d: DroneProfileId) => void;
   setOperator: (patch: Partial<OperatorProfile>) => void;
   setShowCoverage: (v: boolean) => void;
   setBasemap: (b: BasemapId) => void;
   setAppearance: (a: AppearanceId) => void;
+  setLanguage: (l: LanguageId) => void;
 }
 
 const defaults: Settings = {
@@ -94,17 +149,20 @@ const defaults: Settings = {
   showCoverage: false,
   basemap: 'mapa',
   appearance: 'sistema',
+  language: 'sistema',
 };
 
 const Ctx = createContext<SettingsContextValue>({
   ...defaults,
   ready: false,
+  locale: resolveLocale(defaults.language, deviceLanguageTag()),
   setFlightHeight: () => {},
   setDrone: () => {},
   setOperator: () => {},
   setShowCoverage: () => {},
   setBasemap: () => {},
   setAppearance: () => {},
+  setLanguage: () => {},
 });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -131,6 +189,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
               appearance: VALID_APPEARANCES.includes(parsed?.appearance)
                 ? parsed.appearance
                 : 'sistema',
+              language: VALID_LANGUAGES.includes(parsed?.language) ? parsed.language : 'sistema',
             });
           } catch {
             /* valores por defecto */
@@ -148,18 +207,26 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
   }, []);
 
+  // El idioma se fija antes de pintar nada, no en un efecto: el motor de
+  // decisión y las utilidades puras leen `t()` directamente y tienen que ver
+  // el idioma bueno ya en el primer render.
+  const locale = resolveLocale(settings.language, deviceLanguageTag());
+  setLocale(locale);
+
   const value = useMemo<SettingsContextValue>(
     () => ({
       ...settings,
       ready,
+      locale,
       setFlightHeight: (h) => persist({ ...settings, flightHeight: Math.max(1, Math.min(900, Math.round(h))) }),
       setDrone: (d) => persist({ ...settings, drone: d }),
       setOperator: (patch) => persist({ ...settings, operator: { ...settings.operator, ...patch } }),
       setShowCoverage: (v) => persist({ ...settings, showCoverage: v }),
       setBasemap: (b) => persist({ ...settings, basemap: b }),
       setAppearance: (a) => persist({ ...settings, appearance: a }),
+      setLanguage: (l) => persist({ ...settings, language: l }),
     }),
-    [settings, ready, persist],
+    [settings, ready, locale, persist],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

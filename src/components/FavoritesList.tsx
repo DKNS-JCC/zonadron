@@ -6,6 +6,7 @@ import { radius, shadow, space, type, verdictStyles, emphasize } from '../theme'
 import { Separator } from './ui';
 import { useFavorites } from '../state/FavoritesContext';
 import { verdictLevelLabel } from '../logic/labels';
+import { t } from '../i18n';
 
 /**
  * Sitios guardados. A diferencia del historial (que se borra entero de una),
@@ -39,7 +40,7 @@ export function FavoritesList({
               <Pressable
                 onPress={() => onOpen(f.lat, f.lon, f.label)}
                 accessibilityRole="button"
-                accessibilityLabel={`${f.label}. ${verdictLevelLabel[f.lastLevel]}.`}
+                accessibilityLabel={t('favorites.a11y', f.label, verdictLevelLabel(f.lastLevel))}
                 style={({ pressed }) => ({
                   flex: 1,
                   flexDirection: 'row',
@@ -57,14 +58,14 @@ export function FavoritesList({
                     {f.label}
                   </Text>
                   <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
-                    {verdictLevelLabel[f.lastLevel]}
+                    {verdictLevelLabel(f.lastLevel)}
                   </Text>
                 </View>
               </Pressable>
               <Pressable
                 onPress={() => removeFavorite(f.id)}
                 accessibilityRole="button"
-                accessibilityLabel={`Quitar ${f.label} de favoritos`}
+                accessibilityLabel={t('favorites.removeA11y', f.label)}
                 hitSlop={12}
                 style={({ pressed }) => ({
                   paddingHorizontal: space.lg,

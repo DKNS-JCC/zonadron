@@ -16,16 +16,16 @@ cinco respuestas:
 - No puedes volar.
 - No se ha podido comprobar.
 
-Funciona en **Android** y en **iPhone/iPad**. Sin cuenta, sin anuncios, sin
-seguimiento y sin claves de API.
+Funciona en **Android** y en **iPhone/iPad**, en **español o en inglés**. Sin
+cuenta, sin anuncios, sin seguimiento y sin claves de API.
 
 > Esta aplicación es independiente de ENAIRE y no sustituye a la información
 > oficial ni a la normativa aplicable. El piloto es el responsable del vuelo.
 
 <p align="center">
-  <img src="docs/capturas/light-home.png" width="31%" alt="Resultado en tu posición">
-  <img src="docs/capturas/light-mapa.png" width="31%" alt="Mapa con la mirilla">
-  <img src="docs/capturas/light-resultado-auth.png" width="31%" alt="Un punto que exige autorización">
+  <img src="docs/capturas/es/light-home.png" width="31%" alt="Resultado en tu posición">
+  <img src="docs/capturas/es/light-mapa.png" width="31%" alt="Mapa con la mirilla">
+  <img src="docs/capturas/es/light-resultado-auth.png" width="31%" alt="Un punto que exige autorización">
 </p>
 
 ---
@@ -127,9 +127,9 @@ Cinco pestañas, y todo lo demás cuelga de ellas.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/capturas/light-home.png" alt="Volar aquí"></td>
-<td width="33%"><img src="docs/capturas/light-mapa.png" alt="Mapa"></td>
-<td width="33%"><img src="docs/capturas/light-buscar.png" alt="Buscar"></td>
+<td width="33%"><img src="docs/capturas/es/light-home.png" alt="Volar aquí"></td>
+<td width="33%"><img src="docs/capturas/es/light-mapa.png" alt="Mapa"></td>
+<td width="33%"><img src="docs/capturas/es/light-buscar.png" alt="Buscar"></td>
 </tr>
 <tr>
 <td align="center"><b>Volar aquí</b></td>
@@ -178,9 +178,9 @@ Tus sitios guardados, tu diario de vuelos y la normativa, en una pestaña.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/capturas/light-cuaderno.png" alt="Cuaderno"></td>
-<td width="33%"><img src="docs/capturas/light-diario.png" alt="Diario de vuelos"></td>
-<td width="33%"><img src="docs/capturas/light-normas.png" alt="Normas y fuentes"></td>
+<td width="33%"><img src="docs/capturas/es/light-cuaderno.png" alt="Cuaderno"></td>
+<td width="33%"><img src="docs/capturas/es/light-diario.png" alt="Diario de vuelos"></td>
+<td width="33%"><img src="docs/capturas/es/light-normas.png" alt="Normas y fuentes"></td>
 </tr>
 </table>
 
@@ -198,17 +198,17 @@ cada afirmación.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/capturas/light-ajustes.png" alt="Ajustes"></td>
-<td width="33%"><img src="docs/capturas/light-luz.png" alt="Luz y sombras"></td>
-<td width="33%"><img src="docs/capturas/light-descargar.png" alt="Descarga sin conexión"></td>
+<td width="33%"><img src="docs/capturas/es/light-ajustes.png" alt="Ajustes"></td>
+<td width="33%"><img src="docs/capturas/es/light-luz.png" alt="Luz y sombras"></td>
+<td width="33%"><img src="docs/capturas/es/light-descargar.png" alt="Descarga sin conexión"></td>
 </tr>
 </table>
 
 En Ajustes está la altura de vuelo que se usa por defecto, qué dron vuelas
 (esto sólo cambia qué normas se te enseñan, nunca el veredicto), el mapa base,
-el aspecto claro u oscuro y tus **datos de operador**. Esos datos se guardan
-sólo en el móvil y sirven para rellenar la solicitud de autorización que envías
-tú desde tu propia app de correo.
+el aspecto claro u oscuro, el **idioma de la interfaz** y tus **datos de
+operador**. Esos datos se guardan sólo en el móvil y sirven para rellenar la
+solicitud de autorización que envías tú desde tu propia app de correo.
 
 **Luz y sombras** (desde cualquier resultado) da el amanecer, el ocaso, la hora
 dorada y la hora azul de ese punto exacto, la dirección y la longitud de las
@@ -225,9 +225,9 @@ que las descargaste.
 Sigue al sistema por defecto, y se puede forzar en Ajustes.
 
 <p align="center">
-  <img src="docs/capturas/dark-home.png" width="31%" alt="Volar aquí, oscuro">
-  <img src="docs/capturas/dark-mapa.png" width="31%" alt="Mapa, oscuro">
-  <img src="docs/capturas/dark-cuaderno.png" width="31%" alt="Cuaderno, oscuro">
+  <img src="docs/capturas/es/dark-home.png" width="31%" alt="Volar aquí, oscuro">
+  <img src="docs/capturas/es/dark-mapa.png" width="31%" alt="Mapa, oscuro">
+  <img src="docs/capturas/es/dark-cuaderno.png" width="31%" alt="Cuaderno, oscuro">
 </p>
 
 ---
@@ -256,6 +256,7 @@ Sigue al sistema por defecto, y se puede forzar en Ajustes.
 
 ### Mapas y utilidades
 
+- Interfaz en español y en inglés, siguiendo al móvil o a mano.
 - OpenStreetMap como mapa base.
 - Cartografía topográfica y ortofoto del Instituto Geográfico Nacional (IGN).
 - Historial de consultas, sitios guardados y diario de vuelos personal.
@@ -269,12 +270,20 @@ Sigue al sistema por defecto, y se puede forzar en Ajustes.
 
 ## Idioma
 
-La interfaz está **sólo en español**. Nada en el código pasa hoy por un sistema
-de traducción, y parte del contenido —los textos oficiales de cada zona, los
-NOTAM, los resúmenes de normativa— llega de ENAIRE y AESA en español y no se
-puede traducir sin tocar su significado legal. En
-[`docs/i18n.md`](docs/i18n.md) está el análisis completo de lo que costaría un
-ajuste de idioma y hasta dónde podría llegar (en inglés).
+**Español e inglés**, en Ajustes → Idioma, o siguiendo al móvil. Se traduce todo
+lo que escribe la app: las pantallas, las frases del veredicto, el resumen de la
+normativa, los perfiles de dron, las fechas y los decimales, y hasta los
+topónimos que se le piden a Nominatim.
+
+Lo que se queda en español a propósito: **el texto oficial de las zonas de
+ENAIRE, los NOTAM y los nombres de los espacios protegidos**. Se publican sólo
+en español, son la norma en sí, y traducir a máquina una restricción legal para
+luego decidir sobre ella es justo lo que no debe hacer una app cuyo trabajo es
+no equivocarse con las restricciones. La **solicitud de autorización por correo**
+también va siempre en español: la lee el gestor de la zona, no tú.
+
+En [`docs/i18n.md`](docs/i18n.md) está el detalle, incluido cómo añadir un
+tercer idioma (el documento está en inglés).
 
 ---
 
@@ -352,7 +361,8 @@ servicios reales, en claro y en oscuro, con
 ```bash
 npm i -D playwright && npx playwright install chromium
 npm run web:export
-npm run capturas
+npm run capturas es
+npm run capturas en
 ```
 
 ---
@@ -421,6 +431,9 @@ src/
     notam.ts          Restricciones temporales
     protected.ts      Espacios naturales protegidos
     weather.ts        Tiempo y viento
+  i18n/
+    index.ts          t(), el idioma activo y sus formatos
+    es.ts / en.ts     Textos de la interfaz, cuadrados por el compilador
   logic/
     verdict.ts        Motor de decisión
     html.ts           Limpieza del HTML oficial

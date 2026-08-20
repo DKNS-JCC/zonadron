@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { getLocale, t } from '../i18n';
 import { radius, shadow, space, systemColor, type, verdictStyles, emphasize, tabular } from '../theme';
 import type { EvaluatedZone } from '../types';
 import {
@@ -90,8 +91,8 @@ export function ZoneCard({
   const missing = missingOperatorFields(operator);
 
   const subtitle = zone.advisory
-    ? 'Aviso de ENAIRE para toda España'
-    : `${zoneTypeLabel[zone.type]} · ${verticalBandShort(zone)}`;
+    ? t('zoneCard.advisorySubtitle')
+    : t('zoneCard.subtitle', zoneTypeLabel(zone.type), verticalBandShort(zone));
 
   return (
     <View
@@ -109,7 +110,7 @@ export function ZoneCard({
         onPress={() => setOpen((v) => !v)}
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
-        accessibilityLabel={`${zone.title}. ${subtitle}`}
+        accessibilityLabel={t('zoneCard.a11y', zone.title, subtitle)}
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
@@ -141,17 +142,25 @@ export function ZoneCard({
         <View style={{ paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.lg, gap: space.md }}>
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
             {zone.advisory ? (
-              <Chip label="Aviso general" color={p.tint} icon="megaphone-outline" />
+              <Chip label={t('zoneCard.chipAdvisory')} color={p.tint} icon="megaphone-outline" />
             ) : (
-              <Chip label={zoneTypeLabel[zone.type]} color={tint} icon="shield-outline" />
+              <Chip label={zoneTypeLabel(zone.type)} color={tint} icon="shield-outline" />
             )}
-            <Chip label={layerLabel[zone.layer]} color={layerColor[zone.layer]} />
+            <Chip label={layerLabel(zone.layer)} color={layerColor[zone.layer]} />
             {zone.vertical.usedReferencePoint ? (
-              <Chip label="Alturas desde el aeródromo" color={p.tint} icon="git-compare-outline" />
+              <Chip
+                label={t('zoneCard.chipReferencePoint')}
+                color={p.tint}
+                icon="git-compare-outline"
+              />
             ) : null}
             {zone.timing !== 'PERMANENTE' ? (
               <Chip
-                label={zone.timing === 'CADUCADA' ? 'No vigente' : 'Aplicación limitada'}
+                label={
+                  zone.timing === 'CADUCADA'
+                    ? t('zoneCard.chipExpired')
+                    : t('zoneCard.chipLimited')
+                }
                 color={systemColor('orange', p)}
                 icon="time-outline"
               />
@@ -160,12 +169,14 @@ export function ZoneCard({
           </View>
 
           {!zone.advisory ? (
-            <Text style={[type.callout, { color: p.label }]}>{zoneTypeExplain[zone.type]}</Text>
+            <Text style={[type.callout, { color: p.label }]}>{zoneTypeExplain(zone.type)}</Text>
           ) : null}
 
           {zone.reasons.length > 0 && !zone.advisory ? (
             <Text style={[type.footnote, { color: p.labelSecondary }]}>
-              {zone.reasons.map((r) => reasonExplain[r] ?? `Motivo: ${reasonLabel[r] ?? r}.`).join(' ')}
+              {zone.reasons
+                .map((r) => reasonExplain(r) ?? t('reason.fallback', reasonLabel(r)))
+                .join(' ')}
             </Text>
           ) : null}
 
@@ -185,14 +196,17 @@ export function ZoneCard({
           {mailto ? (
             <View style={{ gap: space.sm }}>
               <GhostButton
-                label="Preparar solicitud por correo"
+                label={t('zoneCard.requestButton')}
                 icon="mail-open-outline"
                 onPress={() => Linking.openURL(mailto).catch(() => {})}
               />
               <Text style={[type.footnote, { color: p.labelTertiary }]}>
                 {missing.length > 0
-                  ? `Se abrirá tu correo con la solicitud redactada. Te falta por rellenar en Ajustes: ${missing.join(', ')}; esos huecos aparecerán como [COMPLETAR].`
-                  : 'Se abrirá tu app de correo con la solicitud ya redactada y tus datos rellenados. Revísala antes de enviarla: la envías tú, no la app.'}
+                  ? t('zoneCard.requestMissing', missing.join(', '))
+                  : t('zoneCard.requestReady')}
+                {/* El correo va siempre en español, aunque la app esté en inglés:
+                    lo lee el gestor de la zona, no el piloto. */}
+                {getLocale() === 'es' ? '' : ' ' + t('zoneCard.requestSpanish')}
               </Text>
             </View>
           ) : null}
@@ -240,7 +254,9 @@ export function ZoneCard({
             style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 36 }}
           >
             <Chevron open={openOfficial} color={p.tint} size={14} />
-            <Text style={[emphasize(type.footnote), { color: p.tint }]}>Detalle oficial de ENAIRE</Text>
+            <Text style={[emphasize(type.footnote), { color: p.tint }]}>
+              {t('zoneCard.officialDetail')}
+            </Text>
           </Pressable>
 
           <Collapsible open={openOfficial}>
@@ -253,18 +269,21 @@ export function ZoneCard({
                 ))
               ) : (
                 <Text style={[type.footnote, { color: p.labelSecondary, fontStyle: 'italic' }]}>
-                  ENAIRE no publica un texto descriptivo para esta zona. La información disponible es
-                  la de los campos estructurados que aparecen debajo.
+                  {t('zoneCard.noOfficialText')}
                 </Text>
               )}
               <View style={{ marginTop: space.xs, backgroundColor: p.surfaceSunken, borderRadius: radius.md }}>
-                <TechRow label="Identificador" value={zone.identifier} />
-                <TechRow label="Tipo (ED-318)" value={zone.type} />
-                <TechRow label="Motivos" value={zone.reasons.join(', ') || '—'} />
-                <TechRow label="Límites publicados" value={rawBandLabel(zone)} />
-                <TechRow label="Capa" value={layerLabel[zone.layer]} />
+                <TechRow label={t('zoneCard.techIdentifier')} value={zone.identifier} />
+                <TechRow label={t('zoneCard.techType')} value={zone.type} />
+                <TechRow label={t('zoneCard.techReasons')} value={zone.reasons.join(', ') || '—'} />
+                <TechRow label={t('zoneCard.techLimits')} value={rawBandLabel(zone)} />
+                <TechRow label={t('zoneCard.techLayer')} value={layerLabel(zone.layer)} />
                 {zone.updatedAt ? (
-                  <TechRow label="Actualizada" value={zone.updatedAt.replace('T', ' ')} last />
+                  <TechRow
+                    label={t('zoneCard.techUpdated')}
+                    value={zone.updatedAt.replace('T', ' ')}
+                    last
+                  />
                 ) : null}
               </View>
             </View>

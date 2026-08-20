@@ -10,6 +10,7 @@ import { useFlightLog } from '../../src/state/FlightLogContext';
 import { verdictLevelLabel } from '../../src/logic/labels';
 import { timeAgo } from '../../src/state/HistoryContext';
 import { space, type } from '../../src/theme';
+import { t } from '../../src/i18n';
 
 /**
  * Cuaderno: los sitios que te importan y lo que has volado, en un sitio —
@@ -36,46 +37,49 @@ export default function CuadernoScreen() {
   return (
     <ScreenScroll>
       <ScreenTitle
-        title="Cuaderno"
-        subtitle="Tus sitios guardados, tus vuelos registrados y la normativa, todo en un mismo sitio."
+        title={t('notebook.title')}
+        subtitle={t('notebook.subtitle')}
       />
 
       <View style={{ gap: space.md }}>
-        <SectionTitle>Favoritos</SectionTitle>
+        <SectionTitle>{t('notebook.favorites')}</SectionTitle>
         {favorites.length > 0 ? (
           <FavoritesList onOpen={open} />
         ) : (
           <Card>
             <Text style={[type.callout, { color: p.labelSecondary }]}>
-              Guarda un sitio tocando la estrella en cualquier resultado — el campo donde entrenas, la
-              finca de un cliente — para tenerlo siempre a mano aquí.
+              {t('notebook.favoritesEmpty')}
             </Text>
           </Card>
         )}
       </View>
 
       <View style={{ gap: space.md }}>
-        <SectionTitle>Diario de vuelos</SectionTitle>
+        <SectionTitle>{t('notebook.logTitle')}</SectionTitle>
         <Card>
           {lastFlight ? (
             <>
               <Text style={[type.callout, { color: p.label }]}>
-                {flights.length} vuelo{flights.length === 1 ? '' : 's'} registrado{flights.length === 1 ? '' : 's'}.
+                {t('notebook.logCount', flights.length)}
               </Text>
               <Text style={[type.footnote, { color: p.labelSecondary, marginTop: 2 }]}>
-                Último: {lastFlight.label ?? `${lastFlight.lat.toFixed(4)}, ${lastFlight.lon.toFixed(4)}`} ·{' '}
-                {verdictLevelLabel[lastFlight.verdictLevel]} · {timeAgo(lastFlight.loggedAt)}
+                {t(
+                  'notebook.logLast',
+                  lastFlight.label ??
+                    `${lastFlight.lat.toFixed(4)}, ${lastFlight.lon.toFixed(4)}`,
+                  verdictLevelLabel(lastFlight.verdictLevel),
+                  timeAgo(lastFlight.loggedAt),
+                )}
               </Text>
             </>
           ) : (
             <Text style={[type.callout, { color: p.labelSecondary }]}>
-              Todavía no has registrado ningún vuelo. Desde el resultado de cualquier consulta, toca
-              "Registrar vuelo" después de volar.
+              {t('notebook.logEmpty')}
             </Text>
           )}
           <View style={{ marginTop: space.md }}>
             <GhostButton
-              label={flights.length > 0 ? 'Abrir diario completo' : 'Abrir diario'}
+              label={flights.length > 0 ? t('notebook.openLogFull') : t('notebook.openLog')}
               icon="book-outline"
               onPress={() => router.push('/diario')}
             />
@@ -84,14 +88,17 @@ export default function CuadernoScreen() {
       </View>
 
       <View style={{ gap: space.md }}>
-        <SectionTitle>Normativa</SectionTitle>
+        <SectionTitle>{t('notebook.rulesTitle')}</SectionTitle>
         <Card>
           <Text style={[type.callout, { color: p.labelSecondary }]}>
-            Lo esencial de la normativa española y europea, la categoría que te aplica según tu dron, y
-            de dónde sale cada dato de esta app.
+            {t('notebook.rulesBody')}
           </Text>
           <View style={{ marginTop: space.md }}>
-            <GhostButton label="Ver normas" icon="shield-checkmark-outline" onPress={() => router.push('/normas')} />
+            <GhostButton
+              label={t('notebook.rulesButton')}
+              icon="shield-checkmark-outline"
+              onPress={() => router.push('/normas')}
+            />
           </View>
         </Card>
       </View>

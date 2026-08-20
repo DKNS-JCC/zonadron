@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { t } from '../i18n';
 import { radius, space, systemColor, type, emphasize } from '../theme';
 import { isStrictFigure, PROTECTED_SOURCE, type ProtectedArea } from '../api/protected';
 import { Card, Chip, SectionTitle, SkeletonRows } from './ui';
@@ -29,7 +30,7 @@ export function ProtectedAreaCard({
   if (areas === undefined) {
     return (
       <Card>
-        <SectionTitle>Espacios naturales protegidos</SectionTitle>
+        <SectionTitle>{t('protected.title')}</SectionTitle>
         <SkeletonRows rows={1} />
       </Card>
     );
@@ -40,11 +41,8 @@ export function ProtectedAreaCard({
   if (areas === null) {
     return (
       <Card>
-        <SectionTitle>Espacios naturales protegidos</SectionTitle>
-        <Text style={[type.callout, { color: p.label }]}>
-          No se ha podido consultar el inventario de espacios protegidos. Compruébalo por tu cuenta si
-          vas a volar en campo abierto.
-        </Text>
+        <SectionTitle>{t('protected.title')}</SectionTitle>
+        <Text style={[type.callout, { color: p.label }]}>{t('protected.failed')}</Text>
       </Card>
     );
   }
@@ -58,14 +56,12 @@ export function ProtectedAreaCard({
 
   return (
     <Card>
-      <SectionTitle>Espacios naturales protegidos</SectionTitle>
+      <SectionTitle>{t('protected.title')}</SectionTitle>
 
       {areas.length === 0 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
           <Ionicons name="checkmark-circle" size={24} color={systemColor('green', p)} />
-          <Text style={[type.callout, { color: p.label, flex: 1 }]}>
-            Este punto no está dentro de ningún espacio protegido ni de Red Natura 2000.
-          </Text>
+          <Text style={[type.callout, { color: p.label, flex: 1 }]}>{t('protected.none')}</Text>
         </View>
       ) : (
         <View style={{ gap: space.md }}>
@@ -73,8 +69,8 @@ export function ProtectedAreaCard({
             <Ionicons name={strict ? 'leaf' : 'leaf-outline'} size={26} color={tone} />
             <Text style={[type.callout, { color: p.label, flex: 1 }]}>
               {areas.length === 1
-                ? 'Estás dentro de un espacio protegido.'
-                : `Estás dentro de ${areas.length} espacios protegidos.`}
+                ? t('protected.insideOne')
+                : t('protected.insideMany', areas.length)}
             </Text>
           </View>
 
@@ -87,7 +83,7 @@ export function ProtectedAreaCard({
                 </View>
                 {a.organism ? (
                   <Text style={[type.caption, { color: p.labelSecondary }]}>
-                    Lo gestiona {a.organism}
+                    {t('protected.managedBy', a.organism)}
                   </Text>
                 ) : null}
               </View>
@@ -95,16 +91,13 @@ export function ProtectedAreaCard({
           </View>
 
           <Text style={[type.footnote, { color: p.label }]}>
-            {strict
-              ? 'En parques y reservas el vuelo suele estar prohibido, o exige permiso del gestor del espacio. Pídelo antes de ir.'
-              : 'Cada espacio tiene sus propias normas (PRUG o PORN): el vuelo puede estar prohibido, exigir autorización o estar permitido. Pregunta al organismo que lo gestiona.'}
+            {strict ? t('protected.strict') : t('protected.loose')}
           </Text>
         </View>
       )}
 
       <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
-        Fuente: {PROTECTED_SOURCE}. Es información ambiental, aparte de las zonas de ENAIRE: no cambia
-        el veredicto de arriba, se suma a él.
+        {t('protected.footnote', PROTECTED_SOURCE)}
       </Text>
     </Card>
   );

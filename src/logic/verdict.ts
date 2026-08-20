@@ -12,6 +12,7 @@
  * Ante la duda, siempre se elige la interpretación más restrictiva.
  */
 
+import { dateLocale, t, type MessageKey } from '../i18n';
 import type {
   EvaluatedZone,
   LayerKey,
@@ -114,10 +115,7 @@ export function evaluateVertical(
       affects: true,
       usedTerrain: false,
       usedReferencePoint: true,
-      explanation:
-        'Esta zona mide sus alturas desde el punto de referencia del aeródromo, pero ENAIRE no ' +
-        'publica a qué altitud está. Sin ese dato no se puede calcular si te afecta o no, así que ' +
-        'se considera que sí. Consulta el texto oficial y coordina con el gestor.',
+      explanation: t('verdict.vertical.referenceMissing'),
     };
   }
 
@@ -137,10 +135,8 @@ export function evaluateVertical(
       usedTerrain,
       usedReferencePoint,
       explanation: usedReferencePoint
-        ? 'Esta zona mide sus alturas desde el punto de referencia del aeródromo y no se ha podido ' +
-          'obtener la elevación del terreno en tu punto, así que se considera que te afecta.'
-        : 'No se ha podido convertir con seguridad la franja de alturas de esta zona ' +
-          '(falta la elevación del terreno o la referencia vertical). Se considera que te afecta.',
+        ? t('verdict.vertical.referenceNoTerrain')
+        : t('verdict.vertical.notConvertible'),
     };
   }
 
@@ -150,9 +146,9 @@ export function evaluateVertical(
   // Explicación del origen de las alturas, para que se pueda contrastar.
   const origin =
     usedReferencePoint && arp !== null && terrainElevation !== null
-      ? ` Esta zona mide sus alturas desde el punto de referencia del aeródromo (${fmt(arp)} m sobre el nivel del mar), no desde el suelo: en tu punto el terreno está a ${fmt(terrainElevation)} m, así que la zona empieza a ${fmt(floorAgl)} m por encima de ti.`
+      ? t('verdict.vertical.originReference', fmt(arp), fmt(terrainElevation), fmt(floorAgl))
       : usedTerrain
-        ? ' Calculado con la elevación real del terreno en este punto.'
+        ? t('verdict.vertical.originTerrain')
         : '';
 
   // El vuelo ocupa desde el suelo (despegue) hasta la altura prevista.
@@ -163,10 +159,7 @@ export function evaluateVertical(
       affects: false,
       usedTerrain,
       usedReferencePoint,
-      explanation:
-        `Esta zona empieza a ${fmt(floorAgl)} m sobre el terreno, por encima de los ` +
-        `${fmt(flightHeightAgl)} m a los que piensas volar.` +
-        origin,
+      explanation: t('verdict.vertical.above', fmt(floorAgl), fmt(flightHeightAgl)) + origin,
     };
   }
 
@@ -177,14 +170,14 @@ export function evaluateVertical(
       affects: false,
       usedTerrain,
       usedReferencePoint,
-      explanation:
-        'El techo de esta zona queda por debajo del nivel del terreno en este punto, ' +
-        'así que no aplica a tu vuelo.' + origin,
+      explanation: t('verdict.vertical.underground') + origin,
     };
   }
 
   const ceilingText =
-    ceilingAgl === null ? 'sin techo declarado' : `hasta ${fmt(ceilingAgl)} m sobre el terreno`;
+    ceilingAgl === null
+      ? t('verdict.vertical.noCeiling')
+      : t('verdict.vertical.ceilingAt', fmt(ceilingAgl));
 
   return {
     lowerAgl: floorAgl,
@@ -193,9 +186,7 @@ export function evaluateVertical(
     usedTerrain,
     usedReferencePoint,
     explanation:
-      `Tu vuelo (0 → ${fmt(flightHeightAgl)} m sobre el terreno) entra en la franja de esta zona ` +
-      `(desde ${fmt(floorAgl)} m, ${ceilingText}).` +
-      origin,
+      t('verdict.vertical.inside', fmt(flightHeightAgl), fmt(floorAgl), ceilingText) + origin,
   };
 }
 
@@ -232,13 +223,13 @@ export function evaluateTiming(
   if (end && end.getTime() + EXPIRY_MARGIN_MS < now.getTime()) {
     return {
       timing: 'CADUCADA',
-      timingNote: `ENAIRE indica que esta zona dejó de estar vigente el ${end.toLocaleDateString('es-ES')}.`,
+      timingNote: t('verdict.timing.expired', end.toLocaleDateString(dateLocale())),
     };
   }
   if (start && start.getTime() > now.getTime()) {
     return {
       timing: 'PROGRAMADA',
-      timingNote: `Esta zona entra en vigor el ${start.toLocaleDateString('es-ES')}.`,
+      timingNote: t('verdict.timing.scheduled', start.toLocaleDateString(dateLocale())),
     };
   }
 
@@ -251,20 +242,21 @@ export function evaluateTiming(
   }
 
   const bits: string[] = [];
-  if (day && day !== 'ANY') bits.push(`días: ${day}`);
+  if (day && day !== 'ANY') bits.push(t('verdict.timing.days', day));
   if (hasWindow) {
     bits.push(
-      `horario: ${zone.applicability.startTime || '—'} a ${zone.applicability.endTime || '—'}`,
+      t(
+        'verdict.timing.hours',
+        zone.applicability.startTime || '—',
+        zone.applicability.endTime || '—',
+      ),
     );
   }
   if (limited) bits.push(limited);
 
   return {
     timing: 'ACTIVA_AHORA',
-    timingNote:
-      'Esta zona tiene condiciones de aplicación limitadas' +
-      (bits.length ? ` (${bits.join('; ')})` : '') +
-      '. Comprueba el texto oficial antes de volar.',
+    timingNote: t('verdict.timing.limited', bits.length ? ` (${bits.join('; ')})` : ''),
   };
 }
 
@@ -272,16 +264,17 @@ export function evaluateTiming(
 /* 3. Veredicto                                                         */
 /* ------------------------------------------------------------------ */
 
-const HEADLINES: Record<VerdictLevel, string> = {
-  LIBRE: 'Puedes volar',
-  CONDICIONES: 'Puedes volar, con condiciones',
-  AUTORIZACION: 'Necesitas autorización',
-  PROHIBIDO: 'No puedes volar',
-  DESCONOCIDO: 'No se ha podido comprobar',
-};
+const HEADLINE_KEYS = {
+  LIBRE: 'verdict.headline.LIBRE',
+  CONDICIONES: 'verdict.headline.CONDICIONES',
+  AUTORIZACION: 'verdict.headline.AUTORIZACION',
+  PROHIBIDO: 'verdict.headline.PROHIBIDO',
+  DESCONOCIDO: 'verdict.headline.DESCONOCIDO',
+} satisfies Record<VerdictLevel, MessageKey>;
 
-function plural(n: number, one: string, many: string) {
-  return n === 1 ? one : many;
+/** Titular del veredicto, en el idioma activo. */
+export function verdictHeadline(level: VerdictLevel): string {
+  return t(HEADLINE_KEYS[level]);
 }
 
 export function evaluateZones(
@@ -344,9 +337,7 @@ export function computeMaxFreeHeight(evaluated: EvaluatedZone[]): MaxFreeHeight 
         metres: null,
         limitedBy: zone.title,
         legalLimit: false,
-        label:
-          'No se puede calcular hasta qué altura puedes subir sin permiso: ' +
-          `la franja de "${zone.title}" no se ha podido determinar.`,
+        label: t('verdict.maxFree.unknownBand', zone.title),
       };
     }
 
@@ -362,11 +353,11 @@ export function computeMaxFreeHeight(evaluated: EvaluatedZone[]): MaxFreeHeight 
 
   let label: string;
   if (metres <= 0) {
-    label = `Aquí no puedes volar a ninguna altura sin autorización (${limitedBy}).`;
+    label = t('verdict.maxFree.none', limitedBy ?? '');
   } else if (legalLimit) {
-    label = `Puedes subir hasta ${metres} m, el límite general de la categoría abierta.`;
+    label = t('verdict.maxFree.legalLimit', metres);
   } else {
-    label = `Puedes subir hasta ${metres} m sin pedir permiso. Por encima, ${limitedBy}.`;
+    label = t('verdict.maxFree.limitedBy', metres, limitedBy ?? '');
   }
 
   return { metres, limitedBy, legalLimit, label };
@@ -395,9 +386,7 @@ export function buildVerdict(
 
   const maxFreeHeight = computeMaxFreeHeight(evaluated);
   const incomplete = failedLayers.length > 0;
-  const incompleteNote = incomplete
-    ? ` No se ${plural(failedLayers.length, 'ha', 'han')} podido consultar ${failedLayers.length} de las 3 capas oficiales de ENAIRE.`
-    : '';
+  const incompleteNote = incomplete ? t('verdict.incompleteNote', failedLayers.length) : '';
 
   const worst = affecting.length
     ? affecting.reduce((acc, z) => (SEVERITY[z.type] > SEVERITY[acc.type] ? z : acc))
@@ -408,14 +397,15 @@ export function buildVerdict(
   if (incomplete && worstSeverity < SEVERITY.REQ_AUTHORIZATION) {
     return {
       level: 'DESCONOCIDO',
-      headline: HEADLINES.DESCONOCIDO,
+      headline: verdictHeadline('DESCONOCIDO'),
       summary:
-        `No se ha podido comprobar este punto por completo.${incompleteNote} ` +
-        'Vuelve a intentarlo con mejor cobertura: hasta entonces, da por hecho que puede haber restricciones.',
+        t('verdict.summary.unknown') + incompleteNote + t('verdict.summary.unknownRetry'),
       affecting,
       notAffecting,
       advisories,
-      maxFreeHeight: incomplete ? { ...maxFreeHeight, metres: null, label: 'No se ha podido determinar: falta consultar alguna capa oficial.' } : maxFreeHeight,
+      maxFreeHeight: incomplete
+        ? { ...maxFreeHeight, metres: null, label: t('verdict.maxFree.unknownLayer') }
+        : maxFreeHeight,
       incomplete: true,
       failedLayers,
     };
@@ -424,13 +414,11 @@ export function buildVerdict(
   if (!worst) {
     return {
       level: 'LIBRE',
-      headline: HEADLINES.LIBRE,
+      headline: verdictHeadline('LIBRE'),
       summary:
         notAffecting.length > 0
-          ? `No hay ninguna zona geográfica UAS que te afecte volando hasta ${fmt(flightHeightAgl)} m sobre el terreno. ` +
-            `Sí hay ${notAffecting.length} ${plural(notAffecting.length, 'zona', 'zonas')} en este punto, pero ` +
-            `${plural(notAffecting.length, 'empieza', 'empiezan')} por encima de esa altura.`
-          : 'ENAIRE no publica ninguna zona geográfica UAS que te afecte en este punto. Siguen aplicando las reglas generales de la categoría en la que operes.',
+          ? t('verdict.summary.freeWithZonesAbove', fmt(flightHeightAgl), notAffecting.length)
+          : t('verdict.summary.free'),
       affecting,
       notAffecting,
       advisories,
@@ -450,30 +438,22 @@ export function buildVerdict(
 
   let summary: string;
   if (level === 'PROHIBIDO') {
-    summary =
-      `Estás dentro de ${counts.prohibido} ${plural(counts.prohibido, 'zona prohibida', 'zonas prohibidas')} para drones. ` +
-      'No vueles aquí.';
+    summary = t('verdict.summary.prohibited', counts.prohibido);
   } else if (level === 'AUTORIZACION') {
-    summary =
-      `Estás dentro de ${counts.auth} ${plural(counts.auth, 'zona que exige', 'zonas que exigen')} permiso previo. ` +
-      'Sin esa autorización el vuelo no es legal.';
+    summary = t('verdict.summary.authorization', counts.auth);
   } else if (level === 'CONDICIONES') {
-    summary =
-      `Estás dentro de ${counts.cond} ${plural(counts.cond, 'zona con condiciones', 'zonas con condiciones')}. ` +
-      'Puedes volar si cumples lo que indica cada una.';
+    summary = t('verdict.summary.conditional', counts.cond);
   } else {
-    summary = 'Revisa las zonas listadas antes de volar.';
+    summary = t('verdict.summary.review');
   }
 
   if (affecting.length > 1) {
-    summary +=
-      ` En total te ${plural(affecting.length, 'afecta', 'afectan')} ${affecting.length} ` +
-      `${plural(affecting.length, 'zona', 'zonas')}: se cumplen todas a la vez, no vale con la menos restrictiva.`;
+    summary += t('verdict.summary.allAtOnce', affecting.length);
   }
 
   return {
     level,
-    headline: HEADLINES[level],
+    headline: verdictHeadline(level),
     summary: summary + incompleteNote,
     affecting,
     notAffecting,
@@ -494,11 +474,7 @@ export function buildVerdict(
  */
 export function actionAdvice(zone: EvaluatedZone): string {
   if (zone.advisory) {
-    return (
-      'Esto no es una zona concreta: ENAIRE lo publica cubriendo todo el país como recordatorio. ' +
-      'Mira a tu alrededor y decide si estás en entorno urbano según la definición del texto oficial; ' +
-      'si lo estás, cumple lo que indica antes de volar.'
-    );
+    return t('verdict.advice.advisory');
   }
   const contactBits: string[] = [];
   if (zone.contact.name) contactBits.push(zone.contact.name);
@@ -508,39 +484,38 @@ export function actionAdvice(zone: EvaluatedZone): string {
 
   switch (zone.type) {
     case 'PROHIBITED':
-      return 'No vueles. Esta zona está prohibida para drones.';
+      return t('verdict.advice.prohibited');
     case 'REQ_AUTHORIZATION':
       return contact
-        ? `Solicita autorización antes de volar. Contacto publicado por ENAIRE: ${contact}.`
-        : 'Solicita autorización antes de volar. ENAIRE no publica un contacto directo para esta zona: ' +
-          'consulta el texto oficial y, si no queda claro, pregunta a AESA o al gestor de la zona.';
+        ? t('verdict.advice.authorizationContact', contact)
+        : t('verdict.advice.authorization');
     case 'CONDITIONAL':
       return contact
-        ? `Puedes volar cumpliendo las condiciones del texto oficial. Contacto: ${contact}.`
-        : 'Puedes volar, pero cumpliendo las condiciones que figuran en el texto oficial de esta zona.';
+        ? t('verdict.advice.conditionalContact', contact)
+        : t('verdict.advice.conditional');
     case 'NO_RESTRICTION':
-      return 'Esta zona no añade restricciones.';
+      return t('verdict.advice.noRestriction');
     default:
-      return 'ENAIRE no ha clasificado esta zona. Trátala como restringida y consulta el texto oficial.';
+      return t('verdict.advice.unknown');
   }
 }
 
 /** Franja vertical en texto corto, ya en metros sobre el terreno. */
 export function verticalBandLabel(zone: EvaluatedZone): string {
   const { lowerAgl, upperAgl } = zone.vertical;
-  if (lowerAgl === null && upperAgl === null) return 'Franja de alturas no determinada';
+  if (lowerAgl === null && upperAgl === null) return t('verdict.band.undetermined');
   const from = lowerAgl === null ? '?' : `${fmt(Math.max(0, lowerAgl))} m`;
-  const to = upperAgl === null ? 'sin techo' : `${fmt(Math.max(0, upperAgl))} m`;
-  return `De ${from} a ${to} sobre el terreno`;
+  const to = upperAgl === null ? t('verdict.band.noCeiling') : `${fmt(Math.max(0, upperAgl))} m`;
+  return t('verdict.band.range', from, to);
 }
 
 /** Versión corta para la fila plegada de la tarjeta: "de 45 a 900 m". */
 export function verticalBandShort(zone: EvaluatedZone): string {
   const { lowerAgl, upperAgl } = zone.vertical;
-  if (lowerAgl === null && upperAgl === null) return 'alturas sin determinar';
+  if (lowerAgl === null && upperAgl === null) return t('verdict.band.shortUndetermined');
   const from = lowerAgl === null ? '?' : fmt(Math.max(0, lowerAgl));
-  if (upperAgl === null) return `desde ${from} m`;
-  return `de ${from} a ${fmt(Math.max(0, upperAgl))} m`;
+  if (upperAgl === null) return t('verdict.band.shortFrom', from);
+  return t('verdict.band.shortRange', from, fmt(Math.max(0, upperAgl)));
 }
 
 /** Franja tal y como la publica ENAIRE, sin convertir. */

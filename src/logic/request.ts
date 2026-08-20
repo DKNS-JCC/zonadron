@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type { EvaluatedZone, QueryResult } from '../types';
 import type { OperatorProfile } from '../state/SettingsContext';
 import { getDroneProfile, type DroneProfileId } from './drone';
@@ -8,6 +9,11 @@ import { getDroneProfile, type DroneProfileId } from './drone';
  * Se construye con los datos que ENAIRE publica de la zona y con los tuyos, que
  * viven sólo en el móvil. La app NO envía nada: abre tu aplicación de correo con
  * el mensaje redactado para que lo revises y lo mandes tú.
+ *
+ * OJO: el correo va SIEMPRE en español, aunque la interfaz esté en inglés. Lo
+ * lee el gestor de la zona o AESA, no el piloto, y una solicitud en inglés a un
+ * ayuntamiento español no ayuda a nadie. Por eso aquí no se usa `t()` salvo
+ * para lo que sí se le enseña al piloto (`missingOperatorFields`).
  */
 
 function line(label: string, value: string | undefined | null, fallback = '[COMPLETAR]') {
@@ -28,7 +34,8 @@ export function buildRequestSubject(zone: EvaluatedZone): string {
 
 export function buildRequestBody(zone: EvaluatedZone, ctx: RequestContext): string {
   const { result, place, operator, drone } = ctx;
-  const profile = getDroneProfile(drone);
+  // Etiqueta en español a propósito: forma parte del correo, no de la interfaz.
+  const profile = getDroneProfile(drone, 'es');
   const { lat, lon } = result.coords;
 
   const amsl =
@@ -89,10 +96,10 @@ export function buildMailto(zone: EvaluatedZone, ctx: RequestContext): string | 
 /** Qué falta por rellenar en Ajustes para que la solicitud salga completa. */
 export function missingOperatorFields(operator: OperatorProfile): string[] {
   const missing: string[] = [];
-  if (!operator.name.trim()) missing.push('tu nombre');
-  if (!operator.uasNumber.trim()) missing.push('tu número de operador UAS');
-  if (!operator.email.trim()) missing.push('tu correo');
-  if (!operator.phone.trim()) missing.push('tu teléfono');
-  if (!operator.droneModel.trim()) missing.push('el modelo del dron');
+  if (!operator.name.trim()) missing.push(t('operator.missing.name'));
+  if (!operator.uasNumber.trim()) missing.push(t('operator.missing.uasNumber'));
+  if (!operator.email.trim()) missing.push(t('operator.missing.email'));
+  if (!operator.phone.trim()) missing.push(t('operator.missing.phone'));
+  if (!operator.droneModel.trim()) missing.push(t('operator.missing.droneModel'));
   return missing;
 }

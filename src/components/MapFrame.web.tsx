@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ViewStyle } from 'react-native';
 import type { MapFrameHandle, MapFrameProps } from './MapFrame';
+import { t } from '../i18n';
 
 /**
  * Versión para navegador: react-native-webview no existe en web, así que se usa
@@ -57,7 +58,7 @@ export const MapFrame = React.forwardRef<MapFrameHandle, MapFrameProps>(
       <iframe
         ref={frameRef}
         srcDoc={html}
-        title="Mapa de zonas UAS"
+        title={t('map.webTitle')}
         style={{ flex: 1, border: 'none', width: '100%', height: '100%' }}
       />
     );

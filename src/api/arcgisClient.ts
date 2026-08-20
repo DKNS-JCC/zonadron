@@ -12,6 +12,8 @@
  * fallaban a la primera. Ahora los tres pasan por aquí.
  */
 
+import { t } from '../i18n';
+
 export const ENAIRE_SERVICE =
   'https://servais.enaire.es/insigniads/rest/services/NSF_SRV/SRV_UAS_ZG_data_V2/MapServer';
 
@@ -39,11 +41,11 @@ async function fetchJsonOnce(url: string, signal: AbortSignal | undefined, timeo
     // Cuando el servicio rechaza una petición devuelve una página HTML, no JSON.
     // Suele pasar por peticiones simultáneas, así que se considera transitorio.
     if (text.trim().startsWith('<')) {
-      throw new TransientError('El servicio de ENAIRE ha rechazado la petición');
+      throw new TransientError(t('error.enaireRejected'));
     }
     const json = JSON.parse(text);
     if (json?.error) {
-      throw new Error(json.error?.message ?? 'Error del servicio de ENAIRE');
+      throw new Error(json.error?.message ?? t('error.enaire'));
     }
     return json;
   } finally {
@@ -62,7 +64,7 @@ export async function fetchArcgisJson(url: string, signal?: AbortSignal, timeout
   let lastError: unknown;
   const attempts = 4;
   for (let attempt = 0; attempt < attempts; attempt++) {
-    if (signal?.aborted) throw new Error('Consulta cancelada');
+    if (signal?.aborted) throw new Error(t('error.cancelled'));
     try {
       return await fetchJsonOnce(url, signal, timeoutMs);
     } catch (err) {
@@ -75,5 +77,5 @@ export async function fetchArcgisJson(url: string, signal?: AbortSignal, timeout
       await sleep(300 * (attempt + 1));
     }
   }
-  throw lastError instanceof Error ? lastError : new Error('Error del servicio de ENAIRE');
+  throw lastError instanceof Error ? lastError : new Error(t('error.enaire'));
 }

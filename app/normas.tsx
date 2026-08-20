@@ -7,7 +7,8 @@ import { Banner, Card, Separator, ScreenTitle, SectionTitle } from '../src/compo
 import { Chevron, Collapsible } from '../src/components/motion';
 import { space, type, emphasize } from '../src/theme';
 import { usePalette } from '../src/hooks/useTheme';
-import { RULE_SECTIONS, SOURCES } from '../src/logic/rules';
+import { ruleSections, ruleSources } from '../src/logic/rules';
+import { getLocale, t } from '../src/i18n';
 import { SECTION_RELEVANCE } from '../src/logic/drone';
 import { DroneCard } from '../src/components/DroneCard';
 import { useSettings } from '../src/state/SettingsContext';
@@ -17,15 +18,15 @@ export default function NormasScreen() {
   const p = usePalette();
   const { drone } = useSettings();
   const [open, setOpen] = useState<string | null>(null);
-  const sections = RULE_SECTIONS.filter((s) => (SECTION_RELEVANCE[s.id] ?? []).includes(drone));
+  const sections = ruleSections().filter((s) => (SECTION_RELEVANCE[s.id] ?? []).includes(drone));
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Normas y fuentes', headerShown: true }} />
+      <Stack.Screen options={{ title: t('rules.title'), headerShown: true }} />
       <ScreenScroll>
         <ScreenTitle
-          title="Normas y fuentes"
-          subtitle="Lo esencial de la normativa española y europea, y de dónde sale cada dato de esta app."
+          title={t('rules.title')}
+          subtitle={t('rules.subtitle')}
         />
 
         <DroneCard compact />
@@ -78,25 +79,19 @@ export default function NormasScreen() {
         </View>
 
         <Card>
-          <SectionTitle>De dónde salen los datos</SectionTitle>
-          <Text style={[type.callout, { color: p.label }]}>
-            Las zonas se consultan en tiempo real al servicio oficial de ENAIRE (Zonas Geográficas UAS,
-            formato ED-318). La app no guarda una copia propia de las zonas ni pasa por ningún servidor
-            intermedio: el móvil habla directamente con ENAIRE, así que siempre ves el dato vigente.
-          </Text>
+          <SectionTitle>{t('rules.dataTitle')}</SectionTitle>
+          <Text style={[type.callout, { color: p.label }]}>{t('rules.dataBody')}</Text>
           <View style={{ marginVertical: space.md }}>
             <Separator />
           </View>
           <Text style={[type.footnote, { color: p.labelSecondary }]}>
-            La elevación del terreno viene de {ELEVATION_SOURCE} y se usa para convertir los límites
-            referidos al nivel del mar en altura real sobre el suelo. La búsqueda de lugares usa
-            OpenStreetMap.
+            {t('rules.dataElevation', ELEVATION_SOURCE)}
           </Text>
           <View style={{ marginVertical: space.md }}>
             <Separator />
           </View>
           <View style={{ gap: space.xs }}>
-            {SOURCES.map((s) => (
+            {ruleSources().map((s) => (
               <Pressable
                 key={s.url}
                 onPress={() => Linking.openURL(s.url).catch(() => {})}
@@ -116,11 +111,14 @@ export default function NormasScreen() {
           </View>
         </Card>
 
-        <Banner tone="warn">
-          Esta aplicación es una herramienta de consulta independiente. No sustituye a los servicios
-          oficiales de ENAIRE ni a la normativa: la responsabilidad de comprobar que un vuelo es legal
-          y seguro es siempre del piloto. Comprueba también los NOTAM antes de volar.
-        </Banner>
+        {/* En inglés conviene decirlo: el resumen está traducido, la norma no. */}
+        {getLocale() === 'en' ? (
+          <Text style={[type.footnote, { color: p.labelTertiary }]}>
+            {t('rules.spanishSources')}
+          </Text>
+        ) : null}
+
+        <Banner tone="warn">{t('rules.disclaimer')}</Banner>
       </ScreenScroll>
     </>
   );

@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import { QUERY_BUDGET_MS, queryZonesAt } from '../api/enaire';
 import { ELEVATION_SOURCE, getTerrainElevation } from '../api/elevation';
 import { getNotamsAt } from '../api/notam';
@@ -59,9 +60,7 @@ export async function checkPoint(
     // Si el que ha abortado es nuestro presupuesto (y no el usuario), el mensaje
     // debe explicar qué ha pasado en vez de decir "cancelado".
     if (budget.signal.aborted) {
-      throw new Error(
-        'ENAIRE está tardando demasiado en responder y no tienes descargada esta zona para volar sin cobertura.',
-      );
+      throw new Error(t('query.timeout'));
     }
     throw err;
   } finally {

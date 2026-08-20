@@ -10,7 +10,14 @@ import { OfflineCard } from '../../src/components/OfflineCard';
 import { HeightControl } from '../../src/components/HeightControl';
 import { noWebOutline } from '../../src/components/HeightControl';
 import { usePalette } from '../../src/hooks/useTheme';
-import { APPEARANCES, useSettings } from '../../src/state/SettingsContext';
+import {
+  APPEARANCES,
+  appearanceLabel,
+  LANGUAGES,
+  languageLabel,
+  useSettings,
+} from '../../src/state/SettingsContext';
+import { t } from '../../src/i18n';
 import { missingOperatorFields } from '../../src/logic/request';
 import { radius, shadow, space, systemColor, type, emphasize } from '../../src/theme';
 
@@ -24,20 +31,28 @@ import { radius, shadow, space, systemColor, type, emphasize } from '../../src/t
  */
 export default function AjustesScreen() {
   const p = usePalette();
-  const { operator, setOperator, flightHeight, setFlightHeight, appearance, setAppearance } =
-    useSettings();
+  const {
+    operator,
+    setOperator,
+    flightHeight,
+    setFlightHeight,
+    appearance,
+    setAppearance,
+    language,
+    setLanguage,
+  } = useSettings();
   const missing = missingOperatorFields(operator);
   const [openData, setOpenData] = React.useState(false);
 
   return (
     <ScreenScroll>
-      <ScreenTitle title="Ajustes" />
+      <ScreenTitle title={t('settings.title')} />
 
       <Card>
-        <SectionTitle>Preferencias</SectionTitle>
+        <SectionTitle>{t('settings.preferences')}</SectionTitle>
 
         <Text style={[type.footnote, { color: p.labelSecondary, marginBottom: space.sm }]}>
-          Aspecto
+          {t('settings.appearance')}
         </Text>
         {/* Control segmentado del sistema: pista hundida y pastilla elevada. */}
         <View
@@ -60,7 +75,7 @@ export default function AjustesScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
-                accessibilityLabel={`Aspecto ${a.label}`}
+                accessibilityLabel={t('settings.appearanceA11y', appearanceLabel(a.id))}
                 style={[
                   {
                     flex: 1,
@@ -85,7 +100,7 @@ export default function AjustesScreen() {
                     { color: active ? p.label : p.labelSecondary },
                   ]}
                 >
-                  {a.label}
+                  {appearanceLabel(a.id)}
                 </Text>
               </Pressable>
             );
@@ -96,8 +111,72 @@ export default function AjustesScreen() {
           <Separator />
         </View>
 
+        {/* Idioma. El nombre de cada uno va escrito en su propio idioma: es lo
+            único que se puede leer estando en el idioma equivocado. */}
         <Text style={[type.footnote, { color: p.labelSecondary, marginBottom: space.sm }]}>
-          Altura de vuelo por defecto
+          {t('settings.language')}
+        </Text>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 2,
+            backgroundColor: p.surfaceSunken,
+            borderRadius: 10,
+            padding: 2,
+          }}
+        >
+          {LANGUAGES.map((l) => {
+            const active = language === l.id;
+            return (
+              <Pressable
+                key={l.id}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setLanguage(l.id);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={t('settings.languageA11y', languageLabel(l.id))}
+                style={[
+                  {
+                    flex: 1,
+                    minHeight: 44,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 3,
+                    backgroundColor: active ? p.surface : 'transparent',
+                  },
+                  active ? (shadow.chip as object) : {},
+                ]}
+              >
+                <Ionicons
+                  name={l.icon as keyof typeof Ionicons.glyphMap}
+                  size={17}
+                  color={active ? p.tint : p.labelSecondary}
+                />
+                <Text
+                  style={[
+                    emphasize(type.caption, active ? '600' : '500'),
+                    { color: active ? p.label : p.labelSecondary },
+                  ]}
+                >
+                  {languageLabel(l.id)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[type.caption, { color: p.labelTertiary, marginTop: space.sm }]}>
+          {t('settings.languageNote')}
+        </Text>
+
+        <View style={{ marginVertical: space.lg }}>
+          <Separator />
+        </View>
+
+        <Text style={[type.footnote, { color: p.labelSecondary, marginBottom: space.sm }]}>
+          {t('settings.defaultHeight')}
         </Text>
         <HeightControl value={flightHeight} onChange={setFlightHeight} />
       </Card>
@@ -124,14 +203,14 @@ export default function AjustesScreen() {
           <Ionicons name="person-outline" size={22} color={p.labelSecondary} />
           <View style={{ flex: 1, gap: 1 }}>
             <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-              Tus datos
+              {t('settings.yourData')}
             </Text>
             <Text style={[emphasize(type.callout), { color: p.label }]}>
-              Operador y aeronave
+              {t('settings.operatorAndAircraft')}
             </Text>
           </View>
           {missing.length > 0 ? (
-            <Chip label={`Faltan ${missing.length}`} color={systemColor('orange', p)} />
+            <Chip label={t('settings.missing', missing.length)} color={systemColor('orange', p)} />
           ) : (
             <Ionicons name="checkmark-circle" size={19} color={systemColor('green', p)} />
           )}
@@ -142,33 +221,33 @@ export default function AjustesScreen() {
           <Separator inset={space.lg} />
           <View style={{ padding: space.lg, gap: space.md }}>
             <Text style={[type.footnote, { color: p.labelSecondary }]}>
-              Se usan para redactar las solicitudes de autorización. Se guardan sólo en este móvil.
+              {t('settings.dataNote')}
             </Text>
 
             <Field
-              label="Nombre o razón social"
+              label={t('settings.field.name')}
               value={operator.name}
               onChange={(name) => setOperator({ name })}
-              placeholder="Jorge Cuadrado"
+              placeholder={t('settings.field.namePlaceholder')}
               autoCapitalize="words"
             />
             <Field
-              label="Número de operador UAS (AESA)"
+              label={t('settings.field.uas')}
               value={operator.uasNumber}
               onChange={(uasNumber) => setOperator({ uasNumber })}
               placeholder="ESAxxxxxxxxxxxx"
               autoCapitalize="characters"
             />
             <Field
-              label="Correo de contacto"
+              label={t('settings.field.email')}
               value={operator.email}
               onChange={(email) => setOperator({ email })}
-              placeholder="tucorreo@ejemplo.com"
+              placeholder={t('settings.field.emailPlaceholder')}
               keyboardType="email-address"
               autoCapitalize="none"
             />
             <Field
-              label="Teléfono de contacto"
+              label={t('settings.field.phone')}
               value={operator.phone}
               onChange={(phone) => setOperator({ phone })}
               placeholder="+34 600 000 000"
@@ -180,23 +259,22 @@ export default function AjustesScreen() {
             </View>
 
             <Field
-              label="Modelo del dron"
+              label={t('settings.field.droneModel')}
               value={operator.droneModel}
               onChange={(droneModel) => setOperator({ droneModel })}
               placeholder="DJI Mini 2"
             />
             <Field
-              label="Número de serie"
+              label={t('settings.field.droneSerial')}
               value={operator.droneSerial}
               onChange={(droneSerial) => setOperator({ droneSerial })}
-              placeholder="El de la caja o de la app del fabricante"
+              placeholder={t('settings.field.droneSerialPlaceholder')}
               autoCapitalize="characters"
             />
 
             {missing.length > 0 ? (
               <Text style={[type.caption, { color: p.labelTertiary }]}>
-                Sin {missing.join(', ')}, las solicitudes saldrán con huecos marcados como
-                [COMPLETAR].
+                {t('settings.missingNote', missing.join(', '))}
               </Text>
             ) : null}
           </View>
@@ -211,8 +289,7 @@ export default function AjustesScreen() {
           { color: p.labelTertiary, paddingHorizontal: space.xs, lineHeight: 17 },
         ]}
       >
-        Nada de esto sale de tu móvil. La app no tiene servidor propio ni envía correos por su cuenta:
-        abre tu aplicación de correo con el texto redactado para que lo mandes tú.
+        {t('settings.privacy')}
       </Text>
     </ScreenScroll>
   );

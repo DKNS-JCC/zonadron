@@ -9,6 +9,7 @@
  * petición: hacerlo consultando a ENAIRE serían miles de peticiones.
  */
 
+import { t } from '../i18n';
 import { normalizeZone } from '../api/enaire';
 import { evaluateVertical } from '../logic/verdict';
 import { OPEN_CATEGORY_CEILING_M } from '../logic/verdict';
@@ -124,11 +125,13 @@ export function coverageColor(metres: number): string {
   return '#07835A';
 }
 
-export const COVERAGE_LEGEND = [
-  { color: '#07835A', label: 'Hasta 120 m' },
-  { color: '#7A8F00', label: '60 – 119 m' },
-  { color: '#A96200', label: '30 – 59 m' },
-  { color: '#C24400', label: 'Menos de 30 m' },
-  { color: '#BE2318', label: 'Nada sin permiso' },
-  { color: '#4A5A70', label: 'Sin determinar' },
-];
+export function coverageLegend(): { color: string; label: string }[] {
+  return [
+    { color: '#07835A', label: t('coverage.legend.max') },
+    { color: '#7A8F00', label: t('coverage.legend.high') },
+    { color: '#A96200', label: t('coverage.legend.mid') },
+    { color: '#C24400', label: t('coverage.legend.low') },
+    { color: '#BE2318', label: t('coverage.legend.none') },
+    { color: '#4A5A70', label: t('coverage.legend.unknown') },
+  ];
+}

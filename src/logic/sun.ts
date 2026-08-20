@@ -11,6 +11,8 @@
 
 import * as SunCalc from 'suncalc';
 
+import { dateLocale, t } from '../i18n';
+
 /** Umbrales fotográficos, en grados de altura solar. */
 export const GOLDEN_HOUR_TOP = 6;
 export const HORIZON = 0;
@@ -117,16 +119,18 @@ export function sunPath(date: Date, lat: number, lon: number, stepMinutes = 15):
   return points;
 }
 
-/** Rumbo en texto, para leerlo sin pensar. */
-const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSO', 'SO', 'OSO', 'O', 'ONO', 'NO', 'NNO'];
-
+/**
+ * Rumbo en texto, para leerlo sin pensar. Las siglas cambian de idioma: en
+ * español el oeste es O y en inglés W.
+ */
 export function compass(azimuth: number): string {
-  return COMPASS[Math.round(((azimuth % 360) + 360) % 360 / 22.5) % 16];
+  const points = t('sun.compass').split(',');
+  return points[Math.round(((azimuth % 360) + 360) % 360 / 22.5) % 16];
 }
 
 export function formatTime(d: Date | null): string {
   if (!d) return '—';
-  return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 /** Qué tipo de luz hay a una altura solar dada. */
@@ -139,12 +143,18 @@ export function lightKind(altitude: number): LightKind {
   return 'dia';
 }
 
-export const LIGHT_LABEL: Record<LightKind, string> = {
-  noche: 'Noche',
-  azul: 'Hora azul',
-  dorada: 'Hora dorada',
-  dia: 'Luz de día',
-};
+export function lightLabel(kind: LightKind): string {
+  switch (kind) {
+    case 'noche':
+      return t('sun.light.noche');
+    case 'azul':
+      return t('sun.light.azul');
+    case 'dorada':
+      return t('sun.light.dorada');
+    default:
+      return t('sun.light.dia');
+  }
+}
 
 export const LIGHT_COLOR: Record<LightKind, string> = {
   noche: '#2B3A55',

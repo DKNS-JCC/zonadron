@@ -1,5 +1,6 @@
 import type { FlightLogEntry } from '../state/FlightLogContext';
 import type { QueryResult } from '../types';
+import { dateLocale, t } from '../i18n';
 import { verdictLevelLabel, zoneTypeLabel } from './labels';
 
 /**
@@ -11,30 +12,28 @@ export function buildShareText(result: QueryResult, place?: string | null): stri
   const { coords, verdict, flightHeightAgl } = result;
   const lines: string[] = [];
 
-  lines.push(`${verdict.headline.toUpperCase()} — ${place ?? 'punto consultado'}`);
+  lines.push(t('share.headline', verdict.headline.toUpperCase(), place ?? t('share.thisPoint')));
   lines.push('');
   lines.push(verdict.summary);
   lines.push('');
-  lines.push(`Coordenadas: ${coords.lat.toFixed(5)}, ${coords.lon.toFixed(5)}`);
-  lines.push(`Altura de vuelo prevista: ${flightHeightAgl} m sobre el terreno`);
+  lines.push(t('share.coords', coords.lat.toFixed(5), coords.lon.toFixed(5)));
+  lines.push(t('share.height', flightHeightAgl));
   if (result.terrainElevation !== null) {
-    lines.push(`Elevación del terreno: ${Math.round(result.terrainElevation)} m sobre el nivel del mar`);
+    lines.push(t('share.terrain', Math.round(result.terrainElevation)));
   }
 
   if (verdict.affecting.length > 0) {
     lines.push('');
-    lines.push(`Zonas que afectan (${verdict.affecting.length}):`);
+    lines.push(t('share.zones', verdict.affecting.length));
     for (const z of verdict.affecting) {
       const contact = [z.contact.name, z.contact.email, z.contact.phone].filter(Boolean).join(' · ');
-      lines.push(`• ${z.title} [${z.identifier}] — ${zoneTypeLabel[z.type]}${contact ? ` — ${contact}` : ''}`);
+      lines.push(`• ${z.title} [${z.identifier}] — ${zoneTypeLabel(z.type)}${contact ? ` — ${contact}` : ''}`);
     }
   }
 
   lines.push('');
-  lines.push(
-    `Consultado el ${new Date(result.queriedAt).toLocaleString('es-ES')} a las Zonas Geográficas UAS de ENAIRE.`,
-  );
-  lines.push('Comprueba siempre la fuente oficial antes de volar: https://drones.enaire.es/');
+  lines.push(t('share.checkedAt', new Date(result.queriedAt).toLocaleString(dateLocale())));
+  lines.push(t('share.checkSource'));
 
   return lines.join('\n');
 }
@@ -58,18 +57,21 @@ export function drivingDirectionsUrl(lat: number, lon: number): string {
 
 /** Diario de vuelos en texto plano, del más reciente al más antiguo. */
 export function buildFlightLogText(entries: FlightLogEntry[]): string {
-  const lines: string[] = [`Diario de vuelos — ${entries.length} vuelo(s) registrados`, ''];
+  const lines: string[] = [t('share.logTitle', entries.length), ''];
 
   for (const e of entries) {
-    const when = new Date(e.loggedAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
+    const when = new Date(e.loggedAt).toLocaleString(dateLocale(), {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
     lines.push(`${when} — ${e.label ?? `${e.lat.toFixed(5)}, ${e.lon.toFixed(5)}`}`);
-    lines.push(
-      `  ${verdictLevelLabel[e.verdictLevel]} (${e.verdictHeadline}) · ${e.heightAgl} m · ${e.droneLabel}`,
-    );
-    lines.push(`  Coordenadas: ${e.lat.toFixed(5)}, ${e.lon.toFixed(5)}`);
+    // El titular guardado se ignora a propósito: se escribió en el idioma que
+    // hubiera entonces, y el nivel sí se puede volver a traducir ahora.
+    lines.push(t('share.logEntry', verdictLevelLabel(e.verdictLevel), e.heightAgl, e.droneLabel));
+    lines.push(t('share.logCoords', e.lat.toFixed(5), e.lon.toFixed(5)));
     lines.push('');
   }
 
-  lines.push('Generado con Zona Dron. Registro personal, no sustituye a ningún libro de vuelo oficial.');
+  lines.push(t('share.logFooter'));
   return lines.join('\n');
 }

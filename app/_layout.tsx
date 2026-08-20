@@ -2,11 +2,12 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { SettingsProvider } from '../src/state/SettingsContext';
+import { SettingsProvider, useSettings } from '../src/state/SettingsContext';
 import { HistoryProvider } from '../src/state/HistoryContext';
 import { FavoritesProvider } from '../src/state/FavoritesContext';
 import { FlightLogProvider } from '../src/state/FlightLogContext';
 import { usePalette, useScheme } from '../src/hooks/useTheme';
+import { t } from '../src/i18n';
 
 export default function RootLayout() {
   return (
@@ -29,9 +30,14 @@ export default function RootLayout() {
 function Navegacion() {
   const palette = usePalette();
   const scheme = useScheme();
+  const { locale } = useSettings();
 
   return (
-    <>
+    // Cambiar de idioma rehace la navegación entera. Suena drástico, pero un
+    // veredicto ya calculado lleva su texto dentro (ver `verdict.ts`): sin
+    // volver a montar, la pantalla se quedaría con frases del idioma anterior
+    // hasta la siguiente consulta, que es peor que empezar de cero.
+    <React.Fragment key={locale}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
@@ -52,12 +58,12 @@ function Navegacion() {
         />
         <Stack.Screen
           name="descargar"
-          options={{ presentation: 'modal', headerShown: true, title: 'Elegir zona' }}
+          options={{ presentation: 'modal', headerShown: true, title: t('download.title') }}
         />
-        <Stack.Screen name="luz" options={{ headerShown: true, title: 'Luz y sombras' }} />
-        <Stack.Screen name="diario" options={{ headerShown: true, title: 'Diario de vuelos' }} />
-        <Stack.Screen name="normas" options={{ headerShown: true, title: 'Normas y fuentes' }} />
+        <Stack.Screen name="luz" options={{ headerShown: true, title: t('light.title') }} />
+        <Stack.Screen name="diario" options={{ headerShown: true, title: t('log.title') }} />
+        <Stack.Screen name="normas" options={{ headerShown: true, title: t('rules.title') }} />
       </Stack>
-    </>
+    </React.Fragment>
   );
 }

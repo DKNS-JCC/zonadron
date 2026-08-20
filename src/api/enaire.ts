@@ -10,6 +10,7 @@
  */
 
 import type { LayerKey, RawZoneAttributes, VerticalRef, Zone, ZoneType } from '../types';
+import { t } from '../i18n';
 import { htmlToText } from '../logic/html';
 import { parseReferenceElevation } from '../logic/reference';
 import { layerLabel } from '../logic/labels';
@@ -165,15 +166,15 @@ function splitReasons(value: unknown): string[] {
 }
 
 function buildTitle(attrs: RawZoneAttributes, layer: LayerKey): string {
-  if (ADVISORY_LAYERS.includes(layer)) return 'Entorno urbano: compruébalo antes de volar';
+  if (ADVISORY_LAYERS.includes(layer)) return t('zone.advisoryTitle');
   const name = clean(attrs.name);
   if (name) return name;
   const ext = clean(attrs.extendedProperties);
   const id = clean(attrs.identifier);
   if (ext && id) return `${ext} · ${id}`;
   if (ext) return ext;
-  if (id) return `${layerLabel[layer]} ${id}`;
-  return `Zona ${layerLabel[layer].toLowerCase()}`;
+  if (id) return t('zone.titled', layerLabel(layer), id);
+  return t('zone.untitled', layerLabel(layer));
 }
 
 export function normalizeZone(attrs: RawZoneAttributes, layer: LayerKey, index: number): Zone {
@@ -276,7 +277,7 @@ async function queryLayer(
     return {
       layer: layerKey,
       zones: [],
-      error: err instanceof Error ? err.message : 'Error desconocido',
+      error: err instanceof Error ? err.message : t('error.unknown'),
     };
   }
 }

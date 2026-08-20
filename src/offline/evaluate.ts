@@ -12,6 +12,7 @@
  *    tener ninguno. En modo sin cobertura se dice claramente que faltan.
  */
 
+import { t } from '../i18n';
 import { dedupeZones, normalizeZone } from '../api/enaire';
 import { buildVerdict, evaluateZones } from '../logic/verdict';
 import type { Coords, QueryResult, Zone } from '../types';
@@ -57,7 +58,7 @@ export async function checkPointOffline(
   return {
     coords,
     terrainElevation: interpolated,
-    terrainSource: 'Rejilla descargada (Copernicus DEM vía Open-Meteo)',
+    terrainSource: t('offline.terrainSource'),
     flightHeightAgl,
     zones: evaluated,
     verdict,

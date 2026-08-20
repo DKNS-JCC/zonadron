@@ -9,6 +9,7 @@ import { space, tabular, type, verdictTint } from '../../theme';
 import { formatDistance } from './usePhotoTarget';
 import type { NearestFlyableResult } from '../../offline/nearest';
 import type { Coords } from '../../types';
+import { t } from '../../i18n';
 
 type PhotoState =
   | { state: 'buscando' }
@@ -41,28 +42,30 @@ export function PhotoTargetPanel({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
           <Ionicons name="camera" size={15} color={p.labelSecondary} />
           <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase', flex: 1 }]}>
-            Objetivo marcado
+            {t('photo.title')}
           </Text>
-          <IconButton icon="close" label="Quitar el objetivo" onPress={onClear} color={p.labelTertiary} />
+          <IconButton
+            icon="close"
+            label={t('photo.clear')}
+            onPress={onClear}
+            color={p.labelTertiary}
+          />
         </View>
 
         {photo.state === 'buscando' ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <ActivityIndicator size="small" color={p.labelSecondary} />
-            <Text style={[type.callout, { color: p.label }]}>Buscando desde dónde puedes volar…</Text>
+            <Text style={[type.callout, { color: p.label }]}>{t('photo.searching')}</Text>
           </View>
         ) : photo.state === 'sin-paquete' ? (
-          <Text style={[type.callout, { color: p.label }]}>
-            Para esto necesitas la zona descargada: la búsqueda mira miles de puntos y eso no se le
-            puede preguntar a ENAIRE uno a uno. Descárgala en Ajustes → Volar sin cobertura.
-          </Text>
+          <Text style={[type.callout, { color: p.label }]}>{t('photo.needsPack')}</Text>
         ) : photo.result.targetIsFlyable ? (
           <>
             <Text style={[type.title3, { color: verdictTint('LIBRE', p) }]}>
-              Puedes volar desde el propio objetivo
+              {t('photo.flyFromTarget')}
             </Text>
             <Text style={[type.footnote, { color: p.labelSecondary }]}>
-              No necesitas moverte: ahí mismo se puede despegar sin pedir autorización.
+              {t('photo.flyFromTargetNote')}
             </Text>
           </>
         ) : photo.result.best || photo.result.anyHeight ? (
@@ -78,12 +81,12 @@ export function PhotoTargetPanel({
                   <Text style={[type.title3, { color: p.labelSecondary }]}>{spot.bearing}</Text>
                 </View>
                 <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                  Desde ahí puedes subir hasta {spot.freeHeightM} m sin autorización
-                  {exact ? '.' : `, que es menos de los ${flightHeight} m que querías.`}
-                  {spot.distanceM > 500 ? ' Ojo: queda lejos para tener el objetivo a la vista.' : ''}
+                  {t('photo.spotHeight', spot.freeHeightM)}
+                  {exact ? t('photo.spotExact') : t('photo.spotLess', flightHeight)}
+                  {spot.distanceM > 500 ? t('photo.spotFar') : ''}
                 </Text>
                 <GhostButton
-                  label="Consultar ese punto"
+                  label={t('photo.openSpot')}
                   icon="arrow-forward"
                   onPress={() =>
                     router.push({
@@ -97,8 +100,7 @@ export function PhotoTargetPanel({
           })()
         ) : (
           <Text style={[type.callout, { color: p.label }]}>
-            No hay ningún punto donde volar sin autorización en {photo.result.searchedKm} km a la
-            redonda, dentro de la zona que tienes descargada.
+            {t('photo.nothing', photo.result.searchedKm)}
           </Text>
         )}
       </View>

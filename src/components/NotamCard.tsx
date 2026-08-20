@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { t } from '../i18n';
 import { radius, space, systemColor, type, emphasize } from '../theme';
 import type { Notam } from '../api/notam';
 import { Card, Chip, SectionTitle, Separator } from './ui';
@@ -24,15 +25,15 @@ export function NotamCard({ notams }: { notams: Notam[] | null | undefined }) {
   if (notams == null) {
     return (
       <Card>
-        <SectionTitle>Avisos temporales (NOTAM)</SectionTitle>
-        <Text style={[type.callout, { color: p.label }]}>
-          No se han podido consultar los NOTAM. Compruébalos en el visor oficial antes de volar.
-        </Text>
+        <SectionTitle>{t('notam.title')}</SectionTitle>
+        <Text style={[type.callout, { color: p.label }]}>{t('notam.failed')}</Text>
         <Pressable
           onPress={() => Linking.openURL(ENAIRE_NOTAM_URL).catch(() => {})}
           style={{ marginTop: space.sm, minHeight: 36, justifyContent: 'center' }}
         >
-          <Text style={[emphasize(type.subheadline), { color: p.tint }]}>Abrir ENAIRE Drones</Text>
+          <Text style={[emphasize(type.subheadline), { color: p.tint }]}>
+            {t('notam.openEnaire')}
+          </Text>
         </Pressable>
       </Card>
     );
@@ -45,14 +46,12 @@ export function NotamCard({ notams }: { notams: Notam[] | null | undefined }) {
 
   return (
     <Card>
-      <SectionTitle>Avisos temporales (NOTAM)</SectionTitle>
+      <SectionTitle>{t('notam.title')}</SectionTitle>
 
       {list.length === 0 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
           <Ionicons name="checkmark-circle" size={24} color={systemColor('green', p)} />
-          <Text style={[type.callout, { color: p.label, flex: 1 }]}>
-            No hay ningún NOTAM publicado sobre este punto.
-          </Text>
+          <Text style={[type.callout, { color: p.label, flex: 1 }]}>{t('notam.none')}</Text>
         </View>
       ) : (
         <View style={{ gap: space.md }}>
@@ -60,8 +59,12 @@ export function NotamCard({ notams }: { notams: Notam[] | null | undefined }) {
             <Ionicons name="megaphone" size={24} color={warn} />
             <Text style={[type.callout, { color: p.label, flex: 1 }]}>
               {active.length > 0
-                ? `${active.length} ${active.length === 1 ? 'aviso en vigor' : 'avisos en vigor'} sobre este punto${upcoming.length ? ` y ${upcoming.length} más por venir` : ''}.`
-                : `${upcoming.length} ${upcoming.length === 1 ? 'aviso programado' : 'avisos programados'} sobre este punto.`}
+                ? t(
+                    'notam.active',
+                    active.length,
+                    upcoming.length ? t('notam.andUpcoming', upcoming.length) : '',
+                  )
+                : t('notam.upcoming', upcoming.length)}
             </Text>
           </View>
           <View style={{ backgroundColor: p.surfaceSunken, borderRadius: radius.md, overflow: 'hidden' }}>
@@ -76,8 +79,7 @@ export function NotamCard({ notams }: { notams: Notam[] | null | undefined }) {
       )}
 
       <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
-        Fuente: servicio de NOTAM para UAS de ENAIRE. El horario viene en texto libre y no se
-        interpreta: léelo. Un NOTAM en vigor puede prohibir el vuelo aunque las zonas salgan en verde.
+        {t('notam.footnote')}
       </Text>
     </Card>
   );
@@ -115,7 +117,7 @@ function NotamRow({ notam }: { notam: Notam }) {
           <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <Text style={[emphasize(type.subheadline), { color: p.label }]}>{notam.id}</Text>
             <Chip
-              label={notam.activeNow ? 'En vigor' : 'Programado'}
+              label={notam.activeNow ? t('notam.chipActive') : t('notam.chipScheduled')}
               color={notam.activeNow ? warn : p.labelSecondary}
             />
           </View>
@@ -128,10 +130,10 @@ function NotamRow({ notam }: { notam: Notam }) {
 
       <Collapsible open={open}>
         <View style={{ paddingHorizontal: space.md, paddingBottom: space.md, gap: space.sm }}>
-          {notam.schedule ? <Row label="Horario" value={notam.schedule} /> : null}
-          {notam.levels ? <Row label="Alturas" value={notam.levels} /> : null}
+          {notam.schedule ? <Row label={t('notam.rowSchedule')} value={notam.schedule} /> : null}
+          {notam.levels ? <Row label={t('notam.rowLevels')} value={notam.levels} /> : null}
           {notam.lowerM !== null && notam.upperM !== null ? (
-            <Row label="Equivale a" value={`${notam.lowerM} – ${notam.upperM} m`} />
+            <Row label={t('notam.rowEquals')} value={`${notam.lowerM} – ${notam.upperM} m`} />
           ) : null}
           <Text style={[type.footnote, { color: p.label }]}>{notam.text}</Text>
         </View>

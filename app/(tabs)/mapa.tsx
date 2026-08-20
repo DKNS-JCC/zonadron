@@ -20,6 +20,7 @@ import { usePhotoTarget } from '../../src/screens/mapa/usePhotoTarget';
 import { LegendPanel } from '../../src/screens/mapa/LegendPanel';
 import { PhotoTargetPanel } from '../../src/screens/mapa/PhotoTargetPanel';
 import { radius, space, type, verdictStyles, emphasize } from '../../src/theme';
+import { t } from '../../src/i18n';
 
 /**
  * Pantalla de mapa.
@@ -103,7 +104,7 @@ export default function MapaScreen() {
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.md }}>
           <ActivityIndicator color={p.tint} />
-          <Text style={[type.footnote, { color: p.labelSecondary }]}>Preparando el mapa oficial…</Text>
+          <Text style={[type.footnote, { color: p.labelSecondary }]}>{t('map.preparing')}</Text>
         </View>
       )}
 
@@ -127,16 +128,16 @@ export default function MapaScreen() {
             )}
             <Text style={[emphasize(type.subheadline), { color: p.label, flex: 1 }]} numberOfLines={1}>
               {crosshair.busy
-                ? 'Consultando el punto de la cruz…'
+                ? t('map.querying')
                 : crosshair.error
-                  ? 'No se ha podido consultar'
+                  ? t('map.queryFailed')
                   : crosshair.result
                     ? crosshair.result.verdict.headline
-                    : 'Mueve el mapa para consultar un punto'}
+                    : t('map.moveToQuery')}
             </Text>
             <IconButton
               icon="sunny-outline"
-              label="Luz y sombras en este punto"
+              label={t('map.lightHere')}
               onPress={() =>
                 crosshair.centerRef.current &&
                 router.push({
@@ -147,7 +148,7 @@ export default function MapaScreen() {
             />
             <IconButton
               icon={layers.legendOpen ? 'layers' : 'layers-outline'}
-              label="Capas del mapa"
+              label={t('map.layers')}
               onPress={() => layers.setLegendOpen((v) => !v)}
             />
           </View>
@@ -182,10 +183,10 @@ export default function MapaScreen() {
       >
         <MapButton
           icon="camera-outline"
-          label="Quiero fotografiar esto: buscar desde dónde volar"
+          label={t('map.photoTarget')}
           onPress={photo.markPhotoTarget}
         />
-        <MapButton icon="locate" label="Centrar en mi ubicación" onPress={location.goToMyLocation} />
+        <MapButton icon="locate" label={t('map.centerOnMe')} onPress={location.goToMyLocation} />
       </View>
 
       <BottomSheet
@@ -201,7 +202,11 @@ export default function MapaScreen() {
                   {crosshair.place}
                 </Text>
               ) : null}
-              <Chip label={`hasta ${crosshair.result.flightHeightAgl} m`} color={p.tint} icon="swap-vertical" />
+              <Chip
+                label={t('map.heightChip', crosshair.result.flightHeightAgl)}
+                color={p.tint}
+                icon="swap-vertical"
+              />
             </View>
           ) : (
             // La píldora de arriba ya dice en vivo si está consultando, si ha
@@ -209,7 +214,7 @@ export default function MapaScreen() {
             // no cabe: el porqué del error.
             <View style={{ paddingBottom: space.sm }}>
               <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                {crosshair.error ?? 'El resultado aparecerá aquí.'}
+                {crosshair.error ?? t('map.resultHere')}
               </Text>
             </View>
           )

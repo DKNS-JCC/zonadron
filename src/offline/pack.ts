@@ -12,6 +12,7 @@
 
 import { Directory, File, Paths } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { t } from '../i18n';
 import { getLayerIds, LAYER_KEYS } from '../api/enaire';
 import { ENAIRE_SERVICE, fetchArcgisJson } from '../api/arcgisClient';
 import { elevations } from '../api/openMeteo';
@@ -118,7 +119,7 @@ async function fetchElevationGrid(
   // elevations() traga cualquier error, incluida la cancelación, y devuelve
   // null: hay que distinguirla aquí o cancelar a mitad de la rejilla acabaría
   // guardando un paquete "completo" sin elevación en vez de abortar.
-  if (signal?.aborted) throw new Error('Descarga cancelada');
+  if (signal?.aborted) throw new Error(t('error.downloadCancelled'));
   if (!values) return null;
 
   return { lat0: bbox.minLat, lon0: bbox.minLon, dLat, dLon, rows, cols, values };

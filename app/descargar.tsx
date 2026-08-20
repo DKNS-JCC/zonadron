@@ -23,14 +23,17 @@ import {
   type BuildProgress,
 } from '../src/offline/pack';
 import { radius as r, space, tabular, type, emphasize } from '../src/theme';
+import { t } from '../src/i18n';
 
 const FALLBACK_IDS = { aero: 2, urbano: 3, infraestructuras: 0 };
 
-const STEP_LABEL: Record<BuildProgress['step'], string> = {
-  zonas: 'Descargando las zonas de ENAIRE…',
-  elevacion: 'Descargando la elevación del terreno…',
-  guardando: 'Guardando en el móvil…',
-};
+function stepLabel(step: BuildProgress['step']): string {
+  return step === 'zonas'
+    ? t('download.step.zonas')
+    : step === 'elevacion'
+      ? t('download.step.elevacion')
+      : t('download.step.guardando');
+}
 
 /**
  * Elegir qué zona descargar.
@@ -150,7 +153,8 @@ export default function DescargarScreen() {
     setProgress({ step: 'zonas', pct: 0 });
     try {
       const label =
-        (await describePoint(center.lat, center.lon).catch(() => null)) ?? 'Zona descargada';
+        (await describePoint(center.lat, center.lon).catch(() => null)) ??
+        t('download.fallbackName');
       const meta = await buildPack(center, label, radiusKm, setProgress, controller.signal);
       if (controller.signal.aborted) return;
       // Si falta la elevación el paquete es utilizable pero más restrictivo de
@@ -165,7 +169,7 @@ export default function DescargarScreen() {
     } catch (err) {
       if (controller.signal.aborted) return;
       setError(
-        err instanceof Error ? `No se ha podido descargar: ${err.message}` : 'No se ha podido descargar.',
+        err instanceof Error ? t('download.failedDetail', err.message) : t('download.failed'),
       );
       setProgress(null);
     }
@@ -176,13 +180,15 @@ export default function DescargarScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Elegir zona', headerShown: true }} />
+      <Stack.Screen options={{ title: t('download.title'), headerShown: true }} />
       <View style={{ flex: 1, backgroundColor: p.background }}>
         {html ? (
           <MapFrame ref={mapRef} html={html} onMessage={onMessage} />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={[type.footnote, { color: p.labelSecondary }]}>Preparando el mapa…</Text>
+            <Text style={[type.footnote, { color: p.labelSecondary }]}>
+              {t('download.preparingMap')}
+            </Text>
           </View>
         )}
 
@@ -200,7 +206,7 @@ export default function DescargarScreen() {
             >
               <Ionicons name="hand-left-outline" size={16} color={p.labelSecondary} />
               <Text style={[type.footnote, { color: p.label, flex: 1 }]}>
-                Mueve el mapa para colocar el círculo donde vayas a volar.
+                {t('download.moveHint')}
               </Text>
             </View>
           </Material>
@@ -211,7 +217,7 @@ export default function DescargarScreen() {
             <PressableScale
               onPress={goToMyLocation}
               accessibilityRole="button"
-              accessibilityLabel="Centrar en mi ubicación"
+              accessibilityLabel={t('map.centerOnMe')}
               style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
             >
               <Ionicons name="locate" size={22} color={p.tint} />
@@ -235,7 +241,9 @@ export default function DescargarScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
             <Text style={[type.largeTitle, tabular, { color: p.label }]}>{radiusKm}</Text>
-            <Text style={[emphasize(type.title3), { color: p.label }]}>km de radio</Text>
+            <Text style={[emphasize(type.title3), { color: p.label }]}>
+              {t('download.radius')}
+            </Text>
             <Text style={[type.footnote, tabular, { color: p.labelSecondary, flex: 1, textAlign: 'right' }]}>
               {side} × {side} km
             </Text>
@@ -252,7 +260,7 @@ export default function DescargarScreen() {
             maximumTrackTintColor={p.skeleton}
             thumbTintColor={p.tint}
             disabled={busy}
-            accessibilityLabel={`Radio de descarga: ${radiusKm} kilómetros`}
+            accessibilityLabel={t('download.radiusA11y', radiusKm)}
             style={{ height: 40 }}
           />
 
@@ -263,7 +271,9 @@ export default function DescargarScreen() {
 
           {progress ? (
             <View style={{ gap: space.sm }}>
-              <Text style={[type.footnote, { color: p.labelSecondary }]}>{STEP_LABEL[progress.step]}</Text>
+              <Text style={[type.footnote, { color: p.labelSecondary }]}>
+                {stepLabel(progress.step)}
+              </Text>
               <View style={{ height: 6, borderRadius: 3, backgroundColor: p.skeleton, overflow: 'hidden' }}>
                 <View
                   style={{
@@ -277,7 +287,7 @@ export default function DescargarScreen() {
             </View>
           ) : (
             <PrimaryButton
-              label={center ? 'Descargar esta zona' : 'Mueve el mapa…'}
+              label={center ? t('download.button') : t('download.moveFirst')}
               icon="cloud-download-outline"
               onPress={download}
               disabled={!center}
@@ -286,10 +296,7 @@ export default function DescargarScreen() {
 
           {error ? <Banner tone="warn">{error}</Banner> : null}
 
-          <Text style={[type.caption, { color: p.labelTertiary }]}>
-            Cuanto más grande, más tarda y más ocupa. Un radio de 25 km suele quedarse por debajo de
-            3 MB. Sustituye a la zona que tuvieras descargada.
-          </Text>
+          <Text style={[type.caption, { color: p.labelTertiary }]}>{t('download.footnote')}</Text>
         </View>
         </Material>
         </View>

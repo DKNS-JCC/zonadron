@@ -35,6 +35,7 @@ import {
 import { describePoint } from '../../src/api/geocode';
 import { space, systemColor, type } from '../../src/theme';
 import type { Coords, QueryResult } from '../../src/types';
+import { t } from '../../src/i18n';
 
 type Phase = 'idle' | 'locating' | 'querying' | 'done' | 'error';
 
@@ -102,7 +103,7 @@ export default function HomeScreen() {
         // Un resultado viejo en pantalla junto a un error es peor que ningún
         // resultado: el usuario creería que el verde corresponde a lo que ve.
         setResult(null);
-        setError(err instanceof Error ? err.message : 'Error inesperado');
+        setError(err instanceof Error ? err.message : t('point.unexpectedError'));
         setPhase('error');
       }
     },
@@ -124,9 +125,7 @@ export default function HomeScreen() {
 
     const granted = await ensureLocationPermission();
     if (!granted) {
-      setError(
-        'Necesito acceso a tu ubicación para comprobar dónde estás. Puedes activarlo en los ajustes del móvil, o usar las pestañas Mapa y Buscar para consultar un punto a mano.',
-      );
+      setError(t('home.noPermission'));
       setPhase('error');
       return;
     }
@@ -155,9 +154,7 @@ export default function HomeScreen() {
       // en pantalla y es correcto.
       if (quickIsUsable) return;
       setError(
-        err instanceof Error
-          ? `No se ha podido obtener tu ubicación: ${err.message}`
-          : 'No se ha podido obtener tu ubicación.',
+        err instanceof Error ? t('home.noFixDetail', err.message) : t('home.noFix'),
       );
       setPhase('error');
     }
@@ -213,9 +210,9 @@ export default function HomeScreen() {
       }
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.md, paddingHorizontal: space.xs }}>
-        <Text style={[type.largeTitle, { color: p.label, flex: 1 }]}>¿Puedo volar aquí?</Text>
+        <Text style={[type.largeTitle, { color: p.label, flex: 1 }]}>{t('home.title')}</Text>
         {result ? (
-          <IconButton icon="locate" label="Comprobar mi ubicación otra vez" onPress={locateAndCheck} />
+          <IconButton icon="locate" label={t('home.recheck')} onPress={locateAndCheck} />
         ) : null}
       </View>
 
@@ -226,7 +223,7 @@ export default function HomeScreen() {
             { color: p.labelSecondary, marginTop: -space.sm, paddingHorizontal: space.xs },
           ]}
         >
-          Comprueba tu punto exacto contra las Zonas Geográficas UAS oficiales de ENAIRE.
+          {t('home.subtitle')}
         </Text>
       ) : null}
 
@@ -235,9 +232,9 @@ export default function HomeScreen() {
           label={
             busy
               ? phase === 'locating'
-                ? 'Buscando tu posición…'
-                : 'Consultando a ENAIRE…'
-              : 'Comprobar mi ubicación'
+                ? t('home.locating')
+                : t('home.querying')
+              : t('home.check')
           }
           icon="locate"
           onPress={locateAndCheck}
@@ -247,8 +244,7 @@ export default function HomeScreen() {
 
       {stale && result ? (
         <Banner tone="warn" icon="time-outline">
-          Este resultado tiene más de 10 minutos. Si te has movido o ha pasado un rato, vuelve a
-          comprobarlo antes de despegar.
+          {t('home.stale')}
         </Banner>
       ) : null}
 
@@ -264,7 +260,7 @@ export default function HomeScreen() {
               />
               <View style={{ flex: 1, gap: space.md }}>
                 <Text style={[type.callout, { color: p.label }]}>{error}</Text>
-                <GhostButton label="Reintentar" icon="refresh" onPress={locateAndCheck} />
+                <GhostButton label={t('point.retry')} icon="refresh" onPress={locateAndCheck} />
               </View>
             </View>
           </Card>
@@ -302,11 +298,10 @@ export default function HomeScreen() {
       {!result && !busy ? (
         <>
           <Card>
-            <SectionTitle>Altura de vuelo</SectionTitle>
+            <SectionTitle>{t('home.heightTitle')}</SectionTitle>
             <HeightControl value={flightHeight} onChange={setFlightHeight} />
             <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
-              Metros sobre el terreno. Las zonas que empiezan por encima de esta altura no cuentan:
-              cambiarla cambia la respuesta de verdad.
+              {t('home.heightHint')}
             </Text>
           </Card>
 
@@ -329,14 +324,14 @@ function HistoryEmptyOrList({
     return (
       <EmptyState
         icon="navigate-circle-outline"
-        title="Aún no has consultado ningún punto"
-        subtitle="Pulsa el botón de arriba para saber si puedes despegar donde estás, o busca un sitio concreto."
+        title={t('home.historyEmptyTitle')}
+        subtitle={t('home.historyEmptySubtitle')}
       />
     );
   }
   return (
     <View style={{ gap: space.md }}>
-      <SectionTitle>Últimas consultas</SectionTitle>
+      <SectionTitle>{t('home.historyTitle')}</SectionTitle>
       <HistoryList onOpen={onOpen} />
     </View>
   );

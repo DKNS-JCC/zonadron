@@ -37,6 +37,10 @@
       ],
       "predictiveBackGestureEnabled": false
     },
+    "locales": {
+      "es": "./locales/es.json",
+      "en": "./locales/en.json"
+    },
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
@@ -58,7 +62,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#0B1220"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

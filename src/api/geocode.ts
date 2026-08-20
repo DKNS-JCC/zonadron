@@ -7,6 +7,8 @@
  * https://operations.osmfoundation.org/policies/nominatim/
  */
 
+import { acceptLanguage, t } from '../i18n';
+
 const BASE = 'https://nominatim.openstreetmap.org';
 /**
  * OJO: sólo ASCII. Las cabeceras HTTP no admiten caracteres no ASCII y Android
@@ -51,7 +53,7 @@ export async function searchPlaces(
       return [{
         id: `coord:${lat},${lon}`,
         name: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
-        detail: 'Coordenadas introducidas manualmente',
+        detail: t('geocode.manualCoords'),
         lat,
         lon,
       }];
@@ -63,7 +65,7 @@ export async function searchPlaces(
     format: 'jsonv2',
     limit: '8',
     countrycodes: 'es',
-    'accept-language': 'es',
+    'accept-language': acceptLanguage(),
     addressdetails: '0',
   });
 
@@ -130,7 +132,7 @@ export async function describePoint(
     lon: String(lon),
     format: 'jsonv2',
     zoom: '14',
-    'accept-language': 'es',
+    'accept-language': acceptLanguage(),
   });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);

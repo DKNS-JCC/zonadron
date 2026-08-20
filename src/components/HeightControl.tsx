@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
 import { radius, shadow, space, tabular, type, emphasize } from '../theme';
 import { HEIGHT_PRESETS } from '../state/SettingsContext';
+import { t } from '../i18n';
 
 const MIN = 1;
 const MAX = 900;
@@ -70,7 +71,7 @@ export function HeightControl({
     })),
     {
       key: 'otra',
-      label: custom ? `${value} m` : 'Otra',
+      label: custom ? `${value} m` : t('height.other'),
       active: custom,
       onPress: () => {
         Haptics.selectionAsync().catch(() => {});
@@ -96,7 +97,9 @@ export function HeightControl({
             onPress={s.onPress}
             accessibilityRole="button"
             accessibilityState={{ selected: s.active }}
-            accessibilityLabel={s.key === 'otra' ? 'Otra altura' : `Volar a ${s.label}`}
+            accessibilityLabel={
+              s.key === 'otra' ? t('height.otherA11y') : t('height.flyAtA11y', s.label)
+            }
             style={[
               {
                 flex: 1,
@@ -132,7 +135,7 @@ export function HeightControl({
             overflow: 'hidden',
           }}
         >
-          <Step icon="remove" onPress={() => onChange(clamp(value - 10))} label="Bajar 10 metros" color={onColor ? '#FFFFFF' : p.tint} />
+          <Step icon="remove" onPress={() => onChange(clamp(value - 10))} label={t('height.down10')} color={onColor ? '#FFFFFF' : p.tint} />
           <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' }}>
             <TextInput
               value={text}
@@ -142,7 +145,7 @@ export function HeightControl({
               keyboardType="number-pad"
               returnKeyType="done"
               selectTextOnFocus
-              accessibilityLabel="Altura de vuelo en metros"
+              accessibilityLabel={t('height.inputA11y')}
               style={[
                 type.title3,
                 tabular,
@@ -161,7 +164,7 @@ export function HeightControl({
               m sobre el terreno
             </Text>
           </View>
-          <Step icon="add" onPress={() => onChange(clamp(value + 10))} label="Subir 10 metros" color={onColor ? '#FFFFFF' : p.tint} />
+          <Step icon="add" onPress={() => onChange(clamp(value + 10))} label={t('height.up10')} color={onColor ? '#FFFFFF' : p.tint} />
         </View>
       ) : null}
     </View>

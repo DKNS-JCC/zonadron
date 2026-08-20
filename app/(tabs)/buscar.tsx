@@ -19,6 +19,7 @@ import { usePalette } from '../../src/hooks/useTheme';
 import { useHistory } from '../../src/state/HistoryContext';
 import { searchPlaces, type Place } from '../../src/api/geocode';
 import { radius, shadow, space, type, emphasize } from '../../src/theme';
+import { t } from '../../src/i18n';
 
 const DEBOUNCE_MS = 300;
 
@@ -60,7 +61,7 @@ export default function BuscarScreen() {
       setSearched(true);
     } catch {
       if (controller.signal.aborted) return;
-      setError('No se ha podido buscar. Comprueba tu conexión e inténtalo de nuevo.');
+      setError(t('search.failed'));
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -95,8 +96,8 @@ export default function BuscarScreen() {
   return (
     <ScreenScroll>
       <ScreenTitle
-        title="Buscar un lugar"
-        subtitle="Una dirección, un municipio o unas coordenadas, para consultar ese punto."
+        title={t('search.title')}
+        subtitle={t('search.subtitle')}
       />
 
       {/* Campo de búsqueda del sistema: una pastilla que se levanta del fondo
@@ -122,16 +123,20 @@ export default function BuscarScreen() {
           onChangeText={setQuery}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder="Ej. Playa de la Malvarrosa, o 39.47, -0.32"
+          placeholder={t('search.placeholder')}
           placeholderTextColor={p.labelTertiary}
           autoCorrect={false}
           returnKeyType="search"
           onSubmitEditing={submit}
-          accessibilityLabel="Buscar un lugar"
+          accessibilityLabel={t('search.a11y')}
           style={[type.callout, { flex: 1, color: p.label, paddingVertical: 11 }, noWebOutline]}
         />
         {query.length > 0 ? (
-          <Pressable onPress={() => setQuery('')} hitSlop={12} accessibilityLabel="Borrar búsqueda">
+          <Pressable
+            onPress={() => setQuery('')}
+            hitSlop={12}
+            accessibilityLabel={t('search.clear')}
+          >
             <Ionicons name="close-circle" size={17} color={p.labelTertiary} />
           </Pressable>
         ) : null}
@@ -148,7 +153,7 @@ export default function BuscarScreen() {
       {!loading && results.length > 0 ? (
         <Appear animationKey={results[0]?.id}>
           <View style={{ gap: space.md }}>
-            <SectionTitle>Resultados</SectionTitle>
+            <SectionTitle>{t('search.results')}</SectionTitle>
             <View
               style={[
                 {
@@ -196,12 +201,12 @@ export default function BuscarScreen() {
       ) : null}
 
       {searched && !loading && results.length === 0 && !error ? (
-        <Banner>No se ha encontrado ningún lugar con ese nombre en España.</Banner>
+        <Banner>{t('search.noResults')}</Banner>
       ) : null}
 
       {showRecents ? (
         <View style={{ gap: space.md }}>
-          <SectionTitle>Últimas consultas</SectionTitle>
+          <SectionTitle>{t('search.recent')}</SectionTitle>
           <HistoryList onOpen={open} />
         </View>
       ) : null}
@@ -209,8 +214,8 @@ export default function BuscarScreen() {
       {showIdle && entries.length === 0 ? (
         <EmptyState
           icon="search-outline"
-          title="Busca cualquier punto de España"
-          subtitle="También puedes pegar unas coordenadas directamente, por ejemplo 39.47, -0.32."
+          title={t('search.emptyTitle')}
+          subtitle={t('search.emptySubtitle')}
         />
       ) : null}
     </ScreenScroll>

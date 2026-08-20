@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { MapFrame, type MapFrameHandle } from './MapFrame';
 import { Material } from './Material';
 import { usePalette, useScheme } from '../hooks/useTheme';
+import { t } from '../i18n';
 import { buildMapHtml } from '../map/mapHtml';
 import { getLayerIds } from '../api/enaire';
 import { radius, shadow, space, type, emphasize } from '../theme';
@@ -65,7 +66,7 @@ export function MiniMap({
       onPress={onOpen}
       disabled={!onOpen}
       accessibilityRole={onOpen ? 'button' : 'image'}
-      accessibilityLabel={`Mapa del punto consultado: ${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}`}
+      accessibilityLabel={t('miniMap.a11y', coords.lat.toFixed(4), coords.lon.toFixed(4))}
       style={[
         {
           height,
@@ -80,7 +81,7 @@ export function MiniMap({
         <MapFrame ref={mapRef} html={html} onMessage={() => {}} />
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={[type.footnote, { color: p.labelSecondary }]}>Cargando el mapa…</Text>
+          <Text style={[type.footnote, { color: p.labelSecondary }]}>{t('miniMap.loading')}</Text>
         </View>
       )}
 
@@ -100,7 +101,7 @@ export function MiniMap({
               }}
             >
               <Ionicons name="expand-outline" size={13} color={p.tint} />
-              <Text style={[emphasize(type.footnote), { color: p.tint }]}>Ver en el mapa</Text>
+              <Text style={[emphasize(type.footnote), { color: p.tint }]}>{t('miniMap.open')}</Text>
             </View>
           </Material>
         </View>

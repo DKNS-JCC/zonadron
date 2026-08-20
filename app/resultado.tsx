@@ -13,6 +13,7 @@ import { useFavorites } from '../src/state/FavoritesContext';
 import { checkPoint } from '../src/logic/query';
 import { describePoint } from '../src/api/geocode';
 import { verdictLevelLabel } from '../src/logic/labels';
+import { t } from '../src/i18n';
 import { space, systemColor, type } from '../src/theme';
 import type { QueryResult, VerdictLevel } from '../src/types';
 
@@ -56,7 +57,7 @@ export default function ResultadoScreen() {
       } catch (err) {
         if (controller.signal.aborted) return;
         setResult(null);
-        setError(err instanceof Error ? err.message : 'Error inesperado');
+        setError(err instanceof Error ? err.message : t('point.unexpectedError'));
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
@@ -90,9 +91,7 @@ export default function ResultadoScreen() {
     return (
       <ScreenScroll>
         <Card>
-          <Text style={[type.callout, { color: p.label }]}>
-            No se han recibido coordenadas válidas.
-          </Text>
+          <Text style={[type.callout, { color: p.label }]}>{t('point.invalidCoords')}</Text>
         </Card>
       </ScreenScroll>
     );
@@ -100,7 +99,7 @@ export default function ResultadoScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: place ?? 'Punto consultado' }} />
+      <Stack.Screen options={{ title: place ?? t('point.title') }} />
       <ScreenScroll
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={() => run(flightHeight)} tintColor={p.tint} />
@@ -124,7 +123,11 @@ export default function ResultadoScreen() {
                 />
                 <View style={{ flex: 1, gap: space.md }}>
                   <Text style={[type.callout, { color: p.label }]}>{error}</Text>
-                  <GhostButton label="Reintentar" icon="refresh" onPress={() => run(flightHeight)} />
+                  <GhostButton
+                    label={t('point.retry')}
+                    icon="refresh"
+                    onPress={() => run(flightHeight)}
+                  />
                 </View>
               </View>
             </Card>
@@ -133,8 +136,11 @@ export default function ResultadoScreen() {
 
         {result && changedFrom ? (
           <Banner tone="warn" icon="star">
-            Esto ha cambiado desde que lo guardaste en favoritos: antes era «{verdictLevelLabel[changedFrom]}»,
-            ahora es «{verdictLevelLabel[result.verdict.level]}».
+            {t(
+              'point.favoriteChanged',
+              verdictLevelLabel(changedFrom),
+              verdictLevelLabel(result.verdict.level),
+            )}
           </Banner>
         ) : null}
 

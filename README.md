@@ -16,15 +16,16 @@ answers:
 - You cannot fly.
 - The check could not be completed.
 
-Runs on **Android** and **iPhone/iPad**. No account, no ads, no tracking, no API keys.
+Runs on **Android** and **iPhone/iPad**, in **Spanish or English**. No account,
+no ads, no tracking, no API keys.
 
 > This application is independent of ENAIRE and does not replace official
 > information or applicable regulations. The pilot is responsible for the flight.
 
 <p align="center">
-  <img src="docs/capturas/light-home.png" width="31%" alt="Result for the current location">
-  <img src="docs/capturas/light-mapa.png" width="31%" alt="Map with the crosshair">
-  <img src="docs/capturas/light-resultado-auth.png" width="31%" alt="A point that requires authorization">
+  <img src="docs/capturas/en/light-home.png" width="31%" alt="Result for the current location">
+  <img src="docs/capturas/en/light-mapa.png" width="31%" alt="Map with the crosshair">
+  <img src="docs/capturas/en/light-resultado-auth.png" width="31%" alt="A point that requires authorization">
 </p>
 
 ---
@@ -125,9 +126,9 @@ Five tabs, and everything else hangs off them.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/capturas/light-home.png" alt="Fly here"></td>
-<td width="33%"><img src="docs/capturas/light-mapa.png" alt="Map"></td>
-<td width="33%"><img src="docs/capturas/light-buscar.png" alt="Search"></td>
+<td width="33%"><img src="docs/capturas/en/light-home.png" alt="Fly here"></td>
+<td width="33%"><img src="docs/capturas/en/light-mapa.png" alt="Map"></td>
+<td width="33%"><img src="docs/capturas/en/light-buscar.png" alt="Search"></td>
 </tr>
 <tr>
 <td align="center"><b>Fly here</b></td>
@@ -175,9 +176,9 @@ Your saved places, your flight log and the rules, in one tab.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/capturas/light-cuaderno.png" alt="Notebook"></td>
-<td width="33%"><img src="docs/capturas/light-diario.png" alt="Flight log"></td>
-<td width="33%"><img src="docs/capturas/light-normas.png" alt="Rules and sources"></td>
+<td width="33%"><img src="docs/capturas/en/light-cuaderno.png" alt="Notebook"></td>
+<td width="33%"><img src="docs/capturas/en/light-diario.png" alt="Flight log"></td>
+<td width="33%"><img src="docs/capturas/en/light-normas.png" alt="Rules and sources"></td>
 </tr>
 </table>
 
@@ -193,17 +194,17 @@ what each drone class changes, and a link to the official source of every claim.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/capturas/light-ajustes.png" alt="Settings"></td>
-<td width="33%"><img src="docs/capturas/light-luz.png" alt="Light and shadows"></td>
-<td width="33%"><img src="docs/capturas/light-descargar.png" alt="Offline download"></td>
+<td width="33%"><img src="docs/capturas/en/light-ajustes.png" alt="Settings"></td>
+<td width="33%"><img src="docs/capturas/en/light-luz.png" alt="Light and shadows"></td>
+<td width="33%"><img src="docs/capturas/en/light-descargar.png" alt="Offline download"></td>
 </tr>
 </table>
 
 Settings holds the flight height used by default, which drone you fly (this only
 changes which rules you are shown — never the verdict), the base map, light or
-dark appearance, and your **operator details**. Those details are stored only on
-the phone, and are used to pre-fill the authorization request that you send from
-your own mail app.
+dark appearance, the **interface language**, and your **operator details**.
+Those details are stored only on the phone, and are used to pre-fill the
+authorization request that you send from your own mail app.
 
 **Light and shadows** (from any result) gives sunrise, sunset, golden hour and
 blue hour for that exact point, the direction and length of shadows, and — if
@@ -219,9 +220,9 @@ marked as such and are only as fresh as the day you downloaded them.
 Follows the system by default, and can be forced either way in Settings.
 
 <p align="center">
-  <img src="docs/capturas/dark-home.png" width="31%" alt="Fly here, dark">
-  <img src="docs/capturas/dark-mapa.png" width="31%" alt="Map, dark">
-  <img src="docs/capturas/dark-cuaderno.png" width="31%" alt="Notebook, dark">
+  <img src="docs/capturas/en/dark-home.png" width="31%" alt="Fly here, dark">
+  <img src="docs/capturas/en/dark-mapa.png" width="31%" alt="Map, dark">
+  <img src="docs/capturas/en/dark-cuaderno.png" width="31%" alt="Notebook, dark">
 </p>
 
 ---
@@ -249,6 +250,7 @@ Follows the system by default, and can be forced either way in Settings.
 
 ### Maps and utilities
 
+- Spanish and English interface, following the phone or set by hand.
 - OpenStreetMap as the base map.
 - Topographic mapping and orthophotography from Spain's National Geographic Institute (IGN).
 - Query history, saved places and a personal flight log.
@@ -262,12 +264,21 @@ Follows the system by default, and can be forced either way in Settings.
 
 ## Language
 
-The interface is **Spanish only** today. Nothing in the code is wired to a
-translation system yet, and part of the content — the official zone texts, the
-NOTAMs, the regulation summaries — arrives from ENAIRE and AESA in Spanish and
-cannot be translated without changing its legal meaning. See
-[`docs/i18n.md`](docs/i18n.md) for what a language setting would actually
-involve.
+**Spanish and English**, switchable in Settings → Language, or left to follow
+the phone. Everything the app writes itself is translated: screens, the verdict
+sentences, the regulation summary, the drone profiles, dates and decimals, and
+even the place names it asks Nominatim for.
+
+What stays in Spanish, deliberately: **the official ENAIRE zone text, the
+NOTAMs, and the names of protected areas**. They are published in Spanish only,
+they are the regulation itself, and machine-translating a legal restriction to
+then act on it is exactly the wrong move for an app whose whole point is not
+being wrong about restrictions. The **authorization request e-mail** also stays
+in Spanish whatever the interface language is — it is read by a Spanish zone
+manager, not by you.
+
+[`docs/i18n.md`](docs/i18n.md) has the details, including how to add a third
+language.
 
 ---
 
@@ -343,7 +354,8 @@ services, in light and dark, with
 ```bash
 npm i -D playwright && npx playwright install chromium
 npm run web:export
-npm run capturas
+npm run capturas es
+npm run capturas en
 ```
 
 ---
@@ -410,6 +422,9 @@ src/
     notam.ts          Temporary restrictions
     protected.ts      Protected natural areas
     weather.ts        Weather and wind
+  i18n/
+    index.ts          t(), the active locale and its formats
+    es.ts / en.ts     Interface strings, kept in step by the compiler
   logic/
     verdict.ts        Decision engine
     html.ts           Official HTML cleanup

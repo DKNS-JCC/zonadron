@@ -20,7 +20,7 @@ import {
   compass,
   formatTime,
   LIGHT_COLOR,
-  LIGHT_LABEL,
+  lightLabel,
   lightKind,
   shadowAzimuth,
   shadowRatio,
@@ -31,6 +31,7 @@ import {
 } from '../src/logic/sun';
 import { radius as r, shadow, space, tabular, type, emphasize } from '../src/theme';
 import { Separator } from '../src/components/ui';
+import { dateLocale, t } from '../src/i18n';
 
 const FALLBACK_IDS = { aero: 2, urbano: 3, infraestructuras: 0 };
 const MADRID = { lat: 40.4168, lon: -3.7038 };
@@ -198,14 +199,14 @@ export default function LuzScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: params.label ?? 'Luz y sombras' }} />
+      <Stack.Screen options={{ title: params.label ?? t('light.title') }} />
       <View style={{ flex: 1, backgroundColor: p.background }}>
         {/* Vista */}
         <View style={{ height: '46%' }}>
           {mapHtml ? (
             <MapFrame ref={mapRef} html={mapHtml} onMessage={() => paintSunPath()} />
           ) : (
-            <Centered text="Preparando el mapa…" />
+            <Centered text={t('light.preparingMap')} />
           )}
         </View>
 
@@ -228,16 +229,16 @@ export default function LuzScreen() {
                   {String(minutes % 60).padStart(2, '0')}
                 </Text>
                 <Text style={[emphasize(type.footnote), { color: LIGHT_COLOR[kind] }]}>
-                  {LIGHT_LABEL[kind]}
+                  {lightLabel(kind)}
                 </Text>
               </View>
               {position ? (
                 <View style={{ alignItems: 'flex-end', gap: 1 }}>
                   <Text style={[emphasize(type.subheadline), tabular, { color: p.label }]}>
-                    {position.altitude.toFixed(0)}° de altura
+                    {t('light.altitude', position.altitude.toFixed(0))}
                   </Text>
                   <Text style={[type.footnote, tabular, { color: p.labelSecondary }]}>
-                    {compass(position.azimuth)} · {position.azimuth.toFixed(0)}°
+                    {t('light.bearing', compass(position.azimuth), position.azimuth.toFixed(0))}
                   </Text>
                 </View>
               ) : null}
@@ -252,7 +253,7 @@ export default function LuzScreen() {
               minimumTrackTintColor={LIGHT_COLOR[kind]}
               maximumTrackTintColor={p.skeleton}
               thumbTintColor={LIGHT_COLOR[kind]}
-              accessibilityLabel="Hora del día"
+              accessibilityLabel={t('light.timeOfDay')}
               style={{ height: 40, marginTop: space.sm }}
             />
 
@@ -266,10 +267,10 @@ export default function LuzScreen() {
               }}
             >
               {[
-                { label: 'Amanecer', time: day?.sunrise },
-                { label: 'Dorada', time: day?.goldenEveningStart },
-                { label: 'Ocaso', time: day?.sunset },
-                { label: 'Ahora', time: new Date() },
+                { label: t('light.jump.sunrise'), time: day?.sunrise },
+                { label: t('light.jump.golden'), time: day?.goldenEveningStart },
+                { label: t('light.jump.sunset'), time: day?.sunset },
+                { label: t('light.jump.now'), time: new Date() },
               ].map((q) => (
                 <Pressable
                   key={q.label}
@@ -295,7 +296,7 @@ export default function LuzScreen() {
 
           {/* Día */}
           <Card>
-            <SectionTitle>Día</SectionTitle>
+            <SectionTitle>{t('light.day')}</SectionTitle>
             <View
               style={{
                 flexDirection: 'row',
@@ -336,7 +337,9 @@ export default function LuzScreen() {
                         { color: active ? p.label : p.labelSecondary },
                       ]}
                     >
-                      {offset === 0 ? 'Hoy' : d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+                      {offset === 0
+                        ? t('light.today')
+                        : d.toLocaleDateString(dateLocale(), { day: 'numeric', month: 'short' })}
                     </Text>
                   </Pressable>
                 );
@@ -347,48 +350,71 @@ export default function LuzScreen() {
           {/* Horas de luz */}
           {day ? (
             <Card>
-              <SectionTitle>Horas de luz</SectionTitle>
-              <Moment label="Hora azul (mañana)" value={`${formatTime(day.blueMorning[0])} – ${formatTime(day.blueMorning[1])}`} color="#3D6BC4" first />
-              <Moment label="Amanecer" value={formatTime(day.sunrise)} color="#E8A33D" />
-              <Moment label="Hora dorada (mañana)" value={`${formatTime(day.sunrise)} – ${formatTime(day.goldenMorningEnd)}`} color="#D98A1F" />
-              <Moment label="Mediodía solar" value={`${formatTime(day.solarNoon)} · ${day.maxAltitude.toFixed(0)}°`} color={p.labelSecondary} />
-              <Moment label="Hora dorada (tarde)" value={`${formatTime(day.goldenEveningStart)} – ${formatTime(day.sunset)}`} color="#D98A1F" />
-              <Moment label="Ocaso" value={formatTime(day.sunset)} color="#E05A00" />
-              <Moment label="Hora azul (tarde)" value={`${formatTime(day.blueEvening[0])} – ${formatTime(day.blueEvening[1])}`} color="#3D6BC4" />
+              <SectionTitle>{t('light.hours')}</SectionTitle>
+              <Moment
+                label={t('light.blueMorning')}
+                value={`${formatTime(day.blueMorning[0])} – ${formatTime(day.blueMorning[1])}`}
+                color="#3D6BC4"
+                first
+              />
+              <Moment label={t('light.sunrise')} value={formatTime(day.sunrise)} color="#E8A33D" />
+              <Moment
+                label={t('light.goldenMorning')}
+                value={`${formatTime(day.sunrise)} – ${formatTime(day.goldenMorningEnd)}`}
+                color="#D98A1F"
+              />
+              <Moment
+                label={t('light.solarNoon')}
+                value={`${formatTime(day.solarNoon)} · ${day.maxAltitude.toFixed(0)}°`}
+                color={p.labelSecondary}
+              />
+              <Moment
+                label={t('light.goldenEvening')}
+                value={`${formatTime(day.goldenEveningStart)} – ${formatTime(day.sunset)}`}
+                color="#D98A1F"
+              />
+              <Moment label={t('light.sunset')} value={formatTime(day.sunset)} color="#E05A00" />
+              <Moment
+                label={t('light.blueEvening')}
+                value={`${formatTime(day.blueEvening[0])} – ${formatTime(day.blueEvening[1])}`}
+                color="#3D6BC4"
+              />
             </Card>
           ) : null}
 
           {/* Horizonte real */}
           <Card>
-            <SectionTitle>El sol contra el terreno</SectionTitle>
+            <SectionTitle>{t('light.terrainTitle')}</SectionTitle>
             {terrain ? (
               <View style={{ gap: space.sm }}>
                 <Moment
-                  label="Sale por encima del monte"
-                  value={`${formatTime(terrain.sunriseOverTerrain)}${terrain.sunriseHorizonAngle ? ` · te tapa ${terrain.sunriseHorizonAngle.toFixed(1)}°` : ''}`}
+                  label={t('light.overTheHill')}
+                  value={`${formatTime(terrain.sunriseOverTerrain)}${
+                    terrain.sunriseHorizonAngle
+                      ? t('light.blockedBy', terrain.sunriseHorizonAngle.toFixed(1))
+                      : ''
+                  }`}
                   color="#E8A33D"
                   first
                 />
                 <Moment
-                  label="Se esconde tras el monte"
-                  value={`${formatTime(terrain.sunsetBehindTerrain)}${terrain.sunsetHorizonAngle ? ` · te tapa ${terrain.sunsetHorizonAngle.toFixed(1)}°` : ''}`}
+                  label={t('light.behindTheHill')}
+                  value={`${formatTime(terrain.sunsetBehindTerrain)}${
+                    terrain.sunsetHorizonAngle
+                      ? t('light.blockedBy', terrain.sunsetHorizonAngle.toFixed(1))
+                      : ''
+                  }`}
                   color="#E05A00"
                 />
                 <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.sm }]}>
-                  Calculado muestreando la elevación real hasta 20 km en las direcciones por las que
-                  cae el sol, con corrección de curvatura y refracción. Es el ocaso que vas a ver tú,
-                  no el de la tabla.
+                  {t('light.terrainNote')}
                 </Text>
               </View>
             ) : (
               <View style={{ gap: space.md }}>
-                <Text style={[type.callout, { color: p.label }]}>
-                  El ocaso de las tablas es el de un mundo llano. En un valle el sol se esconde tras
-                  el monte mucho antes: esto calcula la hora de verdad con el relieve que tienes
-                  alrededor.
-                </Text>
+                <Text style={[type.callout, { color: p.label }]}>{t('light.terrainPitch')}</Text>
                 <GhostButton
-                  label={terrainLoading ? 'Midiendo el relieve…' : 'Calcular con el terreno'}
+                  label={terrainLoading ? t('light.measuring') : t('light.calculate')}
                   icon="triangle-outline"
                   onPress={loadTerrain}
                 />
@@ -398,23 +424,26 @@ export default function LuzScreen() {
 
           {/* Sombras */}
           <Card>
-            <SectionTitle>Sombras</SectionTitle>
+            <SectionTitle>{t('light.shadows')}</SectionTitle>
             {ratio && position ? (
               <View style={{ gap: space.sm }}>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
                   <Text style={[type.title1, tabular, { color: p.label }]}>×{ratio.toFixed(1)}</Text>
                   <Text style={[type.callout, { color: p.labelSecondary, flex: 1 }]}>
-                    la altura del objeto
+                    {t('light.objectHeight')}
                   </Text>
                 </View>
                 <Text style={[type.callout, { color: p.label }]}>
-                  Un árbol de 8 m proyecta {(ratio * 8).toFixed(0)} m de sombra hacia el{' '}
-                  {compass(shadowAzimuth(position.azimuth))}.
+                  {t(
+                    'light.shadowExample',
+                    (ratio * 8).toFixed(0),
+                    compass(shadowAzimuth(position.azimuth)),
+                  )}
                 </Text>
               </View>
             ) : (
               <Text style={[type.callout, { color: p.labelSecondary }]}>
-                Con el sol en el horizonte o por debajo no hay sombras que medir.
+                {t('light.noShadows')}
               </Text>
             )}
           </Card>

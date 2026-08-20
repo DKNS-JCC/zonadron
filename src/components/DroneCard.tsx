@@ -4,7 +4,8 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
 import { radius, space, type, emphasize } from '../theme';
-import { DRONE_PROFILES, getDroneProfile } from '../logic/drone';
+import { droneProfiles, getDroneProfile } from '../logic/drone';
+import { t } from '../i18n';
 import { useSettings } from '../state/SettingsContext';
 import { Card, Chip, Separator } from './ui';
 import { Chevron, Collapsible } from './motion';
@@ -55,7 +56,7 @@ export function DroneCard({
         <Ionicons name="hardware-chip-outline" size={22} color={p.labelSecondary} />
         <View style={{ flex: 1, gap: 1 }}>
           <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-            Tu dron
+            {t('droneCard.title')}
           </Text>
           <Text style={[emphasize(type.callout), { color: p.label }]}>{profile.label}</Text>
         </View>
@@ -69,7 +70,7 @@ export function DroneCard({
       <Collapsible open={picking}>
         <Separator inset={space.lg} />
         <View style={{ padding: space.lg, gap: space.sm }}>
-          {DRONE_PROFILES.map((d) => {
+          {droneProfiles().map((d) => {
             const active = d.id === drone;
             return (
               <Pressable
@@ -113,7 +114,7 @@ export function DroneCard({
           <Separator inset={space.lg} />
           <View style={{ padding: space.lg, gap: space.md }}>
             <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-              Lo que te aplica a ti
+              {t('droneCard.rulesTitle')}
             </Text>
             <View style={{ gap: space.sm }}>
               {profile.rules.map((r, i) => (
@@ -124,8 +125,7 @@ export function DroneCard({
               ))}
             </View>
             <Text style={[type.footnote, { color: p.labelTertiary }]}>
-              Las zonas geográficas UAS aplican igual a todos los drones: pesar poco no exime de
-              ninguna. Esto sólo cambia las reglas generales que te enseña la app.
+              {t('droneCard.disclaimer')}
             </Text>
           </View>
         </Collapsible>

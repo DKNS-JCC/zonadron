@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { dateLocale, decimal, t } from '../i18n';
 import { radius, space, systemColor, tabular, type, emphasize } from '../theme';
 import { getFlightWeather, WEATHER_SOURCE, type FlightWeather } from '../api/weather';
 import { assessHour, assessWeather, type WeatherLevel } from '../logic/weather';
@@ -43,7 +44,7 @@ export function WeatherCard({ coords }: { coords: Coords }) {
   if (loading) {
     return (
       <Card>
-        <SectionTitle>Condiciones de vuelo</SectionTitle>
+        <SectionTitle>{t('weather.title')}</SectionTitle>
         <SkeletonRows rows={1} />
       </Card>
     );
@@ -56,7 +57,10 @@ export function WeatherCard({ coords }: { coords: Coords }) {
   const color = systemColor(tone.color, p);
 
   const sunsetTime = weather.sunset
-    ? new Date(weather.sunset).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(weather.sunset).toLocaleTimeString(dateLocale(), {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : null;
 
   // Sólo lo que queda por delante: el servicio da la previsión desde el
@@ -67,7 +71,7 @@ export function WeatherCard({ coords }: { coords: Coords }) {
 
   return (
     <Card>
-      <SectionTitle>Condiciones de vuelo</SectionTitle>
+      <SectionTitle>{t('weather.title')}</SectionTitle>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
         <Ionicons name={tone.icon} size={26} color={color} />
@@ -86,33 +90,38 @@ export function WeatherCard({ coords }: { coords: Coords }) {
       >
         <Metric
           icon="speedometer-outline"
-          value={weather.gustMs !== null ? `${weather.gustMs.toFixed(1).replace('.', ',')}` : '—'}
+          value={weather.gustMs !== null ? decimal(weather.gustMs) : '—'}
           unit="m/s"
-          label="rachas"
+          label={t('weather.metric.gusts')}
           highlight={color}
         />
         <Rule />
         <Metric
           icon="navigate-outline"
-          value={weather.windMs !== null ? `${weather.windMs.toFixed(1).replace('.', ',')}` : '—'}
+          value={weather.windMs !== null ? decimal(weather.windMs) : '—'}
           unit="m/s"
-          label="viento"
+          label={t('weather.metric.wind')}
         />
         <Rule />
         <Metric
           icon="thermometer-outline"
           value={weather.temperatureC !== null ? `${Math.round(weather.temperatureC)}` : '—'}
           unit="°C"
-          label="temp."
+          label={t('weather.metric.temp')}
         />
         <Rule />
-        <Metric icon="moon-outline" value={sunsetTime ?? '—'} unit="" label="ocaso" />
+        <Metric
+          icon="moon-outline"
+          value={sunsetTime ?? '—'}
+          unit=""
+          label={t('weather.metric.sunset')}
+        />
       </View>
 
       {upcoming.length > 0 ? (
         <View style={{ marginTop: space.lg, gap: space.sm }}>
           <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase' }]}>
-            Próximas horas
+            {t('weather.nextHours')}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={{ flexDirection: 'row', gap: space.sm }}>
@@ -121,8 +130,13 @@ export function WeatherCard({ coords }: { coords: Coords }) {
                 const hourColor = systemColor(TONE[level].color, p);
                 const label =
                   i === 0
-                    ? 'Ahora'
-                    : new Date(h.time).toLocaleTimeString('es-ES', { hour: '2-digit' }).replace(':00', '') + 'h';
+                    ? t('weather.now')
+                    : t(
+                        'weather.hourSuffix',
+                        new Date(h.time)
+                          .toLocaleTimeString(dateLocale(), { hour: '2-digit' })
+                          .replace(':00', ''),
+                      );
                 return (
                   <View
                     key={h.time}
@@ -146,7 +160,9 @@ export function WeatherCard({ coords }: { coords: Coords }) {
               })}
             </View>
           </ScrollView>
-          <Text style={[type.caption2, { color: p.labelTertiary }]}>Rachas en m/s, por hora.</Text>
+          <Text style={[type.caption2, { color: p.labelTertiary }]}>
+            {t('weather.gustsPerHour')}
+          </Text>
         </View>
       ) : null}
 
@@ -160,8 +176,7 @@ export function WeatherCard({ coords }: { coords: Coords }) {
       </View>
 
       <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
-        Datos de {WEATHER_SOURCE} en superficie. A la altura a la que vuelas sopla más. Los umbrales
-        son orientativos: manda el manual de tu dron.
+        {t('weather.footnote', WEATHER_SOURCE)}
       </Text>
     </Card>
   );

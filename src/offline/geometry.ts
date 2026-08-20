@@ -3,6 +3,8 @@
  * comprobarlo con `npm run test:motor`.
  */
 
+import { t } from '../i18n';
+
 export interface ElevationGrid {
   lat0: number;
   lon0: number;
@@ -95,15 +97,11 @@ function pointToSegment(px: number, py: number, ax: number, ay: number, bx: numb
   return { dist: Math.hypot(px - cx, py - cy), x: cx, y: cy };
 }
 
-const COMPASS = [
-  'al norte', 'al noreste', 'al este', 'al sureste',
-  'al sur', 'al suroeste', 'al oeste', 'al noroeste',
-];
-
 /** Rumbo legible a partir de un desplazamiento en metros (este, norte). */
 export function bearingLabel(dx: number, dy: number): string {
+  const points = t('bearing.points').split(',');
   const angle = (Math.atan2(dx, dy) * 180) / Math.PI;
-  return COMPASS[Math.round(((angle + 360) % 360) / 45) % 8];
+  return points[Math.round(((angle + 360) % 360) / 45) % 8];
 }
 
 /**

@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { dateLocale, t } from '../i18n';
 import type { LayerKey, QueryResult } from '../types';
 import { VerdictCard } from './VerdictCard';
 import { ZoneCard } from './ZoneCard';
@@ -79,7 +80,7 @@ export function ResultView({
 
   const queriedAt = useMemo(
     () =>
-      new Date(result.queriedAt).toLocaleString('es-ES', {
+      new Date(result.queriedAt).toLocaleString(dateLocale(), {
         dateStyle: 'medium',
         timeStyle: 'short',
       }),
@@ -106,30 +107,28 @@ export function ResultView({
 
       {result.offline ? (
         <Banner tone="warn" icon="cloud-offline-outline">
-          Sin conexión: resuelto con la zona que descargaste
-          {result.offlinePackDate
-            ? ` el ${new Date(result.offlinePackDate).toLocaleDateString('es-ES')}`
-            : ''}
-          . La elevación del terreno es interpolada (±{result.elevationUncertaintyM ?? 30} m, aplicada
-          hacia el lado restrictivo) y <Text style={{ fontWeight: '700' }}>no se han podido consultar
-          los NOTAM</Text>, que son avisos temporales y cambian a diario.
+          {t(
+            'result.offlineBanner',
+            result.offlinePackDate
+              ? ` (${new Date(result.offlinePackDate).toLocaleDateString(dateLocale())})`
+              : '',
+          )}
+          {t('result.offlineElevation', result.elevationUncertaintyM ?? 30)}
+          <Text style={{ fontWeight: '700' }}>{t('result.offlineNotams')}</Text>
+          {t('result.offlineNotamsTail')}
         </Banner>
       ) : null}
 
       {result.verdict.incomplete ? (
         <Banner tone="warn">
-          No ha respondido {result.failedLayers.map((l: LayerKey) => layerLabel[l]).join(', ')}. Esta
-          comprobación está incompleta: no la des por buena.
+          {t('result.incomplete', result.failedLayers.map((l: LayerKey) => layerLabel(l)).join(', '))}
         </Banner>
       ) : null}
 
       {/* Sin conexión el aviso de arriba ya explica de dónde sale la elevación:
           repetirlo aquí sería apilar dos avisos naranjas diciendo lo mismo. */}
       {result.terrainElevation === null && !result.offline ? (
-        <Banner tone="warn">
-          No se ha podido obtener la elevación del terreno en este punto. Las zonas con límites
-          referidos al nivel del mar se muestran como si te afectaran, por prudencia.
-        </Banner>
+        <Banner tone="warn">{t('result.noTerrain')}</Banner>
       ) : null}
 
       {showMap ? <MiniMap coords={result.coords} onOpen={onOpenMap} /> : null}
@@ -137,7 +136,7 @@ export function ResultView({
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <View style={{ flex: 1 }}>
           <GhostButton
-            label="Cómo llegar"
+            label={t('result.directions')}
             icon="navigate-outline"
             onPress={() =>
               Linking.openURL(drivingDirectionsUrl(result.coords.lat, result.coords.lon)).catch(() => {})
@@ -146,7 +145,7 @@ export function ResultView({
         </View>
         <View style={{ flex: 1 }}>
           <GhostButton
-            label={justLogged ? 'Registrado' : 'Registrar vuelo'}
+            label={justLogged ? t('result.logged') : t('result.logFlight')}
             icon={justLogged ? 'checkmark-circle' : 'book-outline'}
             onPress={logThisFlight}
             color={justLogged ? systemColor('green', p) : undefined}
@@ -156,11 +155,11 @@ export function ResultView({
 
       <View style={{ flexDirection: 'row', gap: space.sm }}>
         <View style={{ flex: 1 }}>
-          <GhostButton label="Compartir" icon="share-outline" onPress={share} />
+          <GhostButton label={t('result.share')} icon="share-outline" onPress={share} />
         </View>
         <View style={{ flex: 1 }}>
           <GhostButton
-            label="Ver en ENAIRE"
+            label={t('result.openEnaire')}
             icon="open-outline"
             onPress={() =>
               Linking.openURL(enaireViewerUrl(result.coords.lat, result.coords.lon)).catch(() => {})
@@ -170,7 +169,7 @@ export function ResultView({
       </View>
 
       <GhostButton
-        label="Luz y sombras aquí"
+        label={t('result.light')}
         icon="sunny-outline"
         onPress={() =>
           router.push({
@@ -189,8 +188,8 @@ export function ResultView({
           <View style={{ gap: space.md }}>
             <SectionTitle>
               {affecting.length === 1
-                ? 'La zona que te afecta'
-                : `Las ${affecting.length} zonas que te afectan`}
+                ? t('result.affectingOne')
+                : t('result.affectingMany', affecting.length)}
             </SectionTitle>
             {affecting.map((z, i) => (
               <ZoneCard
@@ -221,8 +220,7 @@ export function ResultView({
           >
             <Chevron open={showOthers} color={p.labelSecondary} size={14} />
             <Text style={[type.sectionHeader, { color: p.labelSecondary, textTransform: 'uppercase', flex: 1 }]}>
-              {others.length} {others.length === 1 ? 'zona que no te afecta' : 'zonas que no te afectan'} a
-              esta altura
+              {t('result.notAffecting', others.length)}
             </Text>
           </Pressable>
           <Collapsible open={showOthers}>
@@ -237,7 +235,7 @@ export function ResultView({
 
       {result.verdict.advisories.length > 0 ? (
         <View style={{ gap: space.md }}>
-          <SectionTitle>Avisos de ENAIRE para toda España</SectionTitle>
+          <SectionTitle>{t('result.advisories')}</SectionTitle>
           {result.verdict.advisories.map((z) => (
             <ZoneCard key={z.key} zone={z} />
           ))}
@@ -246,7 +244,7 @@ export function ResultView({
 
       {expired.length > 0 ? (
         <View style={{ gap: space.md }}>
-          <SectionTitle>Zonas ya no vigentes</SectionTitle>
+          <SectionTitle>{t('result.expired')}</SectionTitle>
           {expired.map((z) => (
             <ZoneCard key={z.key} zone={z} dimmed />
           ))}
@@ -281,45 +279,55 @@ export function ResultView({
         >
           <Chevron open={showData} color={p.labelSecondary} size={14} />
           <Text style={[emphasize(type.subheadline), { color: p.labelSecondary, flex: 1 }]}>
-            Datos y fuentes de esta consulta
+            {t('result.dataTitle')}
           </Text>
         </Pressable>
         <Collapsible open={showData}>
           <Separator inset={space.lg} />
           <View style={{ paddingHorizontal: space.lg, paddingBottom: space.lg, paddingTop: space.xs }}>
             <InfoRow
-              label="Coordenadas"
+              label={t('result.coords')}
               value={`${result.coords.lat.toFixed(5)}, ${result.coords.lon.toFixed(5)}`}
             />
             {accuracy != null ? (
-              <InfoRow label="Precisión de la posición" value={`±${Math.round(accuracy)} m`} />
+              <InfoRow label={t('result.accuracy')} value={`±${Math.round(accuracy)} m`} />
             ) : null}
             <InfoRow
-              label="Elevación del terreno"
+              label={t('result.terrain')}
               value={
                 result.terrainElevation === null
-                  ? 'No disponible'
-                  : `${Math.round(result.terrainElevation)} m sobre el nivel del mar`
+                  ? t('result.terrainUnavailable')
+                  : t('result.metresAmsl', Math.round(result.terrainElevation))
               }
             />
             <InfoRow
-              label="Tu dron llegaría a"
+              label={t('result.droneReaches')}
               value={
                 result.terrainElevation === null
-                  ? `${result.flightHeightAgl} m sobre el terreno`
-                  : `${Math.round(result.terrainElevation + result.flightHeightAgl)} m sobre el nivel del mar`
+                  ? t('result.metresAgl', result.flightHeightAgl)
+                  : t(
+                      'result.metresAmsl',
+                      Math.round(result.terrainElevation + result.flightHeightAgl),
+                    )
               }
             />
             <InfoRow
-              label="Zonas en el punto"
-              value={`${result.zones.filter((z) => !z.advisory).length} (+${result.verdict.advisories.length} aviso general)`}
+              label={t('result.zonesHere')}
+              value={t(
+                'result.zonesHereValue',
+                result.zones.filter((z) => !z.advisory).length,
+                result.verdict.advisories.length,
+              )}
             />
-            <InfoRow label="Consultado" value={queriedAt} />
+            <InfoRow label={t('result.queriedAt')} value={queriedAt} />
             <View style={{ marginVertical: space.sm }}>
               <Separator />
             </View>
-            <InfoRow label="Zonas" value="ENAIRE · Zonas Geográficas UAS (ED-318)" />
-            <InfoRow label="Elevación" value={ELEVATION_SOURCE} />
+            <InfoRow
+              label={t('result.sourceZones')}
+              value="ENAIRE · Zonas Geográficas UAS (ED-318)"
+            />
+            <InfoRow label={t('result.sourceElevation')} value={ELEVATION_SOURCE} />
           </View>
         </Collapsible>
       </Card>
@@ -332,14 +340,12 @@ export function ResultView({
           { color: p.labelTertiary, paddingHorizontal: space.xs, lineHeight: 17 },
         ]}
       >
-        Consulta en directo los servicios oficiales de ENAIRE, pero no los sustituye: los horarios de
-        los NOTAM vienen en texto libre y hay que leerlos. La responsabilidad del vuelo siempre es del
-        piloto.{' '}
+        {t('result.disclaimer')}
         <Text
           style={{ color: p.labelSecondary, fontWeight: '600' }}
           onPress={() => Linking.openURL(ENAIRE_DRONES_URL).catch(() => {})}
         >
-          Abrir ENAIRE Drones
+          {t('result.openEnaireDrones')}
         </Text>
       </Text>
     </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Tabs } from 'expo-router';
+import { t } from '../../src/i18n';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -75,7 +76,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Volar aquí',
+          title: t('tab.here'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'locate' : 'locate-outline'} size={23} color={color} />
           ),
@@ -84,7 +85,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="mapa"
         options={{
-          title: 'Mapa',
+          title: t('tab.map'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'map' : 'map-outline'} size={23} color={color} />
           ),
@@ -93,7 +94,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="buscar"
         options={{
-          title: 'Buscar',
+          title: t('tab.search'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'search' : 'search-outline'} size={23} color={color} />
           ),
@@ -102,7 +103,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="cuaderno"
         options={{
-          title: 'Cuaderno',
+          title: t('tab.notebook'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'book' : 'book-outline'} size={23} color={color} />
           ),
@@ -111,7 +112,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="ajustes"
         options={{
-          title: 'Ajustes',
+          title: t('tab.settings'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? 'settings' : 'settings-outline'} size={23} color={color} />
           ),

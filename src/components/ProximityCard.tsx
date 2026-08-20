@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { t } from '../i18n';
 import { radius, space, systemColor, tabular, type, emphasize } from '../theme';
 import { findNearestBlockingZone, PROXIMITY_RADIUS_M, type NearbyZone } from '../api/proximity';
 import { Card, SectionTitle, SkeletonRows } from './ui';
@@ -33,7 +34,7 @@ export function ProximityCard({ coords }: { coords: Coords }) {
   if (loading) {
     return (
       <Card>
-        <SectionTitle>Margen hasta la siguiente zona</SectionTitle>
+        <SectionTitle>{t('proximity.title')}</SectionTitle>
         <SkeletonRows rows={1} />
       </Card>
     );
@@ -46,14 +47,13 @@ export function ProximityCard({ coords }: { coords: Coords }) {
 
   return (
     <Card>
-      <SectionTitle>Margen hasta la siguiente zona</SectionTitle>
+      <SectionTitle>{t('proximity.title')}</SectionTitle>
 
       {zone === null ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
           <Ionicons name="checkmark-circle" size={24} color={systemColor('green', p)} />
           <Text style={[type.callout, { color: p.label, flex: 1 }]}>
-            No hay ninguna zona que exija permiso en {PROXIMITY_RADIUS_M / 1000} km a la redonda.
-            Tienes sitio de sobra.
+            {t('proximity.none', PROXIMITY_RADIUS_M / 1000)}
           </Text>
         </View>
       ) : (
@@ -69,7 +69,7 @@ export function ProximityCard({ coords }: { coords: Coords }) {
                 <Text style={[type.footnote, { color: p.labelSecondary }]}>{zone.bearing}</Text>
               </View>
               <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={2}>
-                hasta {zone.title}
+                {t('proximity.upTo', zone.title)}
               </Text>
             </View>
           </View>
@@ -82,18 +82,14 @@ export function ProximityCard({ coords }: { coords: Coords }) {
                 padding: space.md,
               }}
             >
-              <Text style={[type.footnote, { color: p.label }]}>
-                Estás muy cerca del borde. Con viento o perdiendo de vista el dron es fácil entrar
-                sin darte cuenta: vuela hacia el lado contrario y deja margen.
-              </Text>
+              <Text style={[type.footnote, { color: p.label }]}>{t('proximity.close')}</Text>
             </View>
           ) : null}
         </View>
       )}
 
       <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
-        Distancia al borde más próximo, calculada sobre la geometría de ENAIRE simplificada a unos
-        10 m. Orientativa: no la uses para apurar.
+        {t('proximity.footnote')}
       </Text>
     </Card>
   );

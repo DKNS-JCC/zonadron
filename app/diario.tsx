@@ -8,6 +8,7 @@ import { usePalette } from '../src/hooks/useTheme';
 import { useFlightLog } from '../src/state/FlightLogContext';
 import { buildFlightLogText } from '../src/logic/share';
 import { verdictLevelLabel } from '../src/logic/labels';
+import { dateLocale, t } from '../src/i18n';
 import { radius, shadow, space, tabular, type, verdictStyles, emphasize } from '../src/theme';
 
 export default function DiarioScreen() {
@@ -20,22 +21,22 @@ export default function DiarioScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Diario de vuelos', headerShown: true }} />
+      <Stack.Screen options={{ title: t('log.title'), headerShown: true }} />
       <ScreenScroll>
         <ScreenTitle
-          title="Diario de vuelos"
-          subtitle="Registro personal de dónde y cuándo has volado. No sustituye al libro de operaciones oficial que exige AESA, pero te ahorra reconstruirlo de memoria."
+          title={t('log.title')}
+          subtitle={t('log.subtitle')}
         />
 
         {entries.length === 0 ? (
           <EmptyState
             icon="book-outline"
-            title="Todavía no has registrado ningún vuelo"
-            subtitle={'Desde el resultado de cualquier consulta, toca "Registrar vuelo" después de volar.'}
+            title={t('log.emptyTitle')}
+            subtitle={t('log.emptySubtitle')}
           />
         ) : (
           <>
-            <GhostButton label="Exportar diario" icon="share-outline" onPress={exportLog} />
+            <GhostButton label={t('log.export')} icon="share-outline" onPress={exportLog} />
 
             <View
               style={[
@@ -46,7 +47,7 @@ export default function DiarioScreen() {
               {entries.map((e, i) => {
                 const tint =
                   p.scheme === 'dark' ? verdictStyles[e.verdictLevel].onDark : verdictStyles[e.verdictLevel].onLight;
-                const when = new Date(e.loggedAt).toLocaleString('es-ES', {
+                const when = new Date(e.loggedAt).toLocaleString(dateLocale(), {
                   dateStyle: 'medium',
                   timeStyle: 'short',
                 });
@@ -60,14 +61,19 @@ export default function DiarioScreen() {
                           {e.label ?? `${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}`}
                         </Text>
                         <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                          {verdictLevelLabel[e.verdictLevel]} · {e.heightAgl} m · {e.droneLabel}
+                          {t(
+                            'log.entryLine',
+                            verdictLevelLabel(e.verdictLevel),
+                            e.heightAgl,
+                            e.droneLabel,
+                          )}
                         </Text>
                         <Text style={[type.caption, tabular, { color: p.labelTertiary }]}>{when}</Text>
                       </View>
                       <Pressable
                         onPress={() => removeEntry(e.id)}
                         accessibilityRole="button"
-                        accessibilityLabel="Borrar esta entrada del diario"
+                        accessibilityLabel={t('log.deleteEntry')}
                         hitSlop={12}
                         style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1, padding: 4 })}
                       >
@@ -90,7 +96,9 @@ export default function DiarioScreen() {
                 borderRadius: radius.md,
               })}
             >
-              <Text style={[type.subheadline, { color: p.labelSecondary }]}>Borrar todo el diario</Text>
+              <Text style={[type.subheadline, { color: p.labelSecondary }]}>
+                {t('log.clearAll')}
+              </Text>
             </Pressable>
           </>
         )}

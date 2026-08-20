@@ -7,8 +7,8 @@ import { Collapsible, PressableScale } from '../../components/motion';
 import { Separator } from '../../components/ui';
 import { usePalette } from '../../hooks/useTheme';
 import { layerColor, layerDescription, layerLabel } from '../../logic/labels';
-import { COVERAGE_LEGEND } from '../../offline/coverage';
-import { BASEMAPS, type BasemapId } from '../../state/SettingsContext';
+import { coverageLegend } from '../../offline/coverage';
+import { BASEMAPS, basemapLabel, basemapNote, type BasemapId } from '../../state/SettingsContext';
 import { radius, shadow, space, type, emphasize } from '../../theme';
 import type { LayerKey } from '../../types';
 
@@ -87,14 +87,14 @@ export function LegendPanel({
                         { color: active ? p.label : p.labelSecondary },
                       ]}
                     >
-                      {b.label}
+                      {basemapLabel(b.id)}
                     </Text>
                   </PressableScale>
                 );
               })}
             </View>
             <Text style={[type.caption, { color: p.labelTertiary }]}>
-              {BASEMAPS.find((b) => b.id === basemap)?.note}
+              {basemapNote(basemap)}
             </Text>
           </View>
 
@@ -131,8 +131,8 @@ export function LegendPanel({
                       }}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={[emphasize(type.subheadline), { color: p.label }]}>{layerLabel[key]}</Text>
-                      <Text style={[type.caption, { color: p.labelSecondary }]}>{layerDescription[key]}</Text>
+                      <Text style={[emphasize(type.subheadline), { color: p.label }]}>{layerLabel(key)}</Text>
+                      <Text style={[type.caption, { color: p.labelSecondary }]}>{layerDescription(key)}</Text>
                     </View>
                     {visible[key] ? <Ionicons name="checkmark" size={19} color={p.tint} /> : null}
                   </Pressable>
@@ -158,7 +158,7 @@ export function LegendPanel({
               ) : (
                 <>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                    {COVERAGE_LEGEND.map((l) => (
+                    {coverageLegend().map((l) => (
                       <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                         <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: l.color }} />
                         <Text style={[type.caption2, { color: p.labelSecondary }]}>{l.label}</Text>

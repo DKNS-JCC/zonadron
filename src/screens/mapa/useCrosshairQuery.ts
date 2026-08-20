@@ -4,6 +4,7 @@ import type { SheetState } from '../../components/BottomSheet';
 import { describePoint } from '../../api/geocode';
 import { checkPoint } from '../../logic/query';
 import type { Coords, QueryResult } from '../../types';
+import { t } from '../../i18n';
 
 /** Espera antes de consultar tras mover el mapa. Suficiente para no encadenar. */
 const MOVE_DEBOUNCE_MS = 700;
@@ -47,7 +48,7 @@ export function useCrosshairQuery(flightHeight: number) {
     } catch (err) {
       if (controller.signal.aborted) return;
       setResult(null);
-      setError(err instanceof Error ? err.message : 'No se ha podido consultar este punto.');
+      setError(err instanceof Error ? err.message : t('map.pointFailed'));
     } finally {
       if (!controller.signal.aborted) setBusy(false);
     }

@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
+import { t } from '../i18n';
 import { space, systemColor, tabular, type, emphasize } from '../theme';
 import { deletePack, getPackMeta, type PackMeta } from '../offline/pack';
 import { useSettings } from '../state/SettingsContext';
@@ -50,7 +51,7 @@ export function OfflineCard() {
 
   return (
     <Card>
-      <SectionTitle>Volar sin cobertura</SectionTitle>
+      <SectionTitle>{t('offline.title')}</SectionTitle>
 
       {meta ? (
         <View style={{ gap: space.md }}>
@@ -65,49 +66,48 @@ export function OfflineCard() {
                 {meta.label}
               </Text>
               <Text style={[type.footnote, tabular, { color: p.labelSecondary }]}>
-                {meta.radiusKm} km de radio · {meta.zoneCount} zonas ·{' '}
-                {(meta.bytes / 1024 / 1024).toFixed(1)} MB
+                {t(
+                  'offline.packSummary',
+                  meta.radiusKm,
+                  meta.zoneCount,
+                  (meta.bytes / 1024 / 1024).toFixed(1),
+                )}
               </Text>
             </View>
           </View>
 
           <Text style={[type.footnote, { color: stale ? warn : p.labelSecondary }]}>
-            Descargada {timeAgo(meta.createdAt)}.
-            {stale
-              ? ' Las zonas de ENAIRE cambian: conviene volver a descargarla antes de fiarte.'
-              : ' Si te quedas sin datos dentro de esa área, la app responde igual.'}
+            {t('offline.downloaded', timeAgo(meta.createdAt))}
+            {stale ? t('offline.stale') : t('offline.fresh')}
           </Text>
 
           {meta.elevationComplete === false ? (
-            <Text style={[type.footnote, { color: warn }]}>
-              No se pudo descargar la elevación del terreno de esta zona. Sin ella, toda zona
-              referida al nivel del mar se trata como si te afectara. Vuelve a descargarla con mejor
-              conexión para tener el margen exacto.
-            </Text>
+            <Text style={[type.footnote, { color: warn }]}>{t('offline.noElevation')}</Text>
           ) : null}
 
           <View style={{ flexDirection: 'row', gap: space.sm }}>
             <View style={{ flex: 1 }}>
-              <GhostButton label="Cambiar zona" icon="map-outline" onPress={open} />
+              <GhostButton label={t('offline.change')} icon="map-outline" onPress={open} />
             </View>
             <View style={{ flex: 1 }}>
-              <GhostButton label="Borrar" icon="trash-outline" onPress={remove} color={p.labelSecondary} />
+              <GhostButton
+                label={t('offline.delete')}
+                icon="trash-outline"
+                onPress={remove}
+                color={p.labelSecondary}
+              />
             </View>
           </View>
         </View>
       ) : (
         <View style={{ gap: space.md }}>
-          <Text style={[type.callout, { color: p.label }]}>
-            Elige en el mapa la zona donde vas a volar y descárgala. Dentro de esa área la app sigue
-            respondiendo aunque te quedes sin datos móviles.
-          </Text>
-          <PrimaryButton label="Elegir zona en el mapa" icon="map-outline" onPress={open} />
+          <Text style={[type.callout, { color: p.label }]}>{t('offline.empty')}</Text>
+          <PrimaryButton label={t('offline.pick')} icon="map-outline" onPress={open} />
         </View>
       )}
 
       <Text style={[type.footnote, { color: p.labelTertiary, marginTop: space.md }]}>
-        Los NOTAM no se descargan: cambian a diario y uno viejo es peor que ninguno. Sin cobertura la
-        app te avisa de que faltan.
+        {t('offline.notamsFootnote')}
       </Text>
 
       <View style={{ marginVertical: space.md }}>
@@ -116,10 +116,11 @@ export function OfflineCard() {
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 44 }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={[emphasize(type.callout), { color: p.label }]}>Mapa de altura libre</Text>
+          <Text style={[emphasize(type.callout), { color: p.label }]}>
+            {t('offline.coverageTitle')}
+          </Text>
           <Text style={[type.footnote, { color: p.labelSecondary }]}>
-            Pinta el mapa por colores según hasta dónde puedes subir en cada punto. Se calcula con
-            esta zona descargada.
+            {t('offline.coverageBody')}
           </Text>
         </View>
         <Switch
@@ -128,7 +129,7 @@ export function OfflineCard() {
             Haptics.selectionAsync().catch(() => {});
             setShowCoverage(v);
           }}
-          accessibilityLabel="Mapa de altura libre"
+          accessibilityLabel={t('offline.coverageTitle')}
           disabled={!meta}
           trackColor={{ true: p.tint, false: p.separator }}
           thumbColor="#fff"

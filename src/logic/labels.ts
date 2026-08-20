@@ -1,69 +1,97 @@
+import { t, type MessageKey } from '../i18n';
 import type { LayerKey, VerdictLevel, VerticalRef, ZoneType } from '../types';
 
-/** Traducción de los códigos ED-318 a lenguaje llano en español. */
+/**
+ * Traducción de los códigos ED-318 a lenguaje llano.
+ *
+ * Son funciones y no objetos constantes a propósito: el idioma se puede
+ * cambiar en caliente desde Ajustes, y una constante de módulo se quedaría
+ * congelada en el idioma que hubiera al arrancar.
+ */
 
-export const zoneTypeLabel: Record<ZoneType, string> = {
-  PROHIBITED: 'Prohibido',
-  REQ_AUTHORIZATION: 'Requiere autorización',
-  CONDITIONAL: 'Con condiciones',
-  NO_RESTRICTION: 'Sin restricción',
-  UNKNOWN: 'Sin clasificar',
+const ZONE_TYPE_KEYS = {
+  PROHIBITED: 'zoneType.PROHIBITED',
+  REQ_AUTHORIZATION: 'zoneType.REQ_AUTHORIZATION',
+  CONDITIONAL: 'zoneType.CONDITIONAL',
+  NO_RESTRICTION: 'zoneType.NO_RESTRICTION',
+  UNKNOWN: 'zoneType.UNKNOWN',
+} satisfies Record<ZoneType, MessageKey>;
+
+const ZONE_TYPE_EXPLAIN_KEYS = {
+  PROHIBITED: 'zoneType.explain.PROHIBITED',
+  REQ_AUTHORIZATION: 'zoneType.explain.REQ_AUTHORIZATION',
+  CONDITIONAL: 'zoneType.explain.CONDITIONAL',
+  NO_RESTRICTION: 'zoneType.explain.NO_RESTRICTION',
+  UNKNOWN: 'zoneType.explain.UNKNOWN',
+} satisfies Record<ZoneType, MessageKey>;
+
+export function zoneTypeLabel(type: ZoneType): string {
+  return t(ZONE_TYPE_KEYS[type]);
+}
+
+export function zoneTypeExplain(type: ZoneType): string {
+  return t(ZONE_TYPE_EXPLAIN_KEYS[type]);
+}
+
+/** Los motivos los publica ENAIRE como códigos: los desconocidos se dejan tal cual. */
+const REASON_KEYS: Record<string, MessageKey> = {
+  AIR_TRAFFIC: 'reason.AIR_TRAFFIC',
+  SENSITIVE: 'reason.SENSITIVE',
+  PRIVACY: 'reason.PRIVACY',
+  POPULATION: 'reason.POPULATION',
+  NATURE: 'reason.NATURE',
+  NOISE: 'reason.NOISE',
+  EMERGENCY: 'reason.EMERGENCY',
+  AIR_DEFENCE: 'reason.AIR_DEFENCE',
+  DANGEROUS_MATERIAL: 'reason.DANGEROUS_MATERIAL',
+  MILITARY: 'reason.MILITARY',
+  OTHER: 'reason.OTHER',
 };
 
-export const zoneTypeExplain: Record<ZoneType, string> = {
-  PROHIBITED: 'Aquí no se puede volar. La zona está prohibida para drones.',
-  REQ_AUTHORIZATION:
-    'Aquí sólo puedes volar si antes pides permiso y te lo conceden. Sin esa autorización, el vuelo no es legal.',
-  CONDITIONAL:
-    'Puedes volar, pero cumpliendo unas condiciones concretas (altura, distancia, coordinación previa…).',
-  NO_RESTRICTION: 'Esta zona no impone restricciones adicionales.',
-  UNKNOWN: 'ENAIRE no ha clasificado el tipo de restricción de esta zona.',
+const REASON_EXPLAIN_KEYS: Record<string, MessageKey> = {
+  AIR_TRAFFIC: 'reason.explain.AIR_TRAFFIC',
+  SENSITIVE: 'reason.explain.SENSITIVE',
+  PRIVACY: 'reason.explain.PRIVACY',
+  POPULATION: 'reason.explain.POPULATION',
+  NATURE: 'reason.explain.NATURE',
+  NOISE: 'reason.explain.NOISE',
+  EMERGENCY: 'reason.explain.EMERGENCY',
+  AIR_DEFENCE: 'reason.explain.AIR_DEFENCE',
+  DANGEROUS_MATERIAL: 'reason.explain.DANGEROUS_MATERIAL',
+  MILITARY: 'reason.explain.MILITARY',
+  OTHER: 'reason.explain.OTHER',
 };
 
-export const reasonLabel: Record<string, string> = {
-  AIR_TRAFFIC: 'Tráfico aéreo',
-  SENSITIVE: 'Instalación sensible',
-  PRIVACY: 'Privacidad',
-  POPULATION: 'Zona poblada',
-  NATURE: 'Espacio natural',
-  NOISE: 'Ruido',
-  EMERGENCY: 'Emergencias',
-  AIR_DEFENCE: 'Defensa aérea',
-  DANGEROUS_MATERIAL: 'Material peligroso',
-  MILITARY: 'Militar',
-  OTHER: 'Otros motivos',
-};
+export function reasonLabel(reason: string): string {
+  const key = REASON_KEYS[reason];
+  return key ? t(key) : reason;
+}
 
-export const reasonExplain: Record<string, string> = {
-  AIR_TRAFFIC:
-    'Hay aviones o helicópteros tripulados operando por aquí (espacio aéreo controlado, aeropuerto o helipuerto cercano).',
-  SENSITIVE: 'Se protege una instalación sensible o crítica.',
-  PRIVACY: 'Se protege la intimidad de las personas.',
-  POPULATION: 'Es una aglomeración de personas o un entorno urbano.',
-  NATURE: 'Es un espacio natural protegido y la fauna puede verse afectada.',
-  NOISE: 'Se limita el ruido en la zona.',
-  EMERGENCY: 'Puede haber operaciones de emergencia.',
-  AIR_DEFENCE: 'Zona relacionada con la defensa aérea.',
-  DANGEROUS_MATERIAL: 'Hay materiales peligrosos en la zona.',
-  MILITARY: 'Es una zona de interés militar.',
-  OTHER: 'ENAIRE agrupa aquí otros motivos; consulta el texto oficial.',
-};
+/** Explicación del motivo, o `null` si ENAIRE usa un código que no conocemos. */
+export function reasonExplain(reason: string): string | null {
+  const key = REASON_EXPLAIN_KEYS[reason];
+  return key ? t(key) : null;
+}
 
-export const layerLabel: Record<LayerKey, string> = {
-  aero: 'Aeronáutica',
-  urbano: 'Aviso urbano',
-  infraestructuras: 'Infraestructura',
-};
+const LAYER_KEYS = {
+  aero: 'layer.aero',
+  urbano: 'layer.urbano',
+  infraestructuras: 'layer.infraestructuras',
+} satisfies Record<LayerKey, MessageKey>;
 
-export const layerDescription: Record<LayerKey, string> = {
-  aero:
-    'Zonas por seguridad del espacio aéreo: aeropuertos, helipuertos, espacio aéreo controlado, zonas prohibidas y restringidas.',
-  urbano:
-    'Aviso general de ENAIRE, no una zona concreta: cubre toda España y recuerda que debes ' +
-    'comprobar tú si vuelas en entorno urbano, y qué obligaciones tienes si es así.',
-  infraestructuras:
-    'Protección de infraestructuras críticas: ferrocarril, carreteras, energía, agua, puertos, hospitales, etc.',
-};
+const LAYER_DESCRIPTION_KEYS = {
+  aero: 'layer.description.aero',
+  urbano: 'layer.description.urbano',
+  infraestructuras: 'layer.description.infraestructuras',
+} satisfies Record<LayerKey, MessageKey>;
+
+export function layerLabel(layer: LayerKey): string {
+  return t(LAYER_KEYS[layer]);
+}
+
+export function layerDescription(layer: LayerKey): string {
+  return t(LAYER_DESCRIPTION_KEYS[layer]);
+}
 
 export const layerColor: Record<LayerKey, string> = {
   aero: '#E05A00',
@@ -71,13 +99,18 @@ export const layerColor: Record<LayerKey, string> = {
   infraestructuras: '#0891B2',
 };
 
-export const verticalRefLabel: Record<VerticalRef, string> = {
-  AGL: 'sobre el terreno',
-  AMSL: 'sobre el nivel del mar',
-  W84: 'sobre el elipsoide WGS-84',
-  UNKNOWN: '(referencia no indicada)',
-};
+const VERTICAL_REF_KEYS = {
+  AGL: 'verticalRef.AGL',
+  AMSL: 'verticalRef.AMSL',
+  W84: 'verticalRef.W84',
+  UNKNOWN: 'verticalRef.UNKNOWN',
+} satisfies Record<VerticalRef, MessageKey>;
 
+export function verticalRefLabel(ref: VerticalRef): string {
+  return t(VERTICAL_REF_KEYS[ref]);
+}
+
+/** Siglas aeronáuticas: son las mismas en cualquier idioma. */
 export const verticalRefShort: Record<VerticalRef, string> = {
   AGL: 'AGL',
   AMSL: 'AMSL',
@@ -86,13 +119,17 @@ export const verticalRefShort: Record<VerticalRef, string> = {
 };
 
 export function readableReasons(reasons: string[]): string[] {
-  return reasons.map((r) => reasonLabel[r] ?? r);
+  return reasons.map((r) => reasonLabel(r));
 }
 
-export const verdictLevelLabel: Record<VerdictLevel, string> = {
-  LIBRE: 'Puedes volar',
-  CONDICIONES: 'Con condiciones',
-  AUTORIZACION: 'Necesitas autorización',
-  PROHIBIDO: 'No puedes volar',
-  DESCONOCIDO: 'Sin comprobar del todo',
-};
+const LEVEL_KEYS = {
+  LIBRE: 'level.LIBRE',
+  CONDICIONES: 'level.CONDICIONES',
+  AUTORIZACION: 'level.AUTORIZACION',
+  PROHIBIDO: 'level.PROHIBIDO',
+  DESCONOCIDO: 'level.DESCONOCIDO',
+} satisfies Record<VerdictLevel, MessageKey>;
+
+export function verdictLevelLabel(level: VerdictLevel): string {
+  return t(LEVEL_KEYS[level]);
+}

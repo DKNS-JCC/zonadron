@@ -20,6 +20,7 @@ import { WeatherCard } from './WeatherCard';
 import { ProximityCard } from './ProximityCard';
 import { ProtectedAreaCard } from './ProtectedAreaCard';
 import { NotamCard } from './NotamCard';
+import { UrbanCard } from './UrbanCard';
 import { useFavorites } from '../state/FavoritesContext';
 import { useFlightLog } from '../state/FlightLogContext';
 import { useSettings } from '../state/SettingsContext';
@@ -252,6 +253,11 @@ export function ResultView({
       ) : null}
 
       {!result.offline ? <NotamCard notams={result.notams} /> : null}
+
+      {/* El entorno urbano no es una zona de ENAIRE —ellos avisan de que lo
+          compruebes tú—, así que va aquí, entre las restricciones publicadas y
+          el contexto del sitio, y nunca toca el veredicto. */}
+      {!result.offline ? <UrbanCard coords={result.coords} /> : null}
 
       {!result.offline ? <ProximityCard coords={result.coords} /> : null}
 

@@ -689,4 +689,42 @@ export const es = {
   'share.logCoords': (lat: string, lon: string) => `  Coordenadas: ${lat}, ${lon}`,
   'share.logFooter':
     'Generado con Zona Dron. Registro personal, no sustituye a ningún libro de vuelo oficial.',
+
+  /* --- Entorno urbano (art. 40) --------------------------------------- */
+
+  'urban.title': 'Entorno urbano',
+  'urban.headline.urbano': 'Estás en entorno urbano',
+  'urban.headline.probable': 'Posible entorno urbano',
+  'urban.headline.parque': 'Estás en una zona verde urbana',
+  'urban.headline.noDetectado': 'No hemos detectado entorno urbano',
+  'urban.headline.sinRegion': 'Sin datos en esta comunidad',
+  'urban.headline.sinDatos': 'No se ha podido comprobar',
+
+  'urban.explain.urbano':
+    'Las dos fuentes coinciden. Aplica el art. 40 del RD 517/2024: en categoría abierta no puedes sobrevolar edificios, casas ni sus patios y jardines, y tienes que mantener la distancia de seguridad de tu clase de dron. Si estás registrado como operador, comunica la operación al Ministerio del Interior con cinco días de antelación.',
+  'urban.explain.probable':
+    'Sólo una de las dos fuentes ve suelo urbano aquí. Puede ser una casa suelta en el campo, o una urbanización nueva que la cartografía todavía no recoge. Míralo a tu alrededor y, si hay edificios, cumple el art. 40 como si lo fuera.',
+  'urban.explain.parque':
+    'Los parques y jardines municipales de acceso público son entorno urbano por el supuesto c) del art. 40, aunque estén rodeados de césped. Aplican las mismas obligaciones que en el resto de la ciudad.',
+  'urban.explain.noDetectado':
+    'Ni el Catastro ni la ocupación del suelo ven aquí suelo urbano. Eso no es un permiso: comprueba a tu alrededor si hay edificios o gente, porque la norma habla de lo que hay en el sitio, no de lo que diga un mapa.',
+  'urban.explain.sinRegion':
+    'Navarra y el País Vasco tienen catastro propio y el servicio estatal no responde ahí, así que preferimos no darte media respuesta. Comprueba el planeamiento urbanístico de tu municipio.',
+  'urban.explain.sinDatos':
+    'Los servicios de Catastro y del IGN no han respondido. Vuelve a intentarlo con mejor cobertura, y mientras tanto da por hecho que puedes estar en entorno urbano.',
+
+  'urban.case.a': 'Núcleo urbano consolidado',
+  'urban.case.b': 'Área residencial, comercial o industrial',
+  'urban.case.c': 'Área recreativa de acceso público',
+
+  'urban.catastro.urbana': 'Parcela urbana',
+  'urban.catastro.rustica': 'Parcela rústica',
+  'urban.catastro.sinParcela': 'Sin parcela en este punto',
+  'urban.catastro.sinServicio': 'No ha respondido',
+  'urban.siose.none': 'Sin dato en este punto',
+
+  'urban.readRule': 'Qué dice el art. 40',
+  'urban.summaryFallback': 'Comprobado con Catastro y ocupación del suelo',
+  'urban.footnote':
+    'Cruce de dos fuentes oficiales: el Catastro dice si la parcela es urbana o rústica, y el SIOSE del IGN qué ocupa el suelo (datos de 2015, CC BY 4.0 scne.es). Es una indicación, no una determinación legal: el art. 40 exige además accesos rodados, viales pavimentados, saneamiento y alumbrado, y eso no está en ningún dato público.',
 };

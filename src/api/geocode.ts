@@ -121,17 +121,56 @@ export async function searchPlaces(
   }
 }
 
-/** Nombre aproximado de un punto, para dar contexto al resultado. */
-export async function describePoint(
+/** Lo que sabemos de un punto por su dirección, no por su altura. */
+export interface PlaceDetails {
+  /** Nombre corto para las cabeceras: "Mazarambroz, Toledo, Castilla-La Mancha". */
+  label: string | null;
+  /** Barrio, si el punto está dentro de uno. */
+  neighbourhood: string | null;
+  /** Municipio. */
+  city: string | null;
+  /** Comunidad autónoma en ISO 3166-2 (ES-PV, ES-NC…), para saber qué datos hay. */
+  regionIso: string | null;
+}
+
+const EMPTY_PLACE: PlaceDetails = {
+  label: null,
+  neighbourhood: null,
+  city: null,
+  regionIso: null,
+};
+
+/**
+ * Caché en memoria de la búsqueda inversa.
+ *
+ * La misma consulta la piden dos sitios —la cabecera quiere el nombre y la
+ * tarjeta de entorno urbano quiere el barrio y la comunidad— y cambiar la
+ * altura de vuelo relanza la consulta entera. Nominatim pide como mucho una
+ * petición por segundo, así que se guarda por celda de ~11 m: sin esto
+ * estaríamos pidiendo tres veces lo mismo.
+ */
+const placeCache = new Map<string, PlaceDetails>();
+
+function cacheKey(lat: number, lon: number): string {
+  return `${lat.toFixed(4)},${lon.toFixed(4)}`;
+}
+
+/** Toda la información de dirección de un punto, cacheada. */
+export async function describePlace(
   lat: number,
   lon: number,
   signal?: AbortSignal,
-): Promise<string | null> {
+): Promise<PlaceDetails> {
+  const key = cacheKey(lat, lon);
+  const hit = placeCache.get(key);
+  if (hit) return hit;
+
   const params = new URLSearchParams({
     lat: String(lat),
     lon: String(lon),
     format: 'jsonv2',
     zoom: '14',
+    addressdetails: '1',
     'accept-language': acceptLanguage(),
   });
   const controller = new AbortController();
@@ -143,15 +182,33 @@ export async function describePoint(
       signal: controller.signal,
       headers: { Accept: 'application/json', 'User-Agent': asciiOnly(UA) },
     });
-    if (!res.ok) return null;
+    if (!res.ok) return EMPTY_PLACE;
     const json = await res.json();
     const display = String(json?.display_name ?? '').trim();
-    if (!display) return null;
-    return display.split(',').slice(0, 3).join(',').trim();
+    const a = (json?.address ?? {}) as Record<string, string>;
+    const place: PlaceDetails = {
+      label: display ? display.split(',').slice(0, 3).join(',').trim() : null,
+      neighbourhood: a.neighbourhood ?? a.suburb ?? a.quarter ?? null,
+      city: a.city ?? a.town ?? a.village ?? a.municipality ?? null,
+      regionIso: a['ISO3166-2-lvl4'] ?? null,
+    };
+    // Sólo se cachea lo que ha respondido de verdad: un fallo de red no debe
+    // dejar el punto marcado como "sin nombre" para el resto de la sesión.
+    if (place.label || place.regionIso) placeCache.set(key, place);
+    return place;
   } catch {
-    return null;
+    return EMPTY_PLACE;
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
   }
+}
+
+/** Nombre aproximado de un punto, para dar contexto al resultado. */
+export async function describePoint(
+  lat: number,
+  lon: number,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  return (await describePlace(lat, lon, signal)).label;
 }

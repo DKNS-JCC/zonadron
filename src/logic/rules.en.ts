@@ -90,12 +90,17 @@ export const RULE_SECTIONS_EN: RuleSection[] = [
     id: 'urbano',
     icon: 'business-outline',
     title: 'Urban environments',
-    intro: 'Towns and residential, commercial, industrial or recreational areas.',
+    intro:
+      'Article 40 treats three things as an urban environment: a) towns with areas consolidated by building; b) residential, commercial or industrial areas that have, all at once, vehicle access, paved streets, drainage and street lighting; and c) publicly accessible recreational areas with structures, including municipal parks and beaches meeting both requirements.',
     bullets: [
       'Maximum height: 300 m above the tallest obstacle within a 600 m radius.',
-      'In the open category you cannot fly over buildings.',
-      'Keep the horizontal safety distances of your subcategory (A1, A2 or A3).',
-      'Registered operators must notify the Ministry of the Interior 5 days in advance in the cases the regulation sets out.',
+      'In the open category you cannot fly over buildings, similar structures, houses or any dwelling, including their yards, gardens and recreation areas, public or private.',
+      'With a C1 drone of 250 g or more: at least 5 m horizontally from those buildings, even when flying outside the area.',
+      'With a C2 drone under 4 kg: at least 30 m horizontally, down to 5 m in low-speed mode.',
+      'The owner or manager of the building can exempt you in writing from the overflight ban, or reduce those distances, if you ask before flying.',
+      'You must also keep the horizontal safety distances of your subcategory (A1, A2 or A3).',
+      'Registered operators must notify the Ministry of the Interior 5 calendar days in advance.',
+      'None of this applies to operations carried out as non-EASA activities or services.',
     ],
     source: 'RD 517/2024 — AESA guidance UAS-OPS-DT01',
     sourceUrl:

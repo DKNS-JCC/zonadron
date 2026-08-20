@@ -147,7 +147,8 @@ Tap **up to 120 m above the ground** to change that height: the verdict is
 recalculated for the new altitude, because a zone that blocks you at 120 m often
 does not exist at 30 m. Everything below the card is optional detail — the mini
 map, directions to the point, sharing, the official ENAIRE viewer, the light and
-shadow forecast, the zones that affect you, NOTAMs and protected natural areas.
+shadow forecast, the zones that affect you, NOTAMs, whether you are standing in
+an urban environment, and protected natural areas.
 
 The star saves the place to your notebook; the circular arrow re-queries ENAIRE.
 
@@ -237,6 +238,9 @@ Follows the system by default, and can be forced either way in Settings.
 - Conversion of altitude references to express them relative to the terrain when required.
 - Information about temporary restrictions through NOTAMs.
 - Distance and bearing to the nearest restricted zone.
+- Urban-environment check for article 40 of RD 517/2024, crossing the cadastre
+  with the national land cover — the question ENAIRE leaves to you. No data in
+  Navarre and the Basque Country, which run their own cadastre.
 - Protected natural areas, which ENAIRE does not publish.
 - Access to the official text and contact details published for each zone.
 
@@ -457,6 +461,8 @@ src/
 | UAS Geographical Zones | [ENAIRE](https://aip.enaire.es/AIP/UAS-es.html) |
 | Service documentation | [servAIS API](https://aip.enaire.es/recursos/descargas/ZGUAS/servAIS_APIDOC.pdf) |
 | Elevation | [Open-Meteo / Copernicus DEM GLO-90](https://open-meteo.com/en/docs/elevation-api) |
+| Urban / rustic land | [Dirección General del Catastro](https://www.sedecatastro.gob.es/) (no coverage in Navarre or the Basque Country) |
+| Land cover | [SIOSE — IGN](https://www.siose.es/), CC BY 4.0 scne.es |
 | Weather | [Open-Meteo](https://open-meteo.com/) |
 | Geocoding | [Nominatim / OpenStreetMap](https://nominatim.openstreetmap.org/) |
 | Maps | [OpenStreetMap](https://www.openstreetmap.org/copyright) |

@@ -148,7 +148,8 @@ Toca **hasta 120 m sobre el terreno** para cambiar esa altura: el veredicto se
 recalcula, porque una zona que te bloquea a 120 m muchas veces no existe a 30 m.
 Todo lo que hay bajo la tarjeta es detalle opcional — el minimapa, cómo llegar,
 compartir, el visor oficial de ENAIRE, la previsión de luz y sombras, las zonas
-que te afectan, los NOTAM y los espacios naturales protegidos.
+que te afectan, los NOTAM, si estás en entorno urbano y los espacios naturales
+protegidos.
 
 La estrella guarda el sitio en el cuaderno; la flecha circular vuelve a
 preguntar a ENAIRE.
@@ -243,6 +244,9 @@ Sigue al sistema por defecto, y se puede forzar en Ajustes.
   cuando hace falta.
 - Restricciones temporales a través de los NOTAM.
 - Distancia y rumbo a la zona restringida más cercana.
+- Comprobación de entorno urbano para el art. 40 del RD 517/2024, cruzando el
+  Catastro con la ocupación del suelo: la pregunta que ENAIRE te deja a ti. Sin
+  datos en Navarra y el País Vasco, que tienen catastro propio.
 - Espacios naturales protegidos, que ENAIRE no publica.
 - Acceso al texto oficial y a los contactos publicados para cada zona.
 
@@ -470,6 +474,8 @@ src/
 | Zonas Geográficas UAS | [ENAIRE](https://aip.enaire.es/AIP/UAS-es.html) |
 | Documentación del servicio | [servAIS API](https://aip.enaire.es/recursos/descargas/ZGUAS/servAIS_APIDOC.pdf) |
 | Elevación | [Open-Meteo / Copernicus DEM GLO-90](https://open-meteo.com/en/docs/elevation-api) |
+| Suelo urbano o rústico | [Dirección General del Catastro](https://www.sedecatastro.gob.es/) (sin cobertura en Navarra ni el País Vasco) |
+| Ocupación del suelo | [SIOSE — IGN](https://www.siose.es/), CC BY 4.0 scne.es |
 | Tiempo | [Open-Meteo](https://open-meteo.com/) |
 | Geocodificación | [Nominatim / OpenStreetMap](https://nominatim.openstreetmap.org/) |
 | Mapas | [OpenStreetMap](https://www.openstreetmap.org/copyright) |

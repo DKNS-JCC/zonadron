@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenScroll } from '../src/components/Screen';
 import { Banner, Card, Separator, ScreenTitle, SectionTitle } from '../src/components/ui';
@@ -17,7 +17,10 @@ import { ELEVATION_SOURCE } from '../src/api/elevation';
 export default function NormasScreen() {
   const p = usePalette();
   const { drone } = useSettings();
-  const [open, setOpen] = useState<string | null>(null);
+  // Se puede llegar aquí desde una tarjeta concreta ("qué dice el art. 40"),
+  // y en ese caso la sección que se venía a leer ya viene abierta.
+  const { seccion } = useLocalSearchParams<{ seccion?: string }>();
+  const [open, setOpen] = useState<string | null>(seccion ?? null);
   const sections = ruleSections().filter((s) => (SECTION_RELEVANCE[s.id] ?? []).includes(drone));
 
   return (

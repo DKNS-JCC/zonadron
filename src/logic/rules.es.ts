@@ -87,12 +87,17 @@ export const RULE_SECTIONS_ES: RuleSection[] = [
     id: 'urbano',
     icon: 'business-outline',
     title: 'Entornos urbanos',
-    intro: 'Núcleos de población y áreas residenciales, comerciales, industriales o recreativas.',
+    intro:
+      'El art. 40 considera entorno urbano tres cosas: a) núcleos de población con áreas consolidadas por la edificación; b) áreas residenciales, comerciales o industriales que tengan a la vez accesos rodados, viales pavimentados, saneamiento y alumbrado público; y c) áreas recreativas de acceso público con construcciones, incluidos los parques municipales y las playas que cumplan ambos requisitos.',
     bullets: [
       'Altura máxima: 300 m sobre el obstáculo más alto situado en un radio de 600 m.',
-      'En categoría abierta no se pueden sobrevolar edificios.',
-      'Hay que mantener las distancias horizontales de seguridad de tu subcategoría (A1, A2 o A3).',
-      'Los operadores registrados deben presentar comunicación previa al Ministerio del Interior con 5 días de antelación en los supuestos previstos.',
+      'En categoría abierta no puedes sobrevolar edificios, construcciones similares, casas ni ningún domicilio, incluidos sus patios, jardines y zonas de recreo, sean públicos o privados.',
+      'Con un dron C1 de 250 g o más: al menos 5 m horizontales de esos edificios, aunque estés volando fuera de la zona.',
+      'Con un dron C2 de menos de 4 kg: al menos 30 m horizontales, que bajan a 5 m si usas el modo de baja velocidad.',
+      'El titular o administrador del edificio puede eximirte por escrito de la prohibición de sobrevuelo o rebajarte esas distancias, si lo pides antes de volar.',
+      'Hay que mantener además las distancias horizontales de seguridad de tu subcategoría (A1, A2 o A3).',
+      'Los operadores registrados deben comunicar la operación al Ministerio del Interior con 5 días naturales de antelación.',
+      'No aplica a las operaciones realizadas en ejecución de actividades o servicios no EASA.',
     ],
     source: 'RD 517/2024 — guía UAS-OPS-DT01 de AESA',
     sourceUrl:

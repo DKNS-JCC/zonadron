@@ -213,6 +213,26 @@ export const verdictStyles: Record<VerdictLevel, VerdictStyle> = {
   DESCONOCIDO: { solid: '#4A4A4F', onLight: '#48484A', onDark: '#AEAEB2', icon: 'questionmark.circle' },
 };
 
+/**
+ * El escalón que faltaba, entre el verde y el naranja.
+ *
+ * Verde es "no hay nada", naranja es "hay una restricción y está publicada",
+ * y rojo es "no vueles". Faltaba un tono para lo que sabemos a medias: el
+ * entorno urbano y las zonas verdes se deducen de datos que no son un registro
+ * de restricciones, así que no pueden pintarse con la misma seguridad que una
+ * zona de ENAIRE — pero tampoco de verde, que se lee como "todo correcto".
+ */
+export const noticeStyle: VerdictStyle = {
+  solid: '#8A6A00',
+  onLight: '#7A5D00',
+  onDark: '#F7C948',
+  icon: 'exclamationmark.triangle',
+};
+
+export function noticeTint(palette: Palette): string {
+  return palette.scheme === 'dark' ? noticeStyle.onDark : noticeStyle.onLight;
+}
+
 export function verdictTint(level: VerdictLevel, palette: Palette): string {
   const s = verdictStyles[level];
   return palette.scheme === 'dark' ? s.onDark : s.onLight;
@@ -221,6 +241,7 @@ export function verdictTint(level: VerdictLevel, palette: Palette): string {
 /** Colores del sistema para estados puntuales. */
 export const systemColors = {
   green: { light: '#187141', dark: '#4ED88A' },
+  amber: { light: '#7A5D00', dark: '#F7C948' },
   orange: { light: '#8A4F00', dark: '#FFB340' },
   red: { light: '#A31E17', dark: '#FF7A70' },
 };

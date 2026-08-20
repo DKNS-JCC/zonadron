@@ -690,4 +690,42 @@ export const en: Messages = {
   'share.logCoords': (lat: string, lon: string) => `  Coordinates: ${lat}, ${lon}`,
   'share.logFooter':
     'Generated with Zona Dron. A personal record; it does not replace any official logbook.',
+
+  /* --- Urban environment (art. 40) ------------------------------------- */
+
+  'urban.title': 'Urban environment',
+  'urban.headline.urbano': 'You are in an urban environment',
+  'urban.headline.probable': 'Possibly an urban environment',
+  'urban.headline.parque': 'You are in an urban green area',
+  'urban.headline.noDetectado': 'No urban environment detected',
+  'urban.headline.sinRegion': 'No data for this region',
+  'urban.headline.sinDatos': 'The check could not be completed',
+
+  'urban.explain.urbano':
+    'Both sources agree. Article 40 of RD 517/2024 applies: in the open category you cannot fly over buildings, houses or their yards and gardens, and you must keep the safety distance for your drone class. If you are a registered operator, notify the Ministry of the Interior five days in advance.',
+  'urban.explain.probable':
+    'Only one of the two sources sees urban land here. It could be a lone house in the countryside, or a new development the mapping has not caught up with. Look around you and, if there are buildings, follow article 40 as if it were.',
+  'urban.explain.parque':
+    'Publicly accessible municipal parks and gardens count as urban environment under case c) of article 40, however much grass there is. The same obligations as the rest of the city apply.',
+  'urban.explain.noDetectado':
+    'Neither the cadastre nor the land cover sees urban land here. That is not permission: look around for buildings or people, because the rule is about what is on the ground, not about what a map says.',
+  'urban.explain.sinRegion':
+    'Navarre and the Basque Country run their own cadastre and the national service does not answer there, so we would rather not give you half an answer. Check your municipality’s urban planning.',
+  'urban.explain.sinDatos':
+    'The cadastre and IGN services did not answer. Try again with a better connection, and until then assume you may be in an urban environment.',
+
+  'urban.case.a': 'Consolidated built-up area',
+  'urban.case.b': 'Residential, commercial or industrial area',
+  'urban.case.c': 'Publicly accessible recreational area',
+
+  'urban.catastro.urbana': 'Urban parcel',
+  'urban.catastro.rustica': 'Rustic parcel',
+  'urban.catastro.sinParcela': 'No parcel at this point',
+  'urban.catastro.sinServicio': 'No answer',
+  'urban.siose.none': 'No data at this point',
+
+  'urban.readRule': 'What article 40 says',
+  'urban.summaryFallback': 'Checked against the cadastre and land cover',
+  'urban.footnote':
+    'Two official sources crossed: the cadastre says whether the parcel is urban or rustic, and the IGN’s SIOSE says what covers the ground (2015 data, CC BY 4.0 scne.es). It is an indication, not a legal determination: article 40 also requires vehicle access, paved streets, drainage and street lighting, and no public dataset records that.',
 };

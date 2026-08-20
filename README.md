@@ -174,9 +174,10 @@ Type an address, a town, a landmark — or paste coordinates like
 ### Sharing a pin from Maps
 
 Open the spot in **Google Maps** or **Apple Maps**, hit share and pick Zona
-Dron: the app opens on that point with the check already running. It reads the
-pin's coordinates from the link, following the short `maps.app.goo.gl` form
-when that is what Maps hands over.
+Dron: the app opens the map with the crosshair on that point and the check
+already running, so you also see what surrounds it. It reads the pin's
+coordinates from the link, following the short `maps.app.goo.gl` form when that
+is what Maps hands over.
 
 This needs the installed app — the APK or the IPA — not Expo Go. And on iPhone
 it depends on how the app was signed: Apple passes the shared link to the app

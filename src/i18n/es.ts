@@ -731,8 +731,9 @@ export const es = {
   /* --- Chincheta compartida desde Maps --------------------------------- */
 
   'sharedPoint.failedTitle': 'No hemos podido leer ese sitio',
-  'sharedPoint.failedBody':
-    'El enlace compartido no lleva coordenadas que podamos comprobar. Comparte la chincheta desde Google Maps o Apple Maps, o pega las coordenadas en Buscar.',
+  'sharedPoint.failedBody': (recibido: string) =>
+    'El enlace compartido no lleva coordenadas que podamos comprobar. Comparte la chincheta desde Google Maps o Apple Maps, o pega las coordenadas en Buscar.' +
+    `\n\nLo que ha llegado: ${recibido}`,
 
   'sharedPoint.emptyTitle': 'No ha llegado el sitio compartido',
   'sharedPoint.emptyBody':

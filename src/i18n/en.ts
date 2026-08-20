@@ -732,8 +732,9 @@ export const en: Messages = {
   /* --- A pin shared from Maps ------------------------------------------ */
 
   'sharedPoint.failedTitle': 'That place could not be read',
-  'sharedPoint.failedBody':
-    'The shared link carries no coordinates we can check. Share the pin from Google Maps or Apple Maps, or paste the coordinates into Search.',
+  'sharedPoint.failedBody': (received: string) =>
+    'The shared link carries no coordinates we can check. Share the pin from Google Maps or Apple Maps, or paste the coordinates into Search.' +
+    `\n\nWhat arrived: ${received}`,
 
   'sharedPoint.emptyTitle': 'The shared place did not arrive',
   'sharedPoint.emptyBody':

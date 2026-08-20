@@ -176,9 +176,10 @@ como `39.47, -0.32`— y consulta un punto sin ir hasta allí. Útil la noche an
 ### Compartir una chincheta desde Maps
 
 Abre el sitio en **Google Maps** o en **Apple Maps**, dale a compartir y elige
-Zona Dron: la app se abre en ese punto y lo comprueba sola. Saca las
-coordenadas de la chincheta del enlace, siguiendo el enlace corto
-`maps.app.goo.gl` cuando es lo que manda Maps.
+Zona Dron: la app abre el mapa con la mirilla en ese punto y lo comprueba sola,
+así que además ves lo que tiene alrededor. Saca las coordenadas de la chincheta
+del enlace, siguiendo el enlace corto `maps.app.goo.gl` cuando es lo que manda
+Maps.
 
 Hace falta la app instalada —el APK o el IPA—, no vale Expo Go. Y en iPhone
 depende de cómo esté firmada: Apple le pasa el enlace a la app a través de un

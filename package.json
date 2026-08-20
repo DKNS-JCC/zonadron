@@ -49,9 +49,9 @@
     "test:unit": "tsx --test tests/*.test.ts",
     "test:motor": "tsx scripts/verificar-motor.ts",
     "vendor:leaflet": "node scripts/vendor-leaflet.mjs",
-    "apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/apk.ps1 -Release",
-    "apk:debug": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/apk.ps1",
-    "apk:eas": "eas build --platform android --profile preview"
+    "apk": "eas build --platform android --profile preview",
+    "apk:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/apk.ps1 -Release",
+    "apk:local:debug": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/apk.ps1"
   },
   "private": true
 }

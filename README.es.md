@@ -328,32 +328,36 @@ npm run web
 
 ### APK de Android
 
-En local, con el SDK de Android instalado — más rápido que la nube y sin
-necesitar cuenta:
-
-```bash
-npm run apk
-```
-
-Eso lanza [`scripts/apk.ps1`](scripts/apk.ps1), que le dice a Gradle dónde está
-el SDK (`ANDROID_HOME` y `android/local.properties`, que `expo prebuild` se
-lleva por delante cada vez), regenera el proyecto nativo si no está, y te dice
-dónde ha dejado el `.apk`. Con `npm run apk:debug` sale la variante de
-depuración, que necesita `npx expo start --dev-client` levantado para tener
-JavaScript.
-
-Un aviso: la plantilla de Expo firma el release con `debug.keystore`, no con la
-clave de EAS. El APK compilado en local se instala y funciona, pero no puede
-actualizar encima de uno bajado de las releases —hay que desinstalar primero— y
-no es el que se publica como actualización.
-
-Para eso sigue estando la compilación en la nube:
+Lo compila Expo Application Services en la nube, firmado con la clave que usan
+las releases:
 
 ```bash
 npm install -g eas-cli
 eas login
-npm run apk:eas
+npm run apk
 ```
+
+Ése es el APK que se publica: uno compilado de cualquier otra forma no puede
+actualizar encima del que ya se ha bajado la gente.
+
+También hay un camino local para iterar sin esperar cola, si tienes el SDK de
+Android instalado:
+
+```bash
+npm run apk:local
+```
+
+Lanza [`scripts/apk.ps1`](scripts/apk.ps1), que le dice a Gradle dónde está el
+SDK (`ANDROID_HOME` y `android/local.properties`, que `expo prebuild` se lleva
+por delante cada vez), regenera el proyecto nativo si no está, y te dice dónde
+ha dejado el `.apk`. Con `npm run apk:local:debug` sale la variante de
+depuración, que necesita `npx expo start --dev-client` levantado para tener
+JavaScript.
+
+El pero que lo convierte en herramienta de desarrollo y no de publicación: la
+plantilla de Expo firma el release con `debug.keystore`, no con la clave de
+EAS. El APK compilado en local se instala y funciona, pero no puede actualizar
+encima de uno bajado de las releases: hay que desinstalar primero.
 
 ### iPhone: el IPA sin firmar
 

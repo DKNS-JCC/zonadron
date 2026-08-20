@@ -323,12 +323,30 @@ npm run web
 
 ### Android APK
 
-The project uses Expo Application Services (EAS):
+Locally, with the Android SDK installed — faster than a cloud build and it does
+not need an account:
+
+```bash
+npm run apk
+```
+
+That runs [`scripts/apk.ps1`](scripts/apk.ps1), which points Gradle at the SDK
+(`ANDROID_HOME` plus `android/local.properties`, which `expo prebuild` wipes
+every time), regenerates the native project when it is missing, and prints
+where the `.apk` landed. `npm run apk:debug` builds the debug variant instead,
+which needs `npx expo start --dev-client` running to have any JavaScript.
+
+One catch: Expo's template signs release builds with `debug.keystore`, not with
+the key EAS uses. A locally built APK installs and works, but it cannot update
+over one downloaded from the releases — uninstall first — and it is not the one
+to publish as an update.
+
+The cloud build is still there for a release-signed APK:
 
 ```bash
 npm install -g eas-cli
 eas login
-npm run apk
+npm run apk:eas
 ```
 
 ### iPhone: the unsigned IPA

@@ -727,4 +727,10 @@ export const es = {
   'urban.summaryFallback': 'Comprobado con Catastro y ocupación del suelo',
   'urban.footnote':
     'Cruce de dos fuentes oficiales: el Catastro dice si la parcela es urbana o rústica, y el SIOSE del IGN qué ocupa el suelo (datos de 2015, CC BY 4.0 scne.es). Es una indicación, no una determinación legal: el art. 40 exige además accesos rodados, viales pavimentados, saneamiento y alumbrado, y eso no está en ningún dato público.',
+
+  /* --- Chincheta compartida desde Maps --------------------------------- */
+
+  'sharedPoint.failedTitle': 'No hemos podido leer ese sitio',
+  'sharedPoint.failedBody':
+    'El enlace compartido no lleva coordenadas que podamos comprobar. Comparte la chincheta desde Google Maps o Apple Maps, o pega las coordenadas en Buscar.',
 };

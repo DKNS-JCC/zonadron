@@ -728,4 +728,10 @@ export const en: Messages = {
   'urban.summaryFallback': 'Checked against the cadastre and land cover',
   'urban.footnote':
     'Two official sources crossed: the cadastre says whether the parcel is urban or rustic, and the IGN’s SIOSE says what covers the ground (2015 data, CC BY 4.0 scne.es). It is an indication, not a legal determination: article 40 also requires vehicle access, paved streets, drainage and street lighting, and no public dataset records that.',
+
+  /* --- A pin shared from Maps ------------------------------------------ */
+
+  'sharedPoint.failedTitle': 'That place could not be read',
+  'sharedPoint.failedBody':
+    'The shared link carries no coordinates we can check. Share the pin from Google Maps or Apple Maps, or paste the coordinates into Search.',
 };

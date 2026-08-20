@@ -64,7 +64,18 @@
           "backgroundColor": "#0B1220"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-share-intent",
+        {
+          "iosShareExtensionName": "Zona Dron",
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true
+          },
+          "androidIntentFilters": ["text/plain"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

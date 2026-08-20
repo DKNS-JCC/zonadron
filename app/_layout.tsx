@@ -7,6 +7,7 @@ import { HistoryProvider } from '../src/state/HistoryContext';
 import { FavoritesProvider } from '../src/state/FavoritesContext';
 import { FlightLogProvider } from '../src/state/FlightLogContext';
 import { usePalette, useScheme } from '../src/hooks/useTheme';
+import { useSharedPointRouting } from '../src/hooks/useSharedPointRouting';
 import { t } from '../src/i18n';
 
 export default function RootLayout() {
@@ -31,6 +32,9 @@ function Navegacion() {
   const palette = usePalette();
   const scheme = useScheme();
   const { locale } = useSettings();
+  // Compartir una chincheta desde Maps abre directamente su resultado. Va aquí
+  // dentro porque necesita el router, y con la app ya montada.
+  useSharedPointRouting();
 
   return (
     // Cambiar de idioma rehace la navegación entera. Suena drástico, pero un

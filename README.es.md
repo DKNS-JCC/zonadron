@@ -323,8 +323,9 @@ El `.ipa` que se publica en las versiones lo construye
 [`.github/workflows/ios.yml`](.github/workflows/ios.yml) en un runner de macOS:
 GitHub Actions genera el proyecto nativo, lo archiva con la firma de código
 desactivada y comprime el resultado. Se lanza desde **Actions → iOS → Run
-workflow**, o publicando una etiqueta `vX.Y.Z`, y en ese caso el archivo se
-adjunta a la release.
+workflow** o publicando una etiqueta `vX.Y.Z`; en los dos casos el `.ipa` acaba
+adjunto a la release de la versión que diga `package.json`, y esa release se
+crea si no existía.
 
 Para esto no se usa EAS: una compilación de iOS que EAS pueda meter en un
 dispositivo necesita un perfil de aprovisionamiento, y eso exige una cuenta de

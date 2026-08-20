@@ -6,7 +6,10 @@
 # para poner la app en un iPhone sin pagar la cuota de desarrollador.
 #
 # Se ejecuta a mano (Actions → iOS → Run workflow) o al publicar una etiqueta
-# vX.Y.Z, en cuyo caso el .ipa se adjunta a la release.
+# vX.Y.Z. En los dos casos el .ipa acaba colgado de la release que corresponde
+# a la versión de package.json, que se crea si todavía no existe: un archivo
+# que sólo vive como artefacto de Actions caduca a los 90 días y no se puede
+# enlazar desde el README.
 
 name: iOS
 
@@ -86,8 +89,22 @@ jobs:
           path: ZonaDron-*.ipa
           if-no-files-found: error
 
-      - name: Attach the .ipa to the release
-        if: startsWith(github.ref, 'refs/tags/')
+      # El artefacto de arriba sirve para probar una compilación suelta; la
+      # release es la que enlaza el README, así que el .ipa tiene que acabar
+      # ahí sí o sí. Si la etiqueta no existía todavía, la crea apuntando al
+      # commit que se acaba de compilar.
+      - name: Publish the .ipa in its release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${GITHUB_REF_NAME}" ZonaDron-*.ipa --clobber
+        run: |
+          set -euo pipefail
+          TAG="v$(node -p "require('./package.json').version")"
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            echo "La release $TAG no existe: se crea."
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "Zona Dron $TAG" \
+              --generate-notes
+          fi
+          gh release upload "$TAG" ZonaDron-*.ipa --clobber
+          echo "IPA publicado en $TAG"

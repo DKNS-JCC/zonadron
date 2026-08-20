@@ -1,3 +1,8 @@
 {
-  "NSLocationWhenInUseUsageDescription": "Zona Dron uses your location to check whether the spot you are standing on falls inside a UAS geographical zone published by ENAIRE."
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "Zona Dron uses your location to check whether the spot you are standing on falls inside a UAS geographical zone published by ENAIRE."
+  },
+  "android": {
+    "app_name": "Zona Dron"
+  }
 }

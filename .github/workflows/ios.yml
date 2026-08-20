@@ -1,0 +1,93 @@
+# IPA sin firmar para instalar por sideload (AltStore, SideStore, Sideloadly).
+#
+# Publicar en la App Store cuesta 99 $/año, así que aquí no se firma nada: el
+# archivo se compila sin identidad de firma y quien lo instala lo firma con su
+# propio Apple ID gratuito desde su ordenador. Ese es el único camino legítimo
+# para poner la app en un iPhone sin pagar la cuota de desarrollador.
+#
+# Se ejecuta a mano (Actions → iOS → Run workflow) o al publicar una etiqueta
+# vX.Y.Z, en cuyo caso el .ipa se adjunta a la release.
+
+name: iOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  ipa:
+    # Compilar para iOS exige Xcode, o sea macOS. Los runners de macOS son
+    # gratis en repositorios públicos.
+    runs-on: macos-latest
+    timeout-minutes: 90
+
+    # Sólo para adjuntar el .ipa a la release cuando el disparador es una etiqueta.
+    permissions:
+      contents: write
+
+    env:
+      EXPO_NO_TELEMETRY: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # El proyecto es "managed": la carpeta ios/ no está en git y se genera
+      # aquí a partir de app.json.
+      - name: Generate the native iOS project
+        run: npx expo prebuild --platform ios --clean --no-install
+
+      - name: Install CocoaPods dependencies
+        run: pod install
+        working-directory: ios
+
+      - name: Archive without code signing
+        run: |
+          set -euo pipefail
+          WORKSPACE="$(ls -d ios/*.xcworkspace | head -1)"
+          SCHEME="$(basename "$WORKSPACE" .xcworkspace)"
+          echo "Workspace: $WORKSPACE — scheme: $SCHEME"
+          xcodebuild archive \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/ZonaDron.xcarchive" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            DEVELOPMENT_TEAM=""
+
+      # Un .ipa es un zip con la app dentro de una carpeta llamada Payload.
+      # No hace falta xcodebuild -exportArchive, que sí exigiría firmar.
+      - name: Package the app into an unsigned .ipa
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          mkdir -p "$RUNNER_TEMP/pack/Payload"
+          cp -R "$RUNNER_TEMP/ZonaDron.xcarchive/Products/Applications/"*.app "$RUNNER_TEMP/pack/Payload/"
+          cd "$RUNNER_TEMP/pack"
+          zip -qry "$GITHUB_WORKSPACE/ZonaDron-$VERSION-unsigned.ipa" Payload
+          cd "$GITHUB_WORKSPACE"
+          ls -lh ZonaDron-*.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ZonaDron-unsigned-ipa
+          path: ZonaDron-*.ipa
+          if-no-files-found: error
+
+      - name: Attach the .ipa to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" ZonaDron-*.ipa --clobber

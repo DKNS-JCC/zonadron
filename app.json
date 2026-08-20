@@ -16,6 +16,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "es.zonadron.app",
+      "buildNumber": "1",
+      "requireFullScreen": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Zona Dron usa tu ubicación para comprobar si el punto donde estás se encuentra dentro de una zona geográfica UAS publicada por ENAIRE.",
         "ITSAppUsesNonExemptEncryption": false

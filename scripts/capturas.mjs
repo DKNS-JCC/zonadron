@@ -1,14 +1,25 @@
 // Capturas de todas las pantallas en claro y oscuro, contra los servicios reales.
-import pw from '/tmp/pw/node_modules/playwright/index.js';
-const { chromium } = pw;
+//
+// Uso:  npm run web:export  &&  npm run capturas [carpeta-de-salida]
+//
+// Playwright no es una dependencia del proyecto (se lleva un navegador entero
+// detrás). Si no está instalado:  npm i -D playwright && npx playwright install chromium
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 
+let chromium;
+try {
+  ({ chromium } = await import('playwright'));
+} catch {
+  console.error('Falta Playwright. Instálalo con: npm i -D playwright && npx playwright install chromium');
+  process.exit(1);
+}
+
 const DIST = 'dist';
 const PORT = 8099;
-const OUT = process.argv[2] ?? '/tmp/after';
+const OUT = process.argv[2] ?? 'docs/capturas';
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.ico': 'image/x-icon', '.png': 'image/png' };
 
@@ -45,7 +56,7 @@ const PAGES = [
   ['descargar', '/descargar'],
 ];
 
-const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const browser = await chromium.launch();
 
 for (const scheme of ['light', 'dark']) {
   const ctx = await browser.newContext({

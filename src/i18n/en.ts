@@ -738,4 +738,11 @@ export const en: Messages = {
   'sharedPoint.emptyTitle': 'The shared place did not arrive',
   'sharedPoint.emptyBody':
     'The app was opened from the share menu but received no link. On iPhone this happens when the app is sideloaded with a free Apple ID: Apple does not let the share extension hand data to the app. Copy the link and paste it into Search.',
+
+  'urban.surrounded':
+    'Right under you the land cover map sees a street, but what surrounds you is urban land.',
+
+  'urban.enaireFallback':
+    'ENAIRE publishes a nationwide notice reminding you to check whether you are in an urban environment. It is all that is left when there is no data: look around you.',
+  'urban.enaireLabel': 'ENAIRE (general notice)',
 };

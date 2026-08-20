@@ -53,13 +53,21 @@ export type CatastroKind = 'urbana' | 'rustica' | 'sin-parcela' | 'sin-servicio'
 
 export interface UrbanEvidence {
   catastro: CatastroKind;
-  /** Código CODIIGE de SIOSE, o null si no ha respondido / no hay dato. */
+  /** Código CODIIGE de SIOSE bajo el punto, o null si no hay dato. */
   siose: number | null;
+  /**
+   * Códigos de lo que hay alrededor, a unos 40 m. Sin esto, una avenida en
+   * mitad de una ciudad sale como "red viaria" y la app diría que no ha
+   * detectado entorno urbano — que es justo el error que no puede cometer.
+   */
+  around: number[];
 }
 
 export interface UrbanContext extends UrbanEvidence {
   level: UrbanLevel;
   supuesto: UrbanCase | null;
+  /** La decisión se ha apoyado en lo que rodea al punto, no en el punto. */
+  surrounded: boolean;
   /** Dirección catastral tal cual la publica el Catastro. */
   direccion: string | null;
   /** Etiqueta de SIOSE tal cual: "Casco", "Cultivo herbáceo"… */
@@ -88,49 +96,76 @@ function sioseFamily(code: number | null): 'nucleo' | 'zona-verde' | 'construido
   return 'natural';
 }
 
+export interface UrbanVerdict {
+  level: UrbanLevel;
+  supuesto: UrbanCase | null;
+  surrounded: boolean;
+}
+
 /**
- * Cruza las dos fuentes. Es una función pura a propósito: es la única parte
- * con criterio propio y tiene que poder comprobarse sin red.
+ * Cruza lo que dicen las fuentes. Es una función pura a propósito: es la única
+ * parte con criterio propio y tiene que poder comprobarse sin red.
+ *
+ * La regla, en una frase: estás en entorno urbano si el suelo que pisas es
+ * urbano, o si lo que te rodea lo es. Lo segundo hace falta porque las calles
+ * y las avenidas se clasifican como red viaria: sin mirar alrededor, el centro
+ * de Salamanca no sería una ciudad.
  */
-export function classifyUrban(evidence: UrbanEvidence): { level: UrbanLevel; supuesto: UrbanCase | null } {
+export function classifyUrban(evidence: UrbanEvidence): UrbanVerdict {
   const { catastro } = evidence;
   const family = sioseFamily(evidence.siose);
+  const around = (evidence.around ?? []).map(sioseFamily);
 
-  if (catastro === 'sin-servicio' && family === null) {
-    return { level: 'sin-datos', supuesto: null };
+  if (catastro === 'sin-servicio' && family === null && around.length === 0) {
+    return { level: 'sin-datos', supuesto: null, surrounded: false };
   }
+
+  const urbanAround = around.filter((f) => f === 'nucleo' || f === 'construido');
+  // Dos polígonos urbanos y al menos la mitad de la muestra: un edificio suelto
+  // junto a una carretera no convierte el campo en ciudad.
+  const surrounded = urbanAround.length >= 2 && urbanAround.length * 2 >= around.length;
+  const nucleoAround = around.filter((f) => f === 'nucleo').length;
 
   const urbanaCatastro = catastro === 'urbana';
-
-  // Un parque urbano es el supuesto c) aunque la parcela sea de titularidad
-  // pública y el Catastro no diga nada de ella. Si además la parcela es
-  // urbana, estás en la ciudad y punto: llamarle "zona verde" a la plaza del
-  // ayuntamiento confunde, aunque SIOSE la clasifique así.
-  if (family === 'zona-verde') {
-    return { level: urbanaCatastro ? 'urbano' : 'parque', supuesto: 'c' };
-  }
-
   const nucleo = family === 'nucleo';
   const construido = family === 'construido';
+  const suelourbano = nucleo || construido;
 
-  if (urbanaCatastro && (nucleo || construido)) {
-    return { level: 'urbano', supuesto: nucleo ? 'a' : 'b' };
+  const supuesto: UrbanCase = nucleo || (surrounded && nucleoAround * 2 >= urbanAround.length) ? 'a' : 'b';
+
+  // Un parque urbano es el supuesto c). Si además la parcela es urbana o está
+  // rodeado de ciudad, estás en la ciudad y punto: llamarle "zona verde" a la
+  // plaza del ayuntamiento confunde, aunque SIOSE la clasifique así.
+  if (family === 'zona-verde') {
+    const dentro = urbanaCatastro || surrounded;
+    return { level: dentro ? 'urbano' : 'parque', supuesto: 'c', surrounded };
   }
 
-  // Sin parcela catastral (una calle, un camino, la playa) el suelo manda: si
-  // SIOSE dice casco o ensanche, estás en el casco aunque pises asfalto.
-  if (catastro === 'sin-parcela' && nucleo) return { level: 'urbano', supuesto: 'a' };
+  // El suelo dice casco o ensanche y no hay parcela que consultar —una calle,
+  // una plaza—: eso ya es estar dentro del núcleo, sin más comprobaciones.
+  if (nucleo && (catastro === 'sin-parcela' || catastro === 'sin-servicio')) {
+    return { level: 'urbano', supuesto: 'a', surrounded: false };
+  }
 
-  // Una sola fuente: hay indicio, no certeza.
-  if (urbanaCatastro || nucleo || construido) {
-    return { level: 'probable', supuesto: nucleo ? 'a' : construido ? 'b' : null };
+  // Dos señales de acuerdo: el suelo y el catastro, o el suelo y el vecindario.
+  if ((suelourbano || surrounded) && (urbanaCatastro || (suelourbano && surrounded))) {
+    return { level: 'urbano', supuesto, surrounded: surrounded && !suelourbano };
+  }
+
+  // Una sola señal: hay indicio, no certeza.
+  if (urbanaCatastro || suelourbano || surrounded) {
+    return {
+      level: 'probable',
+      supuesto: suelourbano || surrounded ? supuesto : null,
+      surrounded: surrounded && !suelourbano,
+    };
   }
 
   if (catastro === 'sin-servicio' && family === 'infraestructura') {
-    return { level: 'sin-datos', supuesto: null };
+    return { level: 'sin-datos', supuesto: null, surrounded: false };
   }
 
-  return { level: 'no-detectado', supuesto: null };
+  return { level: 'no-detectado', supuesto: null, surrounded: false };
 }
 
 /* ------------------------------------------------------------------ */
@@ -193,8 +228,12 @@ export function parseSiose(body: string | null): { code: number | null; label: s
   }
 }
 
-function sioseUrl(lat: number, lon: number): string {
-  // Una caja diminuta alrededor del punto y se pregunta por su píxel central.
+/**
+ * Consulta al WMS. Sin `buffer` responde por el píxel exacto; con él, por todo
+ * lo que haya en ese radio de píxeles — unos 40 m con esta caja — que es como
+ * se mira el vecindario sin lanzar cuatro peticiones.
+ */
+function sioseUrl(lat: number, lon: number, buffer?: number): string {
   const d = 0.0004;
   const params = new URLSearchParams({
     service: 'WMS',
@@ -209,8 +248,24 @@ function sioseUrl(lat: number, lon: number): string {
     i: '25',
     j: '25',
     info_format: 'application/json',
+    feature_count: buffer ? '8' : '1',
+    ...(buffer ? { buffer: String(buffer) } : {}),
   });
   return `${SIOSE_URL}?${params}`;
+}
+
+/** Todos los códigos de una respuesta con varios polígonos. */
+export function parseSioseAround(body: string | null): number[] {
+  if (!body) return [];
+  try {
+    const json = JSON.parse(body);
+    const features = Array.isArray(json?.features) ? json.features : [];
+    return features
+      .map((f: { properties?: { codiige?: unknown } }) => Number(f?.properties?.codiige))
+      .filter((code: number) => Number.isFinite(code));
+  } catch {
+    return [];
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -227,8 +282,10 @@ const cache = new Map<string, UrbanContext>();
 const SIN_REGION: UrbanContext = {
   level: 'sin-region',
   supuesto: null,
+  surrounded: false,
   catastro: 'sin-servicio',
   siose: null,
+  around: [],
   direccion: null,
   cobertura: null,
 };
@@ -244,20 +301,29 @@ export async function checkUrbanContext(
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const [catastroXml, sioseBody] = await Promise.all([
+  // Las tres a la vez: tardan lo que la más lenta, unas décimas de segundo.
+  const [catastroXml, sioseBody, aroundBody] = await Promise.all([
     fetchText(`${CATASTRO_URL}?SRS=EPSG:4326&Coordenada_X=${coords.lon}&Coordenada_Y=${coords.lat}`, signal),
     fetchText(sioseUrl(coords.lat, coords.lon), signal),
+    fetchText(sioseUrl(coords.lat, coords.lon, 25), signal),
   ]);
 
   const catastro = parseCatastro(catastroXml);
   const siose = parseSiose(sioseBody);
-  const { level, supuesto } = classifyUrban({ catastro: catastro.kind, siose: siose.code });
+  const around = parseSioseAround(aroundBody);
+  const { level, supuesto, surrounded } = classifyUrban({
+    catastro: catastro.kind,
+    siose: siose.code,
+    around,
+  });
 
   const context: UrbanContext = {
     level,
     supuesto,
+    surrounded,
     catastro: catastro.kind,
     siose: siose.code,
+    around,
     direccion: catastro.direccion,
     cobertura: siose.label,
   };

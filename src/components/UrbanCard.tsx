@@ -24,7 +24,7 @@ import {
   type,
   type Palette,
 } from '../theme';
-import type { Coords } from '../types';
+import type { Coords, EvaluatedZone } from '../types';
 import { Chevron, Collapsible } from './motion';
 import { GhostButton, Separator, SkeletonRows } from './ui';
 
@@ -39,8 +39,22 @@ import { GhostButton, Separator, SkeletonRows } from './ui';
  *
  * Nunca pinta de verde un "aquí no pasa nada": lo más afirmativo que sabe
  * decir es que no lo ha detectado. Ver `src/api/urbano.ts`.
+ *
+ * El aviso de entorno urbano de ENAIRE —el mismo para toda España, que sólo
+ * dice "compruébalo tú"— se recoge aquí en vez de salir como una zona más:
+ * son la misma pregunta, y enseñarlas por separado obliga al usuario a
+ * conciliar dos tarjetas que hablan de lo mismo. Manda lo que hemos podido
+ * averiguar del punto; el aviso de ENAIRE queda de red de seguridad para
+ * cuando no hay datos.
  */
-export function UrbanCard({ coords }: { coords: Coords }) {
+export function UrbanCard({
+  coords,
+  enaireNotice,
+}: {
+  coords: Coords;
+  /** Aviso general de entorno urbano de ENAIRE, si viene en la consulta. */
+  enaireNotice?: EvaluatedZone | null;
+}) {
   const p = usePalette();
   const router = useRouter();
   const [context, setContext] = useState<UrbanContext | null>(null);
@@ -80,6 +94,8 @@ export function UrbanCard({ coords }: { coords: Coords }) {
 
   const tone = toneFor(context.level, p);
   const applies = context.level === 'urbano' || context.level === 'probable' || context.level === 'parque';
+  // Sin datos propios, lo único que queda es el recordatorio de ENAIRE.
+  const sinDatos = context.level === 'sin-datos' || context.level === 'sin-region';
 
   return (
     <Card>
@@ -114,6 +130,19 @@ export function UrbanCard({ coords }: { coords: Coords }) {
         <View style={{ padding: space.lg, gap: space.md }}>
           <Text style={[type.footnote, { color: p.label }]}>{explanation(context.level)}</Text>
 
+          {/* Por qué decimos ciudad si el suelo de debajo es una carretera. */}
+          {context.surrounded ? (
+            <Text style={[type.footnote, { color: p.labelSecondary }]}>
+              {t('urban.surrounded')}
+            </Text>
+          ) : null}
+
+          {sinDatos && enaireNotice ? (
+            <Text style={[type.footnote, { color: p.labelSecondary }]}>
+              {t('urban.enaireFallback')}
+            </Text>
+          ) : null}
+
           {/* Qué ha contestado cada fuente, sin interpretar. */}
           {context.level !== 'sin-region' ? (
             <View style={{ gap: 4 }}>
@@ -129,6 +158,9 @@ export function UrbanCard({ coords }: { coords: Coords }) {
                     : t('urban.siose.none')
                 }
               />
+              {enaireNotice ? (
+                <SourceLine label={t('urban.enaireLabel')} value={enaireNotice.title} />
+              ) : null}
             </View>
           ) : null}
 

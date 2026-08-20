@@ -737,4 +737,11 @@ export const es = {
   'sharedPoint.emptyTitle': 'No ha llegado el sitio compartido',
   'sharedPoint.emptyBody':
     'La app se ha abierto desde el menú de compartir, pero no ha recibido el enlace. En iPhone esto pasa cuando la app está instalada por sideload con un Apple ID gratuito: Apple no deja que la extensión de compartir le pase datos a la app. Copia el enlace y pégalo en Buscar.',
+
+  'urban.surrounded':
+    'Bajo tus pies el mapa de usos ve una calle, pero lo que te rodea es suelo urbano.',
+
+  'urban.enaireFallback':
+    'ENAIRE publica un aviso general para toda España recordándote que compruebes si estás en entorno urbano. Es lo único que queda cuando no hay datos: míralo a tu alrededor.',
+  'urban.enaireLabel': 'ENAIRE (aviso general)',
 };

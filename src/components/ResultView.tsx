@@ -67,6 +67,10 @@ export function ResultView({
 
   const affecting = result.verdict.affecting;
   const others = result.verdict.notAffecting;
+  // El aviso urbano de ENAIRE no se enseña como zona: vive dentro de la
+  // tarjeta de entorno urbano, que responde a esa misma pregunta con datos.
+  const urbanNotice = result.verdict.advisories.find((z) => z.layer === 'urbano') ?? null;
+  const advisories = result.verdict.advisories.filter((z) => z !== urbanNotice);
   const expired = result.zones.filter((z) => z.timing === 'CADUCADA');
 
   const logThisFlight = () => {
@@ -234,10 +238,10 @@ export function ResultView({
         </View>
       ) : null}
 
-      {result.verdict.advisories.length > 0 ? (
+      {advisories.length > 0 ? (
         <View style={{ gap: space.md }}>
           <SectionTitle>{t('result.advisories')}</SectionTitle>
-          {result.verdict.advisories.map((z) => (
+          {advisories.map((z) => (
             <ZoneCard key={z.key} zone={z} />
           ))}
         </View>
@@ -257,7 +261,9 @@ export function ResultView({
       {/* El entorno urbano no es una zona de ENAIRE —ellos avisan de que lo
           compruebes tú—, así que va aquí, entre las restricciones publicadas y
           el contexto del sitio, y nunca toca el veredicto. */}
-      {!result.offline ? <UrbanCard coords={result.coords} /> : null}
+      {!result.offline ? (
+        <UrbanCard coords={result.coords} enaireNotice={urbanNotice} />
+      ) : null}
 
       {!result.offline ? <ProximityCard coords={result.coords} /> : null}
 

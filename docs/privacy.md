@@ -1,8 +1,18 @@
+---
+layout: default
+title: Privacy policy
+lang: en
+permalink: /privacy
+description: >-
+  Zona Dron collects no personal data, has no accounts and no server of its own,
+  and carries no ads or trackers. Everything stays on your phone.
+---
+
 # Zona Dron privacy policy
 
 *Last updated: 21 August 2026. Applies to Zona Dron (`es.zonadron.app`), all versions.*
 
-**Versión en español: [PRIVACY.es.md](PRIVACY.es.md).**
+**Versión en español: [política de privacidad](privacidad).**
 
 ## The short version
 

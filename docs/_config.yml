@@ -1,0 +1,23 @@
+# Sitio público de Zona Dron (GitHub Pages, servido desde /docs en master).
+#
+# Se sirve desde el propio repositorio a propósito: la política de privacidad
+# tiene que vivir en la misma revisión que el código que describe, y así un
+# cambio en lo que hace la app y un cambio en lo que dice la web entran por el
+# mismo sitio: un commit.
+#
+# Sin tema de Jekyll: la plantilla está en _layouts/default.html, con su CSS
+# dentro. Cuatro páginas no necesitan una gema ni una hoja de estilos externa.
+
+title: Zona Dron
+description: >-
+  Comprueba si puedes volar tu dron en un punto concreto de España, con los
+  datos oficiales de ENAIRE. Gratis, sin anuncios y sin rastrear a nadie.
+lang: es
+url: https://dkns-jcc.github.io
+baseurl: /zonadron
+
+# Se publica sólo lo que es sitio web. La documentación de trabajo se queda en
+# el repositorio, que es donde se busca.
+exclude:
+  - publicar.md
+  - i18n.md

@@ -575,7 +575,11 @@ hay anuncios ni rastreadores. Lo que guardas se queda en tu móvil. Lo único qu
 sale de él son las coordenadas del punto que consultas, y sólo para
 preguntárselo a los servicios oficiales que responden.
 
-Está todo detallado en la **[política de privacidad](PRIVACY.es.md)**.
+Está todo detallado en la **[política de privacidad](https://dkns-jcc.github.io/zonadron/privacidad)**
+(fuente: [`docs/privacidad.md`](docs/privacidad.md)).
+
+La web del proyecto, con la misma información y las capturas, está en
+**<https://dkns-jcc.github.io/zonadron/>**.
 
 ---
 

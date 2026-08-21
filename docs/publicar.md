@@ -14,10 +14,13 @@ Esto se hace una sola vez. Lo que está marcado como **bloqueante** impide envia
 
 - [ ] Cuenta de desarrollador verificada (documento de identidad y dirección de
       contacto pública — las cuentas personales tienen que mostrar una).
-- [ ] **Bloqueante:** política de privacidad en una URL pública. Está escrita en
-      [`PRIVACY.es.md`](../PRIVACY.es.md) (y en inglés en
-      [`PRIVACY.md`](../PRIVACY.md)); basta con enlazarla desde GitHub o
-      publicarla con GitHub Pages.
+- [x] **Bloqueante:** política de privacidad en una URL pública. Publicada con
+      GitHub Pages desde esta misma carpeta:
+      <https://dkns-jcc.github.io/zonadron/privacidad> (en inglés,
+      <https://dkns-jcc.github.io/zonadron/privacy>). La fuente es
+      [`privacidad.md`](privacidad.md), en el repositorio: se cambia con un
+      commit y se publica sola.
+- [ ] Web de la ficha: <https://dkns-jcc.github.io/zonadron/>
 - [ ] Ficha de la tienda en español e inglés: descripción corta y larga,
       capturas (están en [`capturas/`](capturas), en los dos idiomas e
       iluminaciones), icono de 512×512 y gráfico destacado de 1024×500.

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="{{ page.lang | default: site.lang }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+    <meta name="description" content="{{ page.description | default: site.description | strip_newlines }}">
+    <meta name="color-scheme" content="light dark">
+    <meta property="og:title" content="{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}">
+    <meta property="og:description" content="{{ page.description | default: site.description | strip_newlines }}">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="{{ '/capturas/es/light-home.png' | relative_url }}">
+    <style>
+      /* El mismo criterio que la app: tipografía del sistema, color semántico
+         que sigue al del aparato y nada puesto al azar. */
+      :root {
+        --fondo: #f2f2f7;
+        --superficie: #ffffff;
+        --texto: #000000;
+        --texto-2: #3c3c4399;
+        --texto-3: #3c3c434d;
+        --acento: #0a6cff;
+        --linea: #3c3c432e;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fondo: #000000;
+          --superficie: #1c1c1e;
+          --texto: #ffffff;
+          --texto-2: #ebebf599;
+          --texto-3: #ebebf54d;
+          --acento: #3b90ff;
+          --linea: #54545899;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--fondo);
+        color: var(--texto);
+        font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        -webkit-text-size-adjust: 100%;
+      }
+      .envoltorio { max-width: 46rem; margin: 0 auto; padding: 0 1.25rem 4rem; }
+      header.sitio {
+        border-bottom: 1px solid var(--linea);
+        margin-bottom: 2.5rem;
+        padding: 1.5rem 0 1rem;
+      }
+      header.sitio a.marca {
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--texto);
+        text-decoration: none;
+      }
+      nav { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 1.1rem; }
+      nav a { color: var(--acento); text-decoration: none; font-size: 0.95rem; }
+      nav a:hover { text-decoration: underline; }
+      h1 { font-size: 2rem; line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 0.6rem; }
+      h2 { font-size: 1.3rem; letter-spacing: -0.01em; margin: 2.5rem 0 0.75rem; }
+      h3 { font-size: 1.05rem; margin: 1.75rem 0 0.5rem; }
+      p, li { color: var(--texto); }
+      .entradilla { font-size: 1.1rem; color: var(--texto-2); margin-top: 0; }
+      a { color: var(--acento); }
+      code {
+        background: var(--superficie);
+        border: 1px solid var(--linea);
+        border-radius: 6px;
+        padding: 0.1em 0.35em;
+        font-size: 0.9em;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.25rem 0;
+        display: block;
+        overflow-x: auto;
+      }
+      th, td {
+        text-align: left;
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid var(--linea);
+        font-size: 0.95rem;
+        vertical-align: top;
+      }
+      th { color: var(--texto-2); font-weight: 600; }
+      .capturas {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+      .capturas img {
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--linea);
+        display: block;
+      }
+      .botones { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 1.5rem 0; }
+      .boton {
+        display: inline-block;
+        padding: 0.7rem 1.15rem;
+        border-radius: 12px;
+        background: var(--acento);
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.98rem;
+      }
+      .boton.secundario { background: var(--superficie); color: var(--acento); border: 1px solid var(--linea); }
+      .aviso {
+        background: var(--superficie);
+        border: 1px solid var(--linea);
+        border-radius: 14px;
+        padding: 1rem 1.15rem;
+        margin: 1.75rem 0;
+        font-size: 0.97rem;
+      }
+      footer.sitio {
+        border-top: 1px solid var(--linea);
+        margin-top: 3.5rem;
+        padding-top: 1.25rem;
+        color: var(--texto-3);
+        font-size: 0.87rem;
+      }
+      footer.sitio a { color: var(--texto-2); }
+    </style>
+  </head>
+  <body>
+    <div class="envoltorio">
+      <header class="sitio">
+        <a class="marca" href="{{ '/' | relative_url }}">Zona Dron</a>
+        <nav>
+          <a href="{{ '/' | relative_url }}">Inicio</a>
+          <a href="{{ '/privacidad' | relative_url }}">Privacidad</a>
+          <a href="https://github.com/DKNS-JCC/zonadron">Código</a>
+          <a href="https://github.com/DKNS-JCC/zonadron/releases">Descargas</a>
+          <a href="{{ '/en' | relative_url }}">English</a>
+        </nav>
+      </header>
+
+      <main>
+        {{ content }}
+      </main>
+
+      <footer class="sitio">
+        <p>
+          Zona Dron es software libre (MIT) de Jorge Cuadrado ·
+          <a href="https://github.com/DKNS-JCC/zonadron">código</a> ·
+          <a href="{{ '/privacidad' | relative_url }}">privacidad</a>
+        </p>
+        <p>
+          Datos de las Zonas Geográficas UAS: © ENAIRE. Esta web y la aplicación
+          no son un servicio oficial y no sustituyen a la consulta del AIP.
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

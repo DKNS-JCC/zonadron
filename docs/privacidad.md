@@ -1,8 +1,18 @@
+---
+layout: default
+title: Política de privacidad
+lang: es
+permalink: /privacidad
+description: >-
+  Zona Dron no recoge datos personales, no tiene cuentas ni servidor propio y no
+  lleva anuncios ni rastreadores. Todo se queda en tu móvil.
+---
+
 # Política de privacidad de Zona Dron
 
 *Última actualización: 21 de agosto de 2026. Se aplica a Zona Dron (`es.zonadron.app`) en todas sus versiones.*
 
-**English version: [PRIVACY.md](PRIVACY.md).**
+**English version: [privacy policy](privacy).**
 
 ## Lo corto
 

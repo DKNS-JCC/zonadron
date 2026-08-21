@@ -561,7 +561,11 @@ no ads or trackers. What you save stays on your phone. The only thing that leave
 it is the coordinates of the point you are checking, and only to ask the official
 services that answer.
 
-It is all spelled out in the **[privacy policy](PRIVACY.md)**.
+It is all spelled out in the **[privacy policy](https://dkns-jcc.github.io/zonadron/privacy)**
+(source: [`docs/privacy.md`](docs/privacy.md)).
+
+The project's website, with the same information and the screenshots, is at
+**<https://dkns-jcc.github.io/zonadron/en>**.
 
 ---
 

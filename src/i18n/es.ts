@@ -422,11 +422,9 @@ export const es = {
   'offline.empty':
     'Elige en el mapa la zona donde vas a volar y descárgala. Dentro de esa área la app sigue respondiendo aunque te quedes sin datos móviles.',
   'offline.pick': 'Elegir zona en el mapa',
-  'offline.notamsFootnote':
-    'Los NOTAM no se descargan: cambian a diario y uno viejo es peor que ninguno. Sin cobertura la app te avisa de que faltan.',
+  'offline.notamsFootnote': 'Los NOTAM no se descargan: cambian a diario y uno viejo engaña.',
   'offline.coverageTitle': 'Mapa de altura libre',
-  'offline.coverageBody':
-    'Pinta el mapa por colores según hasta dónde puedes subir en cada punto. Se calcula con esta zona descargada.',
+  'offline.coverageBody': 'Colorea el mapa según hasta dónde puedes subir en cada punto.',
 
   /* --- Controles sueltos -------------------------------------------- */
 
@@ -542,7 +540,6 @@ export const es = {
   /* --- Ajustes ------------------------------------------------------- */
 
   'settings.title': 'Ajustes',
-  'settings.preferences': 'Preferencias',
   'settings.appearance': 'Aspecto',
   'settings.appearanceA11y': (aspecto: string) => `Aspecto ${aspecto}`,
   'settings.appearance.sistema': 'Automático',
@@ -551,8 +548,13 @@ export const es = {
   'settings.language': 'Idioma',
   'settings.language.system': 'Automático',
   'settings.languageA11y': (idioma: string) => `Idioma ${idioma}`,
-  'settings.languageNote':
-    'Cambia la interfaz. Los textos oficiales de ENAIRE, los NOTAM y los espacios protegidos siguen llegando en español: son la norma, y traducirlos sería reescribirla.',
+  'settings.languageNote': 'Los textos oficiales de ENAIRE siguen llegando en español.',
+  'settings.section.flight': 'Vuelo',
+  'settings.section.look': 'Aspecto e idioma',
+  'settings.section.app': 'La app',
+  'settings.privacyRow': 'Privacidad',
+  'settings.privacyHint': 'Nada sale de tu móvil',
+  'settings.version': (version: string) => `Zona Dron ${version}`,
   'settings.defaultHeight': 'Altura de vuelo por defecto',
   'settings.yourData': 'Tus datos',
   'settings.operatorAndAircraft': 'Operador y aeronave',
@@ -570,8 +572,6 @@ export const es = {
   'settings.field.droneSerialPlaceholder': 'El de la caja o de la app del fabricante',
   'settings.missingNote': (faltan: string) =>
     `Sin ${faltan}, las solicitudes saldrán con huecos marcados como [COMPLETAR].`,
-  'settings.privacy':
-    'Nada de esto sale de tu móvil. La app no tiene servidor propio ni envía correos por su cuenta: abre tu aplicación de correo con el texto redactado para que lo mandes tú.',
 
   /* --- Mapas base ---------------------------------------------------- */
 
@@ -855,8 +855,6 @@ export const es = {
 
   'settings.accent': 'Color de acento',
   'settings.accentA11y': (color: string) => `Color ${color}`,
-  'settings.accentNote':
-    'Cambia el color de los botones y de lo seleccionado. No hay acentos verdes ni naranjas a propósito: ésos son los colores de los veredictos y de los avisos, y ahí el color significa algo.',
   'settings.accent.azul': 'Azul',
   'settings.accent.turquesa': 'Turquesa',
   'settings.accent.morado': 'Morado',
@@ -864,9 +862,6 @@ export const es = {
   'settings.accent.grafito': 'Grafito',
 
   'support.title': 'Apoyar el proyecto',
-  'support.body':
-    'La app es gratis, sin anuncios y sin rastrear a nadie, y va a seguir siéndolo. Si te resulta útil, puedes invitarme a un café.',
+  'support.body': 'Gratis y sin anuncios. Donar no desbloquea nada.',
   'support.button': 'Invitar a un café',
-  'support.note':
-    'Se abre en el navegador. Donar no desbloquea nada: todo lo que hace la app lo hace para todo el mundo.',
 };

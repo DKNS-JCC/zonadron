@@ -427,11 +427,9 @@ export const en: Messages = {
   'offline.empty':
     'Pick the area you are going to fly in on the map and download it. Inside that area the app keeps answering even with no mobile data.',
   'offline.pick': 'Pick an area on the map',
-  'offline.notamsFootnote':
-    'NOTAMs are not downloaded: they change daily and a stale one is worse than none. With no coverage the app tells you they are missing.',
+  'offline.notamsFootnote': 'NOTAMs are not downloaded: they change daily, and a stale one misleads.',
   'offline.coverageTitle': 'Available-height map',
-  'offline.coverageBody':
-    'Colours the map by how high you can go at each point. Computed from this downloaded area.',
+  'offline.coverageBody': 'Colours the map by how high you can go at each point.',
 
   /* --- Odd controls ------------------------------------------------- */
 
@@ -542,7 +540,6 @@ export const en: Messages = {
   /* --- Settings ------------------------------------------------------ */
 
   'settings.title': 'Settings',
-  'settings.preferences': 'Preferences',
   'settings.appearance': 'Appearance',
   'settings.appearanceA11y': (appearance: string) => `${appearance} appearance`,
   'settings.appearance.sistema': 'Automatic',
@@ -551,8 +548,13 @@ export const en: Messages = {
   'settings.language': 'Language',
   'settings.language.system': 'Automatic',
   'settings.languageA11y': (language: string) => `${language} language`,
-  'settings.languageNote':
-    'Changes the interface. Official ENAIRE text, NOTAMs and protected areas still arrive in Spanish: that is the regulation, and translating it would mean rewriting it.',
+  'settings.languageNote': 'ENAIRE official text still arrives in Spanish.',
+  'settings.section.flight': 'Flying',
+  'settings.section.look': 'Look and language',
+  'settings.section.app': 'The app',
+  'settings.privacyRow': 'Privacy',
+  'settings.privacyHint': 'Nothing leaves your phone',
+  'settings.version': (version: string) => `Zona Dron ${version}`,
   'settings.defaultHeight': 'Default flight height',
   'settings.yourData': 'Your details',
   'settings.operatorAndAircraft': 'Operator and aircraft',
@@ -570,8 +572,6 @@ export const en: Messages = {
   'settings.field.droneSerialPlaceholder': 'From the box or the manufacturer’s app',
   'settings.missingNote': (missing: string) =>
     `Without ${missing}, requests will come out with gaps marked [COMPLETAR].`,
-  'settings.privacy':
-    'None of this leaves your phone. The app has no server of its own and sends no e-mail by itself: it opens your mail app with the text drafted so you send it.',
 
   /* --- Base maps ------------------------------------------------------ */
 
@@ -856,8 +856,6 @@ export const en: Messages = {
 
   'settings.accent': 'Accent colour',
   'settings.accentA11y': (color: string) => `${color} accent`,
-  'settings.accentNote':
-    'Changes the colour of buttons and of what is selected. There are no green or orange accents on purpose: those are the colours of verdicts and warnings, and there colour means something.',
   'settings.accent.azul': 'Blue',
   'settings.accent.turquesa': 'Teal',
   'settings.accent.morado': 'Purple',
@@ -865,9 +863,6 @@ export const en: Messages = {
   'settings.accent.grafito': 'Graphite',
 
   'support.title': 'Support the project',
-  'support.body':
-    'The app is free, carries no ads and tracks nobody, and it is staying that way. If you find it useful, you can buy me a coffee.',
+  'support.body': 'Free, no ads. Donating unlocks nothing.',
   'support.button': 'Buy me a coffee',
-  'support.note':
-    'Opens in your browser. Donating unlocks nothing: everything the app does, it does for everyone.',
 };

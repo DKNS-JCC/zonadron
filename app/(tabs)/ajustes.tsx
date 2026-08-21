@@ -156,7 +156,9 @@ export default function AjustesScreen() {
           <Text style={[type.footnote, { color: p.labelSecondary, marginBottom: space.sm }]}>
             {t('settings.accent')}
           </Text>
-          <View style={{ flexDirection: 'row', gap: space.sm }}>
+          {/* Centrados: cinco círculos no llenan el ancho, y alineados a la
+              izquierda dejaban un hueco que parecía que faltaba algo. */}
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.md }}>
             {ACCENT_IDS.map((a) => {
               const color = accentColor(a, p.scheme);
               const active = accent === a;

@@ -5,18 +5,18 @@
 # propio Apple ID gratuito desde su ordenador. Ese es el único camino legítimo
 # para poner la app en un iPhone sin pagar la cuota de desarrollador.
 #
-# Se ejecuta a mano (Actions → iOS → Run workflow) o al publicar una etiqueta
-# vX.Y.Z. En los dos casos el .ipa acaba colgado de la release que corresponde
-# a la versión de package.json, que se crea si todavía no existe: un archivo
-# que sólo vive como artefacto de Actions caduca a los 90 días y no se puede
-# enlazar desde el README.
+# Se ejecuta SÓLO a mano (Actions → iOS → Run workflow). Antes saltaba también
+# con cada etiqueta vX.Y.Z, pero ahora las etiquetas son releases de Android:
+# el canal principal es Google Play y iOS se compila cuando toca, no en cada
+# versión. El .ipa acaba colgado de la release que corresponde a la versión de
+# package.json, que se crea si todavía no existe: un archivo que sólo vive como
+# artefacto de Actions caduca a los 90 días y no se puede enlazar desde el
+# README.
 
 name: iOS
 
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*']
 
 jobs:
   ipa:

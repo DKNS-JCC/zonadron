@@ -217,7 +217,13 @@ what each drone class changes, and a link to the official source of every claim.
 
 Settings holds the flight height used by default, which drone you fly (this only
 changes which rules you are shown — never the verdict), the base map, light or
-dark appearance, the **interface language**, and the way into your **profile**.
+dark appearance, the **accent colour**, the **interface language**, and the way
+into your **profile**.
+
+The accent colour changes buttons and selected items. There are no green or
+orange accents on purpose, and verdict colours are left alone: there, green and
+red mean something, and letting them be customised would turn a signal into
+decoration.
 
 #### Profile: your details, your drones, your paperwork
 
@@ -545,6 +551,26 @@ src/
 | Regulations | [AESA](https://www.seguridadaerea.gob.es/es/ambitos/drones) |
 
 No API key is required for these sources.
+
+---
+
+## Privacy
+
+No personal data is collected, there are no accounts, no server of its own, and
+no ads or trackers. What you save stays on your phone. The only thing that leaves
+it is the coordinates of the point you are checking, and only to ask the official
+services that answer.
+
+It is all spelled out in the **[privacy policy](PRIVACY.md)**.
+
+---
+
+## Releasing a version
+
+The release process — Google Play, the GitHub APK and the iOS IPA — lives in
+[`docs/publicar.md`](docs/publicar.md).
+
+---
 
 ## License and credits
 

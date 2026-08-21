@@ -221,8 +221,13 @@ cada afirmación.
 
 En Ajustes está la altura de vuelo que se usa por defecto, con qué dron vuelas
 (esto sólo cambia qué normas se te enseñan, nunca el veredicto), el mapa base,
-el aspecto claro u oscuro, el **idioma de la interfaz** y la puerta a tu
-**perfil**.
+el aspecto claro u oscuro, el **color de acento**, el **idioma de la interfaz**
+y la puerta a tu **perfil**.
+
+El color de acento cambia botones y elementos seleccionados. No hay acentos
+verdes ni naranjas a propósito, y los colores del veredicto no se tocan: ahí el
+verde y el rojo significan algo, y dejar que se personalicen sería convertir una
+señal en un adorno.
 
 #### Perfil: tus datos, tus drones y tus papeles
 
@@ -560,6 +565,26 @@ src/
 | Normativa | [AESA](https://www.seguridadaerea.gob.es/es/ambitos/drones) |
 
 Ninguna de estas fuentes necesita clave de API.
+
+---
+
+## Privacidad
+
+No se recoge ningún dato personal, no hay cuentas, no hay servidor propio y no
+hay anuncios ni rastreadores. Lo que guardas se queda en tu móvil. Lo único que
+sale de él son las coordenadas del punto que consultas, y sólo para
+preguntárselo a los servicios oficiales que responden.
+
+Está todo detallado en la **[política de privacidad](PRIVACY.es.md)**.
+
+---
+
+## Publicar una versión
+
+El proceso de release —Google Play, APK de GitHub e IPA de iOS— está en
+[`docs/publicar.md`](docs/publicar.md).
+
+---
 
 ## Licencia y créditos
 

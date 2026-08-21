@@ -217,9 +217,29 @@ what each drone class changes, and a link to the official source of every claim.
 
 Settings holds the flight height used by default, which drone you fly (this only
 changes which rules you are shown — never the verdict), the base map, light or
-dark appearance, the **interface language**, and your **operator details**.
-Those details are stored only on the phone, and are used to pre-fill the
-authorization request that you send from your own mail app.
+dark appearance, the **interface language**, and the way into your **profile**.
+
+#### Profile: your details, your drones, your paperwork
+
+The profile has three parts:
+
+- **Operator.** Name, UAS operator number, e-mail and phone. This is what
+  pre-fills the authorization request that you send from your own mail app.
+- **My drones.** Each drone with its nickname, make, model, serial number,
+  weight and class. Keep as many as you like: one of them is the active one —
+  the one assumed in requests and in the flight log — and you switch it from
+  “Your drone” in Settings or in any result. If you already had a drone saved in
+  the previous version, you will find it turned into the first one of your
+  fleet.
+- **Documents.** A folder for your pilot certificate, operator registration,
+  insurance, declaration of conformity, invoices… Pilot paperwork lives in the
+  profile, aircraft paperwork in each drone's own page. Give any of them an
+  expiry date and the app warns you a month ahead, with anything expired pinned
+  to the top.
+
+Files are copied into the app's private folder **on your phone**: nothing is
+uploaded, and they only leave when you tap open. Picking them uses the system
+file picker, so the app asks for no photo or storage permission.
 
 **Light and shadows** (from any result) gives sunrise, sunset, golden hour and
 blue hour for that exact point, the direction and length of shadows, and — if
@@ -451,7 +471,9 @@ app/
     mapa.tsx          Map and zone queries
     buscar.tsx        Location search
     cuaderno.tsx      Saved places, flight log and rules
-    ajustes.tsx       Settings and operator details
+    ajustes.tsx       Settings
+  perfil.tsx          Operator, fleet and documents
+  dron/[id].tsx       One drone's details and paperwork
   resultado.tsx       Result for a location
   luz.tsx             Light, shadows and horizon
   descargar.tsx       Offline zone download
@@ -475,6 +497,10 @@ src/
     labels.ts         ED-318 code conversion
     rules.ts          Regulatory information
     reference.ts      Altitude reference handling
+    fleet.ts          Drone fleet model
+    documents.ts      Categories, expiry dates and sizes
+  documents/
+    files.ts          Copying, deleting and opening stored files
   offline/            Downloaded packs and offline evaluation
   map/
     mapHtml.ts        Map integration

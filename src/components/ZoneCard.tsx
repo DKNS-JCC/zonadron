@@ -16,8 +16,9 @@ import {
 import { actionAdvice, rawBandLabel, verticalBandShort } from '../logic/verdict';
 import { toParagraphs } from '../logic/html';
 import { Chip, GhostButton, Separator } from './ui';
-import { buildMailto, missingOperatorFields } from '../logic/request';
+import { buildMailto, missingRequestFields } from '../logic/request';
 import { useSettings } from '../state/SettingsContext';
+import { useFleet } from '../state/FleetContext';
 import type { QueryResult } from '../types';
 import { Chevron, Collapsible } from './motion';
 
@@ -59,6 +60,7 @@ export function ZoneCard({
 }) {
   const p = usePalette();
   const { operator, drone } = useSettings();
+  const { activeDrone } = useFleet();
   const [open, setOpen] = useState(Boolean(defaultOpen));
   const [openOfficial, setOpenOfficial] = useState(false);
 
@@ -86,9 +88,10 @@ export function ZoneCard({
           place: requestContext.place,
           operator,
           drone,
+          aircraft: activeDrone,
         })
       : null;
-  const missing = missingOperatorFields(operator);
+  const missing = missingRequestFields(operator, activeDrone);
 
   const subtitle = zone.advisory
     ? t('zoneCard.advisorySubtitle')

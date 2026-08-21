@@ -24,9 +24,11 @@ import { UrbanCard } from './UrbanCard';
 import { useFavorites } from '../state/FavoritesContext';
 import { useFlightLog } from '../state/FlightLogContext';
 import { useSettings } from '../state/SettingsContext';
+import { useFleet } from '../state/FleetContext';
 import { useProtectedAreas } from '../hooks/useProtectedAreas';
 import { isStrictFigure } from '../api/protected';
 import { getDroneProfile } from '../logic/drone';
+import { droneName } from '../logic/fleet';
 import { space, systemColor, type, emphasize } from '../theme';
 
 export function ResultView({
@@ -56,7 +58,8 @@ export function ResultView({
   const [showData, setShowData] = useState(false);
   const { isFavorite, toggleFavorite } = useFavorites();
   const { logFlight } = useFlightLog();
-  const { drone, operator } = useSettings();
+  const { drone } = useSettings();
+  const { activeDrone } = useFleet();
   const [justLogged, setJustLogged] = useState(false);
 
   // Sin conexión no se consulta el inventario ambiental: no está en el paquete.
@@ -74,7 +77,9 @@ export function ResultView({
   const expired = result.zones.filter((z) => z.timing === 'CADUCADA');
 
   const logThisFlight = () => {
-    const droneLabel = operator.droneModel.trim() || getDroneProfile(drone).label;
+    // En el diario interesa saber con cuál volaste, no de qué clase era: si
+    // tienes dos Mini, el alias los distingue y la clase no.
+    const droneLabel = activeDrone ? droneName(activeDrone) : getDroneProfile(drone).label;
     logFlight(result, place ?? null, droneLabel);
     setJustLogged(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});

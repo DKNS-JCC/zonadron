@@ -91,6 +91,11 @@ export const HEIGHT_PRESETS = [30, 60, 120] as const;
  * Datos del operador. Se guardan SÓLO en el móvil (AsyncStorage) y se usan
  * únicamente para rellenar las solicitudes de autorización que tú mismo envías
  * desde tu app de correo. No se envían a ningún sitio.
+ *
+ * La aeronave ya no vive aquí: cada dron tiene su ficha en la flota
+ * (`src/state/FleetContext.tsx`), porque casi nadie vuela uno solo. Los dos
+ * campos de abajo se conservan vacíos para poder migrar lo que hubiera
+ * guardado la versión anterior, y no se enseñan en ninguna pantalla.
  */
 export interface OperatorProfile {
   name: string;
@@ -98,8 +103,9 @@ export interface OperatorProfile {
   uasNumber: string;
   email: string;
   phone: string;
+  /** @deprecated Migrado a la flota; se lee una vez y se vacía. */
   droneModel: string;
-  /** Número de serie del dron (lo piden en muchas solicitudes). */
+  /** @deprecated Migrado a la flota; se lee una vez y se vacía. */
   droneSerial: string;
 }
 

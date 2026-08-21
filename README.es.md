@@ -219,11 +219,33 @@ cada afirmación.
 </tr>
 </table>
 
-En Ajustes está la altura de vuelo que se usa por defecto, qué dron vuelas
+En Ajustes está la altura de vuelo que se usa por defecto, con qué dron vuelas
 (esto sólo cambia qué normas se te enseñan, nunca el veredicto), el mapa base,
-el aspecto claro u oscuro, el **idioma de la interfaz** y tus **datos de
-operador**. Esos datos se guardan sólo en el móvil y sirven para rellenar la
-solicitud de autorización que envías tú desde tu propia app de correo.
+el aspecto claro u oscuro, el **idioma de la interfaz** y la puerta a tu
+**perfil**.
+
+#### Perfil: tus datos, tus drones y tus papeles
+
+El perfil tiene tres partes:
+
+- **Operador.** Nombre, número de operador UAS, correo y teléfono. Es lo que se
+  usa para rellenar la solicitud de autorización que envías tú desde tu propia
+  app de correo.
+- **Mis drones.** Cada dron con su alias, marca, modelo, número de serie, peso y
+  clase. Puedes tener los que quieras: uno de ellos es el activo —el que se da
+  por supuesto en las solicitudes y en el diario— y se cambia desde «Tu dron» en
+  Ajustes o en cualquier resultado. Quien ya tenía un dron guardado en la
+  versión anterior se lo encuentra convertido en el primero de su flota.
+- **Documentos.** Una carpeta para el carnet de piloto, el registro de operador,
+  el seguro, la declaración de conformidad, las facturas… Los papeles del piloto
+  van en el perfil y los del aparato en la ficha de cada dron. Puedes ponerle
+  fecha de caducidad a cada uno y la app te avisa un mes antes, con lo caducado
+  siempre arriba del todo.
+
+Los archivos se copian a la carpeta privada de la app **en tu móvil**: no se
+suben a ningún sitio y sólo salen de ahí cuando le das a abrir. Para elegirlos
+se usa el selector del sistema, así que la app no pide permiso de fotos ni de
+almacenamiento.
 
 **Luz y sombras** (desde cualquier resultado) da el amanecer, el ocaso, la hora
 dorada y la hora azul de ese punto exacto, la dirección y la longitud de las
@@ -459,7 +481,9 @@ app/
     mapa.tsx          Mapa y consulta de zonas
     buscar.tsx        Búsqueda de lugares
     cuaderno.tsx      Sitios guardados, diario y normativa
-    ajustes.tsx       Ajustes y datos de operador
+    ajustes.tsx       Ajustes
+  perfil.tsx          Operador, flota y documentos
+  dron/[id].tsx       Ficha de un dron y sus papeles
   resultado.tsx       Resultado de un punto
   luz.tsx             Luz, sombras y horizonte
   descargar.tsx       Descarga de zonas sin conexión
@@ -483,6 +507,10 @@ src/
     labels.ts         Conversión de códigos ED-318
     rules.ts          Información normativa
     reference.ts      Referencias de altitud
+    fleet.ts          Modelo de la flota de drones
+    documents.ts      Categorías, caducidades y tamaños
+  documents/
+    files.ts          Copia, borrado y apertura de los archivos guardados
   offline/            Paquetes descargados y evaluación sin conexión
   map/
     mapHtml.ts        Integración del mapa

@@ -745,4 +745,103 @@ export const es = {
   'urban.enaireFallback':
     'ENAIRE publica un aviso general para toda España recordándote que compruebes si estás en entorno urbano. Es lo único que queda cuando no hay datos: míralo a tu alrededor.',
   'urban.enaireLabel': 'ENAIRE (aviso general)',
+
+  /* --- Acciones genéricas ------------------------------------------ */
+
+  'common.cancel': 'Cancelar',
+  'common.delete': 'Borrar',
+  'common.save': 'Guardar',
+  'common.add': 'Añadir',
+
+  /* --- Perfil (perfil.tsx) ------------------------------------------ */
+
+  'profile.title': 'Perfil',
+  'profile.subtitle':
+    'Tus datos de operador, tus drones y la carpeta donde guardas los papeles. Todo se queda en este móvil.',
+  'profile.settingsRow': 'Perfil y documentos',
+  'profile.settingsHint': 'Operador, drones y papeles',
+  'profile.operator': 'Operador',
+  'profile.fleet': 'Mis drones',
+  'profile.fleetEmpty':
+    'Añade tus drones para que las solicitudes salgan con el modelo y el número de serie ya puestos.',
+  'profile.fleetCount': (n: number) => `${n} ${plural(n, 'dron', 'drones')}`,
+  'profile.addDrone': 'Añadir dron',
+  'profile.documents': 'Mis documentos',
+  'profile.documentsNote':
+    'Carnet de piloto, certificado de formación, registro de operador… lo que te puedan pedir en el campo.',
+  'profile.alerts': (n: number) =>
+    `${n} ${plural(n, 'documento caducado o a punto', 'documentos caducados o a punto')}`,
+
+  /* --- Flota (fleet.ts, dron/[id].tsx) ------------------------------ */
+
+  'fleet.unnamed': 'Dron sin nombre',
+  'fleet.serialShort': (serie: string) => `nº ${serie}`,
+  'fleet.missing.drone': 'un dron guardado',
+  'fleet.missing.model': 'el modelo del dron',
+  'fleet.missing.serial': 'el número de serie',
+  'fleet.newTitle': 'Nuevo dron',
+  'fleet.editTitle': 'Ficha del dron',
+  'fleet.field.alias': 'Cómo lo llamas',
+  'fleet.field.aliasPlaceholder': 'El pequeño de la mochila',
+  'fleet.field.manufacturer': 'Marca',
+  'fleet.field.model': 'Modelo',
+  'fleet.field.serial': 'Número de serie',
+  'fleet.field.serialPlaceholder': 'El de la caja o de la app del fabricante',
+  'fleet.field.weight': 'Peso al despegue (g)',
+  'fleet.field.weightPlaceholder': '249',
+  'fleet.field.notes': 'Notas',
+  'fleet.field.notesPlaceholder': 'Baterías, cámara, lo que quieras recordar',
+  'fleet.class': 'Clase',
+  'fleet.classNote':
+    'La clase decide qué reglas generales te enseña la app y qué subcategoría se pone en la solicitud. Nunca cambia el veredicto de una zona: las zonas aplican igual a todos los drones.',
+  'fleet.delete': 'Borrar este dron',
+  'fleet.deleteConfirm': (nombre: string) =>
+    `¿Borrar «${nombre}»? También se borran los documentos que tenga guardados.`,
+  'fleet.active': 'Dron activo',
+  'fleet.activeNote': 'Es el que se usa en las solicitudes de autorización y en el diario de vuelos.',
+  'fleet.makeActive': 'Volar con este dron',
+  'fleet.isActive': 'En uso',
+  'fleet.docsTitle': 'Documentos de este dron',
+  'fleet.docsNote': 'Declaración de conformidad, seguro, marcado de clase, facturas…',
+  'fleet.manage': 'Gestionar mis drones',
+  'fleet.addFirst': 'Guardar mis drones',
+  'fleet.pickTitle': 'Con cuál vuelas hoy',
+  'fleet.savedNote': 'Se guarda solo, según escribes.',
+
+  /* --- Documentos (documents.ts, DocumentSection.tsx) --------------- */
+
+  'docs.title': 'Documentos',
+  'docs.add': 'Añadir documento',
+  'docs.adding': 'Guardando…',
+  'docs.empty': 'Todavía no has guardado ningún documento aquí.',
+  'docs.count': (n: number) => `${n} ${plural(n, 'documento', 'documentos')}`,
+  'docs.category.operador': 'Operador',
+  'docs.category.piloto': 'Piloto',
+  'docs.category.dron': 'Dron',
+  'docs.category.seguro': 'Seguro',
+  'docs.category.otro': 'Otro',
+  'docs.category': 'Qué es',
+  'docs.field.title': 'Nombre',
+  'docs.field.titlePlaceholder': 'Carnet A1/A3',
+  'docs.field.expires': 'Caduca el (opcional)',
+  'docs.field.expiresPlaceholder': 'DD/MM/AAAA',
+  'docs.field.expiresHelp': 'Si lo pones, la app te avisa un mes antes.',
+  'docs.status.soon': (dias: number) =>
+    dias === 0 ? 'Caduca hoy' : `Caduca en ${dias} ${plural(dias, 'día', 'días')}`,
+  'docs.status.expired': 'Caducado',
+  'docs.validUntil': (fecha: string) => `Válido hasta el ${fecha}`,
+  'docs.expiredOn': (fecha: string) => `Caducó el ${fecha}`,
+  'docs.fileLine': (tamano: string, fecha: string) => `${tamano} · guardado el ${fecha}`,
+  'docs.open': 'Abrir',
+  'docs.delete': 'Borrar documento',
+  'docs.deleteConfirm': (nombre: string) => `¿Borrar «${nombre}»? El archivo se borra del móvil.`,
+  'docs.edit': 'Editar datos',
+  'docs.pickError': 'No se ha podido guardar el archivo. Prueba otra vez o elige otro.',
+  'docs.openError': 'Este móvil no ha sabido abrir el archivo.',
+  'docs.missingFile': 'El archivo ya no está en el móvil.',
+  'docs.webUnsupported': 'Guardar documentos sólo funciona en la app del móvil, no en el navegador.',
+  'docs.privacy':
+    'Los archivos se copian a la carpeta privada de la app, en tu móvil. No se suben a ningún sitio ni se comparten solos: sólo salen de aquí si tú le das a abrir.',
+  'docs.alertsTitle': 'Papeles que se te caducan',
+  'docs.dateInvalid': 'Fecha no válida. Escríbela como DD/MM/AAAA.',
 };

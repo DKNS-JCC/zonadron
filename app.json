@@ -77,7 +77,8 @@
             "text/plain"
           ]
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

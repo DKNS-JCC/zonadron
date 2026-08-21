@@ -6,6 +6,8 @@ import { SettingsProvider, useSettings } from '../src/state/SettingsContext';
 import { HistoryProvider } from '../src/state/HistoryContext';
 import { FavoritesProvider } from '../src/state/FavoritesContext';
 import { FlightLogProvider } from '../src/state/FlightLogContext';
+import { FleetProvider } from '../src/state/FleetContext';
+import { DocumentsProvider } from '../src/state/DocumentsContext';
 import { usePalette, useScheme } from '../src/hooks/useTheme';
 import { useSharedPointRouting } from '../src/hooks/useSharedPointRouting';
 import { t } from '../src/i18n';
@@ -17,9 +19,17 @@ export default function RootLayout() {
         <HistoryProvider>
           <FavoritesProvider>
             <FlightLogProvider>
-              {/* El aspecto se lee de los ajustes, así que la pila de navegación
-                  tiene que ir por dentro del proveedor para enterarse del cambio. */}
-              <Navegacion />
+              {/* La flota va por dentro de los ajustes a propósito: de ahí saca
+                  el dron que había guardado la versión anterior, y ahí escribe
+                  la clase del dron activo. */}
+              <FleetProvider>
+                <DocumentsProvider>
+                  {/* El aspecto se lee de los ajustes, así que la pila de
+                      navegación tiene que ir por dentro del proveedor para
+                      enterarse del cambio. */}
+                  <Navegacion />
+                </DocumentsProvider>
+              </FleetProvider>
             </FlightLogProvider>
           </FavoritesProvider>
         </HistoryProvider>
@@ -67,6 +77,11 @@ function Navegacion() {
         <Stack.Screen name="luz" options={{ headerShown: true, title: t('light.title') }} />
         <Stack.Screen name="diario" options={{ headerShown: true, title: t('log.title') }} />
         <Stack.Screen name="normas" options={{ headerShown: true, title: t('rules.title') }} />
+        <Stack.Screen name="perfil" options={{ headerShown: true, title: t('profile.title') }} />
+        <Stack.Screen
+          name="dron/[id]"
+          options={{ headerShown: true, title: t('fleet.editTitle') }}
+        />
       </Stack>
     </React.Fragment>
   );

@@ -2,6 +2,7 @@ import { t } from '../i18n';
 import type { EvaluatedZone, QueryResult } from '../types';
 import type { OperatorProfile } from '../state/SettingsContext';
 import { getDroneProfile, type DroneProfileId } from './drone';
+import { droneOfficialModel, missingDroneFields, type FleetDrone } from './fleet';
 
 /**
  * Solicitud de autorización / coordinación, lista para enviar por correo.
@@ -25,7 +26,15 @@ export interface RequestContext {
   result: QueryResult;
   place?: string | null;
   operator: OperatorProfile;
+  /** Clase con la que operas: la del dron activo, o la de los ajustes. */
   drone: DroneProfileId;
+  /**
+   * El dron concreto con el que vas a volar. De él salen el modelo y el número
+   * de serie: quien tiene tres drones no manda tres solicitudes iguales.
+   * null cuando todavía no hay ninguno guardado, y entonces los dos campos
+   * salen como [COMPLETAR].
+   */
+  aircraft: FleetDrone | null;
 }
 
 export function buildRequestSubject(zone: EvaluatedZone): string {
@@ -33,7 +42,7 @@ export function buildRequestSubject(zone: EvaluatedZone): string {
 }
 
 export function buildRequestBody(zone: EvaluatedZone, ctx: RequestContext): string {
-  const { result, place, operator, drone } = ctx;
+  const { result, place, operator, drone, aircraft } = ctx;
   // Etiqueta en español a propósito: forma parte del correo, no de la interfaz.
   const profile = getDroneProfile(drone, 'es');
   const { lat, lon } = result.coords;
@@ -55,8 +64,8 @@ export function buildRequestBody(zone: EvaluatedZone, ctx: RequestContext): stri
     line('Teléfono de contacto', operator.phone),
     '',
     'DATOS DE LA AERONAVE',
-    line('Modelo', operator.droneModel),
-    line('Número de serie', operator.droneSerial),
+    line('Modelo', aircraft ? droneOfficialModel(aircraft) : ''),
+    line('Número de serie', aircraft?.serial),
     `Categoría de la operación: abierta, subcategoría ${profile.subcategory} (${profile.label})`,
     '',
     'DATOS DE LA OPERACIÓN',
@@ -93,13 +102,25 @@ export function buildMailto(zone: EvaluatedZone, ctx: RequestContext): string | 
   return `mailto:${to}?subject=${subject}&body=${body}`;
 }
 
-/** Qué falta por rellenar en Ajustes para que la solicitud salga completa. */
+/**
+ * Qué falta por rellenar en el perfil para que la solicitud salga completa.
+ *
+ * Los datos de la aeronave ya no viven aquí: los pone el dron activo, y de
+ * ellos se encarga `missingDroneFields` en `fleet.ts`.
+ */
 export function missingOperatorFields(operator: OperatorProfile): string[] {
   const missing: string[] = [];
   if (!operator.name.trim()) missing.push(t('operator.missing.name'));
   if (!operator.uasNumber.trim()) missing.push(t('operator.missing.uasNumber'));
   if (!operator.email.trim()) missing.push(t('operator.missing.email'));
   if (!operator.phone.trim()) missing.push(t('operator.missing.phone'));
-  if (!operator.droneModel.trim()) missing.push(t('operator.missing.droneModel'));
   return missing;
+}
+
+/** Todo lo que falta —tuyo y del dron— antes de mandar nada. */
+export function missingRequestFields(
+  operator: OperatorProfile,
+  aircraft: FleetDrone | null,
+): string[] {
+  return [...missingOperatorFields(operator), ...missingDroneFields(aircraft)];
 }

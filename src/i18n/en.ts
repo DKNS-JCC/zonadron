@@ -746,4 +746,103 @@ export const en: Messages = {
   'urban.enaireFallback':
     'ENAIRE publishes a nationwide notice reminding you to check whether you are in an urban environment. It is all that is left when there is no data: look around you.',
   'urban.enaireLabel': 'ENAIRE (general notice)',
+
+  /* --- Generic actions ---------------------------------------------- */
+
+  'common.cancel': 'Cancel',
+  'common.delete': 'Delete',
+  'common.save': 'Save',
+  'common.add': 'Add',
+
+  /* --- Profile (perfil.tsx) ------------------------------------------ */
+
+  'profile.title': 'Profile',
+  'profile.subtitle':
+    'Your operator details, your drones and the folder where you keep the paperwork. It all stays on this phone.',
+  'profile.settingsRow': 'Profile and documents',
+  'profile.settingsHint': 'Operator, drones and paperwork',
+  'profile.operator': 'Operator',
+  'profile.fleet': 'My drones',
+  'profile.fleetEmpty':
+    'Add your drones so authorisation requests come out with the model and serial number already filled in.',
+  'profile.fleetCount': (n: number) => `${n} ${plural(n, 'drone', 'drones')}`,
+  'profile.addDrone': 'Add drone',
+  'profile.documents': 'My documents',
+  'profile.documentsNote':
+    'Pilot certificate, training proof, operator registration… whatever you may be asked for in the field.',
+  'profile.alerts': (n: number) =>
+    `${n} ${plural(n, 'document expired or about to', 'documents expired or about to')}`,
+
+  /* --- Fleet (fleet.ts, dron/[id].tsx) ------------------------------- */
+
+  'fleet.unnamed': 'Unnamed drone',
+  'fleet.serialShort': (serial: string) => `no. ${serial}`,
+  'fleet.missing.drone': 'a saved drone',
+  'fleet.missing.model': 'the drone model',
+  'fleet.missing.serial': 'the serial number',
+  'fleet.newTitle': 'New drone',
+  'fleet.editTitle': 'Drone details',
+  'fleet.field.alias': 'What you call it',
+  'fleet.field.aliasPlaceholder': 'The little one in the backpack',
+  'fleet.field.manufacturer': 'Make',
+  'fleet.field.model': 'Model',
+  'fleet.field.serial': 'Serial number',
+  'fleet.field.serialPlaceholder': 'From the box or the manufacturer’s app',
+  'fleet.field.weight': 'Take-off weight (g)',
+  'fleet.field.weightPlaceholder': '249',
+  'fleet.field.notes': 'Notes',
+  'fleet.field.notesPlaceholder': 'Batteries, camera, anything you want to remember',
+  'fleet.class': 'Class',
+  'fleet.classNote':
+    'The class decides which general rules the app shows you and which subcategory goes into the request. It never changes a zone verdict: zones apply the same to every drone.',
+  'fleet.delete': 'Delete this drone',
+  'fleet.deleteConfirm': (name: string) =>
+    `Delete “${name}”? Any documents saved for it go too.`,
+  'fleet.active': 'Active drone',
+  'fleet.activeNote': 'The one used in authorisation requests and in the flight log.',
+  'fleet.makeActive': 'Fly with this one',
+  'fleet.isActive': 'In use',
+  'fleet.docsTitle': 'Documents for this drone',
+  'fleet.docsNote': 'Declaration of conformity, insurance, class marking, invoices…',
+  'fleet.manage': 'Manage my drones',
+  'fleet.addFirst': 'Save my drones',
+  'fleet.pickTitle': 'Which one are you flying today',
+  'fleet.savedNote': 'Saved as you type.',
+
+  /* --- Documents (documents.ts, DocumentSection.tsx) ------------------ */
+
+  'docs.title': 'Documents',
+  'docs.add': 'Add document',
+  'docs.adding': 'Saving…',
+  'docs.empty': 'Nothing saved here yet.',
+  'docs.count': (n: number) => `${n} ${plural(n, 'document', 'documents')}`,
+  'docs.category.operador': 'Operator',
+  'docs.category.piloto': 'Pilot',
+  'docs.category.dron': 'Drone',
+  'docs.category.seguro': 'Insurance',
+  'docs.category.otro': 'Other',
+  'docs.category': 'What it is',
+  'docs.field.title': 'Name',
+  'docs.field.titlePlaceholder': 'A1/A3 certificate',
+  'docs.field.expires': 'Expiry date (optional)',
+  'docs.field.expiresPlaceholder': 'DD/MM/YYYY',
+  'docs.field.expiresHelp': 'If you set it, the app warns you a month ahead.',
+  'docs.status.soon': (days: number) =>
+    days === 0 ? 'Expires today' : `Expires in ${days} ${plural(days, 'day', 'days')}`,
+  'docs.status.expired': 'Expired',
+  'docs.validUntil': (date: string) => `Valid until ${date}`,
+  'docs.expiredOn': (date: string) => `Expired on ${date}`,
+  'docs.fileLine': (size: string, date: string) => `${size} · saved on ${date}`,
+  'docs.open': 'Open',
+  'docs.delete': 'Delete document',
+  'docs.deleteConfirm': (name: string) => `Delete “${name}”? The file is removed from the phone.`,
+  'docs.edit': 'Edit details',
+  'docs.pickError': 'The file could not be saved. Try again, or pick another one.',
+  'docs.openError': 'This phone did not know how to open the file.',
+  'docs.missingFile': 'The file is no longer on the phone.',
+  'docs.webUnsupported': 'Saving documents only works in the phone app, not in the browser.',
+  'docs.privacy':
+    'Files are copied into the app’s private folder, on your phone. Nothing is uploaded or shared on its own: they only leave here when you tap open.',
+  'docs.alertsTitle': 'Paperwork running out',
+  'docs.dateInvalid': 'Not a valid date. Write it as DD/MM/YYYY.',
 };

@@ -458,6 +458,17 @@ npm run test:motor
 Ésta necesita red y puede fallar porque ENAIRE esté caído, no porque el motor
 esté mal. Por eso se mantiene separada de `test:unit`.
 
+Y la de los enlaces compartidos, que resuelve enlaces reales de Google Maps y
+Apple Maps de principio a fin:
+
+```bash
+npm run test:enlaces
+```
+
+Google cambia el formato de sus enlaces cada poco y cuando lo hace la app deja
+de reconocer el sitio sin que se entere ninguna prueba unitaria. Se le pueden
+pasar enlaces propios como argumentos.
+
 También hay comprobación de tipos:
 
 ```bash

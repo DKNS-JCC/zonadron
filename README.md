@@ -448,6 +448,17 @@ npm run test:motor
 This one needs network and can fail because ENAIRE is down, not because the
 engine is wrong — that's why it's kept separate from `test:unit`.
 
+And the shared-link check, which resolves real Google Maps and Apple Maps links
+end to end:
+
+```bash
+npm run test:enlaces
+```
+
+Google changes its link format every so often, and when it does the app stops
+recognising the shared place without any unit test noticing. You can pass your
+own links as arguments.
+
 Type checking is also available:
 
 ```bash

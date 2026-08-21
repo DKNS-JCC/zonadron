@@ -845,4 +845,10 @@ export const en: Messages = {
     'Files are copied into the app’s private folder, on your phone. Nothing is uploaded or shared on its own: they only leave here when you tap open.',
   'docs.alertsTitle': 'Paperwork running out',
   'docs.dateInvalid': 'Not a valid date. Write it as DD/MM/YYYY.',
+
+  'sharedPoint.approxTitle': 'The place, roughly',
+  'sharedPoint.approxBody': (name: string) =>
+    name
+      ? `The link carried no coordinates, so “${name}” was looked up. Move the crosshair onto the exact spot before trusting the result.`
+      : 'The link carried no exact coordinates: the crosshair sits where the map was pointing, which can be a kilometre off. Move it onto the exact spot before trusting the result.',
 };

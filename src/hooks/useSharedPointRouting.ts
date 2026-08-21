@@ -63,6 +63,16 @@ export function useSharedPointRouting() {
             pathname: '/mapa',
             params: { lat: String(punto.lat), lon: String(punto.lon) },
           });
+          // Cuando el punto no venía en el enlace —se ha buscado por el nombre
+          // o se ha sacado del encuadre del mapa— hay que decirlo. Un punto a
+          // un kilómetro es un vuelo comprobado en el sitio que no era, y eso
+          // no se puede dejar pasar en silencio.
+          if (punto.approximate) {
+            Alert.alert(
+              t('sharedPoint.approxTitle'),
+              t('sharedPoint.approxBody', punto.label ?? ''),
+            );
+          }
           return;
         }
         // Con el texto recibido delante, un fallo se puede contar; sin él sólo

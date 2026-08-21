@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { firstUrl, parseSharedLabel, parseSharedPoint } from '../src/logic/sharedPoint';
+import {
+  firstUrl,
+  parseLabelFromHtml,
+  parsePointFromHtml,
+  parseSharedLabel,
+  parseSharedPoint,
+} from '../src/logic/sharedPoint';
 
 /**
  * Formatos reales de lo que mandan Google Maps y Apple Maps al menú de
@@ -102,4 +108,80 @@ test('lo que no es un sitio no se convierte en uno', () => {
 test('un nombre que son coordenadas no es un nombre', () => {
   assert.equal(parseSharedLabel('https://maps.google.com/?q=38.3452,-0.4815'), null);
   assert.equal(parseSharedLabel('39.4756, -0.3229'), null);
+});
+
+test('Google: la chincheta suelta llega como coordenadas en la ruta', () => {
+  // Compartir un punto sin ficha de sitio acaba en /maps/search/lat,+lon.
+  assert.deepEqual(parseSharedPoint('https://www.google.com/maps/search/38.3452,+-0.4815'), {
+    lat: 38.3452,
+    lon: -0.4815,
+    label: null,
+  });
+  assert.deepEqual(parseSharedPoint('https://www.google.com/maps/search/38.3452,-0.4815'), {
+    lat: 38.3452,
+    lon: -0.4815,
+    label: null,
+  });
+  assert.deepEqual(parseSharedPoint('https://www.google.com/maps/place/38.3452,-0.4815'), {
+    lat: 38.3452,
+    lon: -0.4815,
+    label: null,
+  });
+});
+
+test('una URL codificada se entiende igual que sin codificar', () => {
+  assert.deepEqual(parseSharedPoint('https://www.google.com/maps/search/38.3452%2C-0.4815'), {
+    lat: 38.3452,
+    lon: -0.4815,
+    label: null,
+  });
+  assert.deepEqual(
+    parseSharedPoint('https://www.google.com/maps/place/Bar/data=!4m2!3m1!8m2!3d38.3452!4d-0.4815'),
+    { lat: 38.3452, lon: -0.4815, label: 'Bar' },
+  );
+});
+
+test('cuando la URL no trae el sitio, se saca de la página', () => {
+  // 1. La miniatura del mapa es el sitio de la ficha.
+  const conMiniatura =
+    '<meta property="og:title" content="Playa de la Malvarrosa - Google Maps">' +
+    '<meta property="og:image" content="https://maps.google.com/maps/api/staticmap?' +
+    'center=39.4756%2C-0.3229&amp;zoom=17&amp;size=900x900">';
+  assert.deepEqual(parsePointFromHtml(conMiniatura), {
+    lat: 39.4756,
+    lon: -0.3229,
+    label: 'Playa de la Malvarrosa',
+  });
+
+  // 2. Sin miniatura, la chincheta de los datos de la página.
+  assert.deepEqual(
+    parsePointFromHtml('<title>Sitio</title> ...!3d38.3452!4d-0.4815!16s...'),
+    { lat: 38.3452, lon: -0.4815, label: 'Sitio' },
+  );
+
+  // 3. El estado inicial trae la longitud antes que la latitud, y es el
+  //    encuadre: sale marcado como aproximado para que se avise.
+  assert.deepEqual(
+    parsePointFromHtml('window.APP_INITIALIZATION_STATE=[[[17.1,-0.4815,38.3452],null,null]'),
+    { lat: 38.3452, lon: -0.4815, label: null, approximate: true },
+  );
+
+  // Una miniatura sin ficha detrás es el mapa genérico: aproximado, no el sitio.
+  assert.deepEqual(
+    parsePointFromHtml('<title> Google Maps </title>?center=40.9731072%2C-5.6590336&zoom=11'),
+    { lat: 40.9731072, lon: -5.6590336, label: null, approximate: true },
+  );
+
+  assert.equal(parsePointFromHtml(''), null);
+  assert.equal(parsePointFromHtml('<title>Google Maps</title>'), null);
+});
+
+test('el nombre de la página se limpia de la coletilla de Google', () => {
+  assert.equal(
+    parseLabelFromHtml('<meta property="og:title" content="Faro de Santa Pola - Google Maps">'),
+    'Faro de Santa Pola',
+  );
+  assert.equal(parseLabelFromHtml('<title>Faro de Santa Pola - Google Maps</title>'), 'Faro de Santa Pola');
+  // Un nombre que son coordenadas no es un nombre.
+  assert.equal(parseLabelFromHtml('<title>38.3452, -0.4815 - Google Maps</title>'), null);
 });

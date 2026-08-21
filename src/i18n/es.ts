@@ -844,4 +844,10 @@ export const es = {
     'Los archivos se copian a la carpeta privada de la app, en tu móvil. No se suben a ningún sitio ni se comparten solos: sólo salen de aquí si tú le das a abrir.',
   'docs.alertsTitle': 'Papeles que se te caducan',
   'docs.dateInvalid': 'Fecha no válida. Escríbela como DD/MM/AAAA.',
+
+  'sharedPoint.approxTitle': 'El sitio, aproximado',
+  'sharedPoint.approxBody': (nombre: string) =>
+    nombre
+      ? `El enlace no traía coordenadas, así que he buscado «${nombre}». Mueve la mirilla al punto exacto antes de fiarte del resultado.`
+      : 'El enlace no traía coordenadas exactas: la mirilla está donde apuntaba el mapa, que puede quedarse a un kilómetro. Muévela al punto exacto antes de fiarte del resultado.',
 };

@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import { resolveLocale, setLocale, t, type LanguageId, type Locale } from '../i18n';
 import type { DroneProfileId } from '../logic/drone';
+import { ACCENT_IDS, type AccentId } from '../theme';
 
 const KEY = 'zonadron.settings.v1';
 
@@ -49,6 +50,19 @@ export function appearanceLabel(id: AppearanceId): string {
 }
 
 const VALID_APPEARANCES: AppearanceId[] = ['sistema', 'claro', 'oscuro'];
+
+/** Nombre del acento para la interfaz. El color se saca de `theme.ts`. */
+export function accentLabel(id: AccentId): string {
+  return id === 'turquesa'
+    ? t('settings.accent.turquesa')
+    : id === 'morado'
+      ? t('settings.accent.morado')
+      : id === 'rosa'
+        ? t('settings.accent.rosa')
+        : id === 'grafito'
+          ? t('settings.accent.grafito')
+          : t('settings.accent.azul');
+}
 
 /**
  * Idioma de la interfaz. Los textos oficiales de ENAIRE, los NOTAM y los
@@ -131,6 +145,8 @@ interface Settings {
   appearance: AppearanceId;
   /** Idioma de la interfaz: el del móvil, español o inglés. */
   language: LanguageId;
+  /** Color de los controles. No toca nunca a los colores del veredicto. */
+  accent: AccentId;
 }
 
 interface SettingsContextValue extends Settings {
@@ -144,6 +160,7 @@ interface SettingsContextValue extends Settings {
   setBasemap: (b: BasemapId) => void;
   setAppearance: (a: AppearanceId) => void;
   setLanguage: (l: LanguageId) => void;
+  setAccent: (a: AccentId) => void;
 }
 
 const defaults: Settings = {
@@ -156,6 +173,7 @@ const defaults: Settings = {
   basemap: 'mapa',
   appearance: 'sistema',
   language: 'sistema',
+  accent: 'azul',
 };
 
 const Ctx = createContext<SettingsContextValue>({
@@ -169,6 +187,7 @@ const Ctx = createContext<SettingsContextValue>({
   setBasemap: () => {},
   setAppearance: () => {},
   setLanguage: () => {},
+  setAccent: () => {},
 });
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
@@ -196,6 +215,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                 ? parsed.appearance
                 : 'sistema',
               language: VALID_LANGUAGES.includes(parsed?.language) ? parsed.language : 'sistema',
+              accent: ACCENT_IDS.includes(parsed?.accent) ? parsed.accent : 'azul',
             });
           } catch {
             /* valores por defecto */
@@ -231,6 +251,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setBasemap: (b) => persist({ ...settings, basemap: b }),
       setAppearance: (a) => persist({ ...settings, appearance: a }),
       setLanguage: (l) => persist({ ...settings, language: l }),
+      setAccent: (a) => persist({ ...settings, accent: a }),
     }),
     [settings, ready, locale, persist],
   );

@@ -850,4 +850,23 @@ export const es = {
     nombre
       ? `El enlace no traía coordenadas, así que he buscado «${nombre}». Mueve la mirilla al punto exacto antes de fiarte del resultado.`
       : 'El enlace no traía coordenadas exactas: la mirilla está donde apuntaba el mapa, que puede quedarse a un kilómetro. Muévela al punto exacto antes de fiarte del resultado.',
+
+  /* --- Acento y apoyo al proyecto ---------------------------------- */
+
+  'settings.accent': 'Color de acento',
+  'settings.accentA11y': (color: string) => `Color ${color}`,
+  'settings.accentNote':
+    'Cambia el color de los botones y de lo seleccionado. No hay acentos verdes ni naranjas a propósito: ésos son los colores de los veredictos y de los avisos, y ahí el color significa algo.',
+  'settings.accent.azul': 'Azul',
+  'settings.accent.turquesa': 'Turquesa',
+  'settings.accent.morado': 'Morado',
+  'settings.accent.rosa': 'Rosa',
+  'settings.accent.grafito': 'Grafito',
+
+  'support.title': 'Apoyar el proyecto',
+  'support.body':
+    'La app es gratis, sin anuncios y sin rastrear a nadie, y va a seguir siéndolo. Si te resulta útil, puedes invitarme a un café.',
+  'support.button': 'Invitar a un café',
+  'support.note':
+    'Se abre en el navegador. Donar no desbloquea nada: todo lo que hace la app lo hace para todo el mundo.',
 };

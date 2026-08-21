@@ -1,5 +1,5 @@
 import { useColorScheme } from 'react-native';
-import { darkPalette, lightPalette, type Palette } from '../theme';
+import { darkPalette, lightPalette, withAccent, type Palette } from '../theme';
 import { useSettings } from '../state/SettingsContext';
 
 /**
@@ -19,5 +19,9 @@ export function useScheme(): 'light' | 'dark' {
 }
 
 export function usePalette(): Palette {
-  return useScheme() === 'dark' ? darkPalette : lightPalette;
+  const { accent } = useSettings();
+  const base = useScheme() === 'dark' ? darkPalette : lightPalette;
+  // El acento es lo único que el usuario elige del color: los veredictos
+  // mantienen el suyo pase lo que pase (ver `accents` en theme.ts).
+  return withAccent(base, accent);
 }

@@ -851,4 +851,23 @@ export const en: Messages = {
     name
       ? `The link carried no coordinates, so “${name}” was looked up. Move the crosshair onto the exact spot before trusting the result.`
       : 'The link carried no exact coordinates: the crosshair sits where the map was pointing, which can be a kilometre off. Move it onto the exact spot before trusting the result.',
+
+  /* --- Accent colour and supporting the project ---------------------- */
+
+  'settings.accent': 'Accent colour',
+  'settings.accentA11y': (color: string) => `${color} accent`,
+  'settings.accentNote':
+    'Changes the colour of buttons and of what is selected. There are no green or orange accents on purpose: those are the colours of verdicts and warnings, and there colour means something.',
+  'settings.accent.azul': 'Blue',
+  'settings.accent.turquesa': 'Teal',
+  'settings.accent.morado': 'Purple',
+  'settings.accent.rosa': 'Pink',
+  'settings.accent.grafito': 'Graphite',
+
+  'support.title': 'Support the project',
+  'support.body':
+    'The app is free, carries no ads and tracks nobody, and it is staying that way. If you find it useful, you can buy me a coffee.',
+  'support.button': 'Buy me a coffee',
+  'support.note':
+    'Opens in your browser. Donating unlocks nothing: everything the app does, it does for everyone.',
 };

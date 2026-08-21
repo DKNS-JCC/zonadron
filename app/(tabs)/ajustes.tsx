@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { OfflineCard } from '../../src/components/OfflineCard';
 import { HeightControl } from '../../src/components/HeightControl';
 import { usePalette } from '../../src/hooks/useTheme';
 import {
+  accentLabel,
   APPEARANCES,
   appearanceLabel,
   LANGUAGES,
@@ -19,7 +20,17 @@ import {
 import { t } from '../../src/i18n';
 import { missingOperatorFields } from '../../src/logic/request';
 import { useDocuments } from '../../src/state/DocumentsContext';
-import { shadow, space, systemColor, type, emphasize } from '../../src/theme';
+import { SUPPORT_URL, supportAvailable } from '../../src/logic/support';
+import {
+  ACCENT_IDS,
+  accentColor,
+  radius,
+  shadow,
+  space,
+  systemColor,
+  type,
+  emphasize,
+} from '../../src/theme';
 
 /**
  * Ajustes.
@@ -40,6 +51,8 @@ export default function AjustesScreen() {
     setAppearance,
     language,
     setLanguage,
+    accent,
+    setAccent,
   } = useSettings();
   const { expiring } = useDocuments();
   const router = useRouter();
@@ -107,6 +120,57 @@ export default function AjustesScreen() {
             );
           })}
         </View>
+
+        <View style={{ marginVertical: space.lg }}>
+          <Separator />
+        </View>
+
+        {/* Acento. Los colores se enseñan pintados, no por su nombre: nadie
+            elige «morado» leyéndolo, se elige viéndolo. */}
+        <Text style={[type.footnote, { color: p.labelSecondary, marginBottom: space.sm }]}>
+          {t('settings.accent')}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: space.sm }}>
+          {ACCENT_IDS.map((a) => {
+            const color = accentColor(a, p.scheme);
+            const active = accent === a;
+            return (
+              <Pressable
+                key={a}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {});
+                  setAccent(a);
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={t('settings.accentA11y', accentLabel(a))}
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 22,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // El seleccionado lleva un aro de su propio color, separado
+                  // por el fondo: se ve cuál es sin taparlo con una marca.
+                  borderWidth: active ? 2 : 0,
+                  borderColor: active ? color : 'transparent',
+                }}
+              >
+                <View
+                  style={{
+                    width: active ? 26 : 30,
+                    height: active ? 26 : 30,
+                    borderRadius: 15,
+                    backgroundColor: color,
+                  }}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[type.caption, { color: p.labelTertiary, marginTop: space.sm }]}>
+          {t('settings.accentNote')}
+        </Text>
 
         <View style={{ marginVertical: space.lg }}>
           <Separator />
@@ -231,6 +295,44 @@ export default function AjustesScreen() {
       </Card>
 
       <OfflineCard />
+
+      {/* Un café, si te apetece. Nada que desbloquear: ver src/logic/support.ts. */}
+      {supportAvailable() ? (
+        <Card>
+          <View style={{ gap: space.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+              <Ionicons name="cafe-outline" size={22} color={p.labelSecondary} />
+              <Text style={[emphasize(type.callout), { color: p.label, flex: 1 }]}>
+                {t('support.title')}
+              </Text>
+            </View>
+            <Text style={[type.footnote, { color: p.labelSecondary }]}>{t('support.body')}</Text>
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync().catch(() => {});
+                Linking.openURL(SUPPORT_URL).catch(() => {});
+              }}
+              accessibilityRole="link"
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: space.sm,
+                minHeight: 44,
+                borderRadius: radius.md,
+                backgroundColor: p.tintSoft,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Ionicons name="open-outline" size={16} color={p.tint} />
+              <Text style={[emphasize(type.subheadline), { color: p.tint }]}>
+                {t('support.button')}
+              </Text>
+            </Pressable>
+            <Text style={[type.caption, { color: p.labelTertiary }]}>{t('support.note')}</Text>
+          </View>
+        </Card>
+      ) : null}
 
       <Text
         style={[

@@ -80,6 +80,62 @@ export const darkPalette: Palette = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Color de acento                                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * El acento se puede cambiar; el resto del color, no.
+ *
+ * Y hay una regla que no se toca: los colores del veredicto (verde, ámbar,
+ * naranja, rojo) y los de aviso NO son personalizables. Ahí el color no
+ * decora, significa: es la diferencia entre «puedes volar» y «aquí no». Que
+ * alguien ponga su app en rojo entero y deje de distinguir un veredicto de
+ * otro no es una preferencia estética, es un fallo de seguridad.
+ *
+ * Lo que cambia es el color de los controles: enlaces, botones, seleccionados.
+ * Cada acento trae su tono para claro y para oscuro, porque un azul que se lee
+ * sobre blanco se apaga sobre negro.
+ *
+ * Por eso mismo **ninguno de los acentos es verde, ámbar, naranja ni rojo**:
+ * ésa es la familia de los veredictos y de los avisos. Un botón del mismo verde
+ * que «puedes volar» enseña al ojo que ese verde no quiere decir nada, y el día
+ * que sí quiera decir algo ya no se mira.
+ */
+export type AccentId = 'azul' | 'turquesa' | 'morado' | 'rosa' | 'grafito';
+
+interface AccentColor {
+  light: string;
+  dark: string;
+}
+
+export const accents: Record<AccentId, AccentColor> = {
+  azul: { light: '#0A6CFF', dark: '#3B90FF' },
+  turquesa: { light: '#0E7C86', dark: '#45CFDD' },
+  morado: { light: '#6B3FBF', dark: '#B18CFF' },
+  rosa: { light: '#B02A6B', dark: '#FF8FC0' },
+  grafito: { light: '#3A3A3C', dark: '#C7C7CC' },
+};
+
+export const ACCENT_IDS: AccentId[] = ['azul', 'turquesa', 'morado', 'rosa', 'grafito'];
+
+/** El acento tal y como se ve en el esquema que toque. */
+export function accentColor(id: AccentId, scheme: 'light' | 'dark'): string {
+  return (accents[id] ?? accents.azul)[scheme];
+}
+
+/**
+ * La paleta con el acento puesto.
+ *
+ * `tintSoft` es el mismo color con transparencia (un canal alfa en hexadecimal
+ * al final): sobre blanco basta con un 8%, y sobre negro hace falta algo más
+ * para que el relleno se vea.
+ */
+export function withAccent(base: Palette, id: AccentId): Palette {
+  const tint = accentColor(id, base.scheme);
+  return { ...base, tint, tintSoft: `${tint}${base.scheme === 'dark' ? '1F' : '14'}` };
+}
+
+/* ------------------------------------------------------------------ */
 /* Tipografía                                                          */
 /* ------------------------------------------------------------------ */
 

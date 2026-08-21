@@ -1,20 +1,11 @@
 # Botón de «Sponsor» del repositorio.
 #
-# Está todo comentado a propósito: mientras GitHub Sponsors no esté activado en
-# la cuenta, el botón aparece pero lleva al perfil, no a ninguna forma de
-# apoyar. Antes que un botón que no hace lo que promete, ninguno.
+# La misma dirección que la tarjeta de Ajustes de la app (`SUPPORT_URL`, en
+# src/logic/support.ts) y que el enlace de la web: si algún día cambia, cambia
+# en los tres sitios.
 #
-# Para activarlo, cuando la cuenta de Sponsors esté lista:
-#
-#   1. Descomenta la línea de abajo que corresponda.
-#   2. Pon esa misma URL en `SUPPORT_URL`, en src/logic/support.ts, para que
-#      aparezca también la tarjeta de Ajustes dentro de la app.
-#
-# Recuerda la regla que va con esto (ver docs/publicar.md §4): apoyar el
-# proyecto no desbloquea nada dentro de la app. En cuanto un pago da acceso a
-# algo, deja de ser una donación y tiene que pasar por la facturación de Google
-# Play.
+# La regla que va con esto (ver docs/publicar.md §4): apoyar el proyecto no
+# desbloquea nada dentro de la app. En cuanto un pago da acceso a algo, deja de
+# ser una donación y tiene que pasar por la facturación de Google Play.
 
-# github: DKNS-JCC
-# ko_fi: tu-usuario
-# buy_me_a_coffee: tu-usuario
+buy_me_a_coffee: dknsjcc

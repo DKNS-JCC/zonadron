@@ -63,11 +63,12 @@ Esto se hace una sola vez. Lo que está marcado como **bloqueante** impide envia
 
 ### Opcional pero conviene
 
-- [ ] Si se quiere el botón de «invitar a un café» en Ajustes: activar GitHub
-      Sponsors (o Ko-fi, o lo que sea) y poner la URL en
-      [`src/logic/support.ts`](../src/logic/support.ts). **Con la constante
-      vacía la tarjeta no se enseña**, que es mejor que un botón que lleva a una
-      página que no existe.
+- [x] Botón de «invitar a un café»: <https://buymeacoffee.com/dknsjcc>. Está en
+      tres sitios y los tres tienen que decir lo mismo si algún día cambia:
+      [`src/logic/support.ts`](../src/logic/support.ts) (tarjeta de Ajustes),
+      [`.github/FUNDING.yml`](../.github/FUNDING.yml) (botón del repositorio) y
+      la web ([`index.md`](index.md) y [`en.md`](en.md)). **Con `SUPPORT_URL`
+      vacía la tarjeta de la app no se enseña.**
 - [ ] `eas submit` para subir el AAB desde la línea de órdenes: necesita una
       cuenta de servicio de Google Play Console y su clave JSON, que **no va al
       repositorio**.

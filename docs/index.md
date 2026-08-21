@@ -59,6 +59,16 @@ hay anuncios ni rastreadores. Lo que guardas se queda en tu móvil.
 Está detallado, servicio por servicio, en la
 [política de privacidad](privacidad).
 
+## Apoyar el proyecto
+
+La app es gratis, no lleva anuncios y no rastrea a nadie, y va a seguir siendo
+así. Si te resulta útil, puedes
+[invitarme a un café](https://buymeacoffee.com/dknsjcc).
+
+Donar no desbloquea nada: todo lo que hace la app lo hace para todo el mundo.
+Saber si puedes volar en un sitio es seguridad, y no puede depender de haber
+pagado.
+
 ## Cómo se instala
 
 - **Android**: descarga el APK de la

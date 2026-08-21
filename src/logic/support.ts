@@ -23,7 +23,7 @@
  * Dónde se puede invitar a un café: GitHub Sponsors, Ko-fi, lo que sea.
  * Vacío = la tarjeta no aparece en Ajustes.
  */
-export const SUPPORT_URL = '';
+export const SUPPORT_URL = 'https://buymeacoffee.com/dknsjcc';
 
 /** ¿Hay sitio al que mandar a quien quiera apoyar? */
 export function supportAvailable(): boolean {

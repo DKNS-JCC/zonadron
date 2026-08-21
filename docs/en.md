@@ -59,6 +59,15 @@ no ads or trackers. What you save stays on your phone.
 
 It is spelled out, service by service, in the [privacy policy](privacy).
 
+## Supporting the project
+
+The app is free, carries no ads and tracks nobody, and it is staying that way.
+If you find it useful, you can
+[buy me a coffee](https://buymeacoffee.com/dknsjcc).
+
+Donating unlocks nothing: everything the app does, it does for everyone. Knowing
+whether you may fly somewhere is safety, and it cannot depend on having paid.
+
 ## Installing
 
 - **Android**: download the APK from the

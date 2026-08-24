@@ -49,6 +49,10 @@ yarn-error.*
 *.keystore
 /firma/
 
+# certificados que descarga Play Console (públicos, pero no pintan nada aquí)
+certificates*.zip
+*.der
+
 # scratch / cleanup staging
 /_to_delete/
 /_to_delete_entrega/

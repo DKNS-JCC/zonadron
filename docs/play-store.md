@@ -195,7 +195,7 @@ Source code and privacy policy: https://dkns-jcc.github.io/zonadron/
 | Tipo | Aplicación (no es un juego) |
 | Gratuita o de pago | **Gratuita** (una app gratuita no se puede convertir en de pago después) |
 | Categoría | Mapas y navegación |
-| Etiquetas | Mapas, Navegación, Utilidades, Viajes, Tiempo |
+| Etiquetas | **Mapas y navegación**, **Tiempo**, **Herramientas** y **Fotografía** (por el planificador de luz). La quinta se deja vacía a propósito: las etiquetas deciden con qué apps te compara Play, y las que quedan en la lista —Viajes y guías, Medición, Privacidad y seguridad— describen otra cosa. Rellenar el hueco sólo empeora el grupo de comparación. |
 | Correo de contacto | El de la cuenta de desarrollador |
 | Sitio web | `https://dkns-jcc.github.io/zonadron/` |
 | Política de privacidad | `https://dkns-jcc.github.io/zonadron/privacidad` |

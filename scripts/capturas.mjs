@@ -68,7 +68,11 @@ const browser = await chromium.launch();
 
 for (const scheme of ['light', 'dark']) {
   const ctx = await browser.newContext({
-    viewport: { width: 402, height: 874 },
+    // 390x760 a 2x = 780x1520. La proporción importa: Google Play rechaza las
+    // capturas cuyo lado largo pase del doble del corto, y un móvil moderno
+    // (19,5:9) se pasa. Esto es 1,95:1, dentro del límite y aún con pinta de
+    // teléfono.
+    viewport: { width: 390, height: 760 },
     deviceScaleFactor: 2,
     colorScheme: scheme,
     locale: LANG === 'en' ? 'en-GB' : 'es-ES',

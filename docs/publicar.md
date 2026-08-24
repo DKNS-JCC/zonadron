@@ -21,15 +21,22 @@ Esto se hace una sola vez. Lo que está marcado como **bloqueante** impide envia
       [`privacidad.md`](privacidad.md), en el repositorio: se cambia con un
       commit y se publica sola.
 - [ ] Web de la ficha: <https://dkns-jcc.github.io/zonadron/>
-- [ ] Ficha de la tienda en español e inglés: descripción corta y larga,
-      capturas (están en [`capturas/`](capturas), en los dos idiomas e
-      iluminaciones), icono de 512×512 y gráfico destacado de 1024×500.
-- [ ] En la descripción, el descargo de responsabilidad bien visible: la app
-      **no sustituye** a la consulta oficial de ENAIRE ni a la publicación del
-      AIP. Es una app que roza lo normativo y se mira con lupa.
+- [x] **Textos, respuestas de los formularios y recursos gráficos: todo escrito
+      en [`play-store.md`](play-store.md)**, listo para copiar. Incluye el
+      descargo de responsabilidad dentro de la descripción, que en una app que
+      roza lo normativo no es opcional.
+- [x] Icono de 512×512 y gráfico destacado de 1024×500: `npm run tienda` los
+      genera en [`tienda/`](tienda) con los colores de la app.
+- [x] Capturas a 780×1520: `npm run web:export && npm run capturas` (y
+      `npm run capturas en`). El tamaño está fijado por el límite de proporción
+      de Play —el lado largo no puede pasar del doble del corto— que una captura
+      de móvil moderno se salta.
 - [ ] Categoría, correo de contacto y clasificación de contenido.
 
 ### Declaraciones
+
+Las respuestas exactas, campo por campo, están en
+[`play-store.md`](play-store.md#2-respuestas-a-los-formularios).
 
 - [ ] **Seguridad de los datos.** Ojo con esto, que es donde se equivoca todo el
       mundo: la app **no recoge** datos, pero **sí envía las coordenadas del
@@ -127,7 +134,28 @@ npm run test:enlaces      # si se ha tocado algo de enlaces compartidos
 
 ---
 
-## 3. Qué vigilar después
+## 3. Permisos
+
+La app declara cuatro y ninguno delicado: `INTERNET`, `VIBRATE`,
+`ACCESS_COARSE_LOCATION` y `ACCESS_FINE_LOCATION`. La plantilla de Expo metía
+además `SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE` y `WRITE_EXTERNAL_STORAGE`
+sin que la app los usara; están bloqueados en `app.json` con
+`android.blockedPermissions`.
+
+Si algún día se añade una dependencia nativa, **comprobar el manifiesto antes de
+subir**:
+
+```bash
+npx expo prebuild --platform android --no-install
+grep -o 'uses-permission[^>]*' android/app/src/main/AndroidManifest.xml | sort -u
+```
+
+Un permiso que aparece solo y no se usa es motivo de rechazo, y en esta app
+además contradice lo que promete la ficha.
+
+---
+
+## 4. Qué vigilar después
 
 - **Android vitals y fallos** en Play Console. Es la única telemetría que tiene
   el proyecto, y viene sin meter ningún SDK ni rastrear a nadie: no hace falta
@@ -140,7 +168,7 @@ npm run test:enlaces      # si se ha tocado algo de enlaces compartidos
 
 ---
 
-## 4. Si algún día se cobra algo
+## 5. Si algún día se cobra algo
 
 Dos reglas, por este orden:
 

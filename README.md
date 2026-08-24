@@ -572,7 +572,8 @@ The project's website, with the same information and the screenshots, is at
 ## Releasing a version
 
 The release process — Google Play, the GitHub APK and the iOS IPA — lives in
-[`docs/publicar.md`](docs/publicar.md).
+[`docs/publicar.md`](docs/publicar.md), and the Google Play listing copy and form
+answers in [`docs/play-store.md`](docs/play-store.md).
 
 ---
 

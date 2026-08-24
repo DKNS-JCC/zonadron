@@ -36,6 +36,7 @@
     "@types/node": "^26.2.0",
     "@types/react": "~19.2.2",
     "leaflet": "^1.9.4",
+    "playwright": "^1.62.1",
     "tsx": "^4.23.12",
     "typescript": "~6.0.3"
   },
@@ -46,6 +47,7 @@
     "web": "expo start --web",
     "web:export": "expo export -p web",
     "capturas": "node scripts/capturas.mjs",
+    "tienda": "node scripts/tienda.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --noEmit -p tests/tsconfig.json",
     "test:unit": "tsx --test tests/*.test.ts",

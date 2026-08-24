@@ -586,7 +586,8 @@ La web del proyecto, con la misma información y las capturas, está en
 ## Publicar una versión
 
 El proceso de release —Google Play, APK de GitHub e IPA de iOS— está en
-[`docs/publicar.md`](docs/publicar.md).
+[`docs/publicar.md`](docs/publicar.md), y los textos y respuestas de la ficha de
+Google Play en [`docs/play-store.md`](docs/play-store.md).
 
 ---
 

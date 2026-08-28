@@ -21,3 +21,4 @@ baseurl: /zonadron
 exclude:
   - publicar.md
   - i18n.md
+  - pro.md

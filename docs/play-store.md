@@ -264,6 +264,41 @@ perfil con la flota, la descarga sin cobertura y los ajustes.
 
 ---
 
+## 3 bis. Novedades de cada versión
+
+Play las pide por idioma y con un máximo de 500 caracteres. Se escriben en la
+misma voz que la ficha: qué cambia para quien vuela, no qué se ha refactorizado.
+
+### 1.5.0 — español
+
+```
+La altura del terreno ahora sale del Modelo Digital del Terreno del IGN: 5 m de
+resolución en vez de 90, así que el margen es más ajustado y más fiel al sitio
+exacto donde estás.
+
+· Mapa de altura libre en degradado: se ve de un vistazo dónde tienes que volar
+  más bajo porque el terreno sube.
+· Descargar una zona ya no bloquea la app: sigue en segundo plano mientras la
+  usas, y tarda segundos en vez de minutos.
+· Corregido: en algunos puntos aparecían restricciones que no tocaban.
+```
+
+### 1.5.0 — English
+
+```
+Terrain height now comes from the Spanish IGN elevation model: 5 m resolution
+instead of 90, so the margin we give you is tighter and truer to the exact spot
+you are standing on.
+
+· Available-height map as a gradient: see at a glance where you must fly lower
+  because the ground rises.
+· Downloading an area no longer blocks the app: it carries on in the background
+  while you use it, and takes seconds instead of minutes.
+· Fixed: some points showed restrictions that did not apply.
+```
+
+---
+
 ## 4. Subirlo
 
 1. **Compilar el paquete de Android** (AAB, que es lo que acepta Play):

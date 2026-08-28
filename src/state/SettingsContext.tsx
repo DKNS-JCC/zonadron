@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import { resolveLocale, setLocale, t, type LanguageId, type Locale } from '../i18n';
 import type { DroneProfileId } from '../logic/drone';
+import { EMPTY_PILOT, type PilotProfile } from '../logic/interior';
 import { ACCENT_IDS, type AccentId } from '../theme';
 
 const KEY = 'zonadron.settings.v1';
@@ -117,6 +118,16 @@ export interface OperatorProfile {
   uasNumber: string;
   email: string;
   phone: string;
+  /**
+   * Los cuatro siguientes existen por la comunicación al Ministerio del
+   * Interior, que los pide en su impreso. No hacen falta para volar ni para el
+   * veredicto, así que la app nunca los reclama salvo al generar ese trámite.
+   */
+  dni: string;
+  address: string;
+  postalCode: string;
+  municipality: string;
+  province: string;
   /** @deprecated Migrado a la flota; se lee una vez y se vacía. */
   droneModel: string;
   /** @deprecated Migrado a la flota; se lee una vez y se vacía. */
@@ -128,6 +139,11 @@ export const EMPTY_OPERATOR: OperatorProfile = {
   uasNumber: '',
   email: '',
   phone: '',
+  dni: '',
+  address: '',
+  postalCode: '',
+  municipality: '',
+  province: '',
   droneModel: '',
   droneSerial: '',
 };
@@ -137,8 +153,12 @@ interface Settings {
   /** Qué dron vuelas: sólo cambia qué reglas se te enseñan, nunca el veredicto. */
   drone: DroneProfileId;
   operator: OperatorProfile;
+  /** Datos del piloto para el impreso del Ministerio del Interior. */
+  pilot: PilotProfile;
   /** Pinta sobre el mapa la altura libre de cada celda (necesita paquete descargado). */
   showCoverage: boolean;
+  /** Dibuja en el mapa las áreas de los NOTAM que te pueden alcanzar. */
+  showNotams: boolean;
   /** Mapa base: callejero, topográfico del IGN o satélite (PNOA). */
   basemap: BasemapId;
   /** Aspecto de la app: automático (el del móvil), claro u oscuro. */
@@ -156,7 +176,9 @@ interface SettingsContextValue extends Settings {
   setFlightHeight: (h: number) => void;
   setDrone: (d: DroneProfileId) => void;
   setOperator: (patch: Partial<OperatorProfile>) => void;
+  setPilot: (patch: Partial<PilotProfile>) => void;
   setShowCoverage: (v: boolean) => void;
+  setShowNotams: (v: boolean) => void;
   setBasemap: (b: BasemapId) => void;
   setAppearance: (a: AppearanceId) => void;
   setLanguage: (l: LanguageId) => void;
@@ -169,7 +191,11 @@ const defaults: Settings = {
   // de partida más útil. Se cambia en la pestaña Normas.
   drone: 'sub250',
   operator: EMPTY_OPERATOR,
+  pilot: EMPTY_PILOT,
   showCoverage: false,
+  // Encendidos de fábrica: son avisos temporales, los que no esperas, y el
+  // filtro de altura ya se queda con los que pueden llegar a tu dron.
+  showNotams: true,
   basemap: 'mapa',
   appearance: 'sistema',
   language: 'sistema',
@@ -183,7 +209,9 @@ const Ctx = createContext<SettingsContextValue>({
   setFlightHeight: () => {},
   setDrone: () => {},
   setOperator: () => {},
+  setPilot: () => {},
   setShowCoverage: () => {},
+  setShowNotams: () => {},
   setBasemap: () => {},
   setAppearance: () => {},
   setLanguage: () => {},
@@ -209,7 +237,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
                   : DEFAULT_HEIGHT,
               drone: VALID_DRONES.includes(parsed?.drone) ? parsed.drone : defaults.drone,
               operator: { ...EMPTY_OPERATOR, ...(parsed?.operator ?? {}) },
+              pilot: { ...EMPTY_PILOT, ...(parsed?.pilot ?? {}) },
               showCoverage: Boolean(parsed?.showCoverage),
+              // Ausente (ajustes de una versión anterior) significa encendido.
+              showNotams: parsed?.showNotams !== false,
               basemap: VALID_BASEMAPS.includes(parsed?.basemap) ? parsed.basemap : 'mapa',
               appearance: VALID_APPEARANCES.includes(parsed?.appearance)
                 ? parsed.appearance
@@ -247,7 +278,9 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setFlightHeight: (h) => persist({ ...settings, flightHeight: Math.max(1, Math.min(900, Math.round(h))) }),
       setDrone: (d) => persist({ ...settings, drone: d }),
       setOperator: (patch) => persist({ ...settings, operator: { ...settings.operator, ...patch } }),
+      setPilot: (patch) => persist({ ...settings, pilot: { ...settings.pilot, ...patch } }),
       setShowCoverage: (v) => persist({ ...settings, showCoverage: v }),
+      setShowNotams: (v) => persist({ ...settings, showNotams: v }),
       setBasemap: (b) => persist({ ...settings, basemap: b }),
       setAppearance: (a) => persist({ ...settings, appearance: a }),
       setLanguage: (l) => persist({ ...settings, language: l }),

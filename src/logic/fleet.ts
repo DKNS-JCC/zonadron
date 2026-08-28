@@ -36,6 +36,30 @@ export interface FleetDrone {
   weightGrams: number | null;
   notes: string;
   addedAt: string;
+
+  /**
+   * A partir de aquí, datos que sólo pide el impreso del Ministerio del
+   * Interior. Se editan aparte, en un apartado plegado de la ficha del dron,
+   * para no llenar de casillas la pantalla del día a día. Todos opcionales:
+   * un dron a medio rellenar tiene que seguir funcionando en el resto de la app.
+   */
+  /** Matrícula, si la lleva. En categoría abierta casi nunca. */
+  registration: string;
+  /** Autonomía de vuelo: «unos 30 min». */
+  autonomy: string;
+  autopilot: string;
+  /** Banda y frecuencias de control: «2,4 GHz / 5,8 GHz». */
+  frequencies: string;
+  color: string;
+  /** Luces o pintura de alta visibilidad. */
+  lights: string;
+  /** Carga de pago: cámara, micrófono, etc. */
+  payload: string;
+  vhf: string;
+  modeS: string;
+  /** Sistema de terminación del vuelo seguro. */
+  emergency: string;
+  forwardVision: string;
 }
 
 export function emptyDrone(): FleetDrone {
@@ -49,6 +73,19 @@ export function emptyDrone(): FleetDrone {
     weightGrams: null,
     notes: '',
     addedAt: new Date().toISOString(),
+    registration: '',
+    autonomy: '',
+    autopilot: '',
+    frequencies: '',
+    color: '',
+    lights: '',
+    payload: '',
+    // Un dron de aficionado no lleva ninguna de estas tres, y dejarlas en
+    // blanco en el impreso invita a que te lo devuelvan preguntando.
+    vhf: 'No',
+    modeS: 'No',
+    emergency: '',
+    forwardVision: '',
   };
 }
 
@@ -114,6 +151,20 @@ export function normaliseDrone(raw: unknown): FleetDrone | null {
     weightGrams: Number.isFinite(weight) && weight > 0 ? Math.round(weight) : null,
     notes: text(r.notes),
     addedAt: typeof r.addedAt === 'string' ? r.addedAt : new Date().toISOString(),
+    // Los drones guardados antes de que existiera el trámite del Interior no
+    // traen nada de esto: se rellenan en blanco y ya los completará quien lo
+    // necesite.
+    registration: text(r.registration),
+    autonomy: text(r.autonomy),
+    autopilot: text(r.autopilot),
+    frequencies: text(r.frequencies),
+    color: text(r.color),
+    lights: text(r.lights),
+    payload: text(r.payload),
+    vhf: text(r.vhf),
+    modeS: text(r.modeS),
+    emergency: text(r.emergency),
+    forwardVision: text(r.forwardVision),
   };
 }
 

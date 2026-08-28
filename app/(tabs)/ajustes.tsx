@@ -7,6 +7,7 @@ import { ScreenScroll } from '../../src/components/Screen';
 import { Card, Chip, ScreenTitle, SectionTitle, Separator } from '../../src/components/ui';
 import { DroneCard } from '../../src/components/DroneCard';
 import { OfflineCard } from '../../src/components/OfflineCard';
+import { SecretTakeoff } from '../../src/components/SecretTakeoff';
 import { HeightControl } from '../../src/components/HeightControl';
 import { usePalette } from '../../src/hooks/useTheme';
 import {
@@ -255,20 +256,7 @@ export default function AjustesScreen() {
           {version ? (
             <>
               <Separator inset={space.lg} />
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: space.md,
-                  padding: space.lg,
-                  minHeight: 52,
-                }}
-              >
-                <Ionicons name="information-circle-outline" size={22} color={p.labelTertiary} />
-                <Text style={[type.footnote, { color: p.labelTertiary }]}>
-                  {t('settings.version', version)}
-                </Text>
-              </View>
+              <SecretTakeoff version={version} />
             </>
           ) : null}
         </Card>

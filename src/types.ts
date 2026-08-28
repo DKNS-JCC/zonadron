@@ -133,7 +133,18 @@ export interface EvaluatedZone extends Zone {
   timingNote?: string;
 }
 
-export type VerdictLevel = 'LIBRE' | 'CONDICIONES' | 'AUTORIZACION' | 'PROHIBIDO' | 'DESCONOCIDO';
+export type VerdictLevel =
+  | 'LIBRE'
+  | 'CONDICIONES'
+  | 'AUTORIZACION'
+  | 'PROHIBIDO'
+  | 'DESCONOCIDO'
+  /**
+   * El punto no está en España: ENAIRE no publica zonas para él y esta app no
+   * puede decir nada. No es un permiso ni una prohibición, es un «aquí no
+   * aplico». Ver `src/logic/airspace.ts`.
+   */
+  | 'FUERA_DE_ESPANA';
 
 export interface Verdict {
   level: VerdictLevel;
@@ -153,6 +164,12 @@ export interface Verdict {
   maxFreeHeight: MaxFreeHeight;
   /** true si alguna capa oficial no respondió: el resultado no es concluyente. */
   incomplete: boolean;
+  /**
+   * País del punto cuando el veredicto es FUERA_DE_ESPANA. Sale de la búsqueda
+   * inversa, así que puede venir vacío (mar abierto, sin conexión): el mensaje
+   * funciona igual sin él.
+   */
+  outside?: import('./logic/airspace').OutsideCountry;
   /** Capas que no respondieron. */
   failedLayers: LayerKey[];
 }

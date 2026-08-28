@@ -128,6 +128,7 @@ const LEVEL_KEYS = {
   AUTORIZACION: 'level.AUTORIZACION',
   PROHIBIDO: 'level.PROHIBIDO',
   DESCONOCIDO: 'level.DESCONOCIDO',
+  FUERA_DE_ESPANA: 'level.FUERA_DE_ESPANA',
 } satisfies Record<VerdictLevel, MessageKey>;
 
 export function verdictLevelLabel(level: VerdictLevel): string {

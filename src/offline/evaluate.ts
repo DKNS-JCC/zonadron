@@ -14,7 +14,8 @@
 
 import { t } from '../i18n';
 import { dedupeZones, normalizeZone } from '../api/enaire';
-import { buildVerdict, evaluateZones } from '../logic/verdict';
+import { buildOutsideVerdict, buildVerdict, evaluateZones } from '../logic/verdict';
+import { isSpanishAirspace } from '../logic/airspace';
 import type { Coords, QueryResult, Zone } from '../types';
 import { loadPack } from './pack';
 import { elevationUncertaintyFor, type OfflinePack } from './model';
@@ -53,12 +54,20 @@ export async function checkPointOffline(
   const terrain = interpolated === null ? null : interpolated + uncertainty;
 
   const evaluated = evaluateZones(dedupeZones(zones), flightHeightAgl, terrain);
-  const verdict = buildVerdict(evaluated, flightHeightAgl, []);
+
+  // Un paquete es un rectángulo, y un rectángulo pegado a la raya de Portugal o
+  // a la frontera francesa se lleva dentro trozos que no son España. El paquete
+  // guarda también los polígonos FIR de ENAIRE, así que la comprobación es la
+  // misma que con conexión; lo único que falta aquí es el nombre del país, que
+  // necesita red. Ver `src/logic/airspace.ts`.
+  const verdict = isSpanishAirspace(evaluated)
+    ? buildVerdict(evaluated, flightHeightAgl, [])
+    : buildOutsideVerdict();
 
   return {
     coords,
     terrainElevation: interpolated,
-    terrainSource: t('offline.terrainSource'),
+    terrainSource: pack.elevationSource ?? t('offline.terrainSource'),
     flightHeightAgl,
     zones: evaluated,
     verdict,

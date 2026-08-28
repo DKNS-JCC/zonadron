@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,8 @@ import { Appear } from '../../src/components/motion';
 import { noWebOutline } from '../../src/components/HeightControl';
 import { usePalette } from '../../src/hooks/useTheme';
 import { useHistory } from '../../src/state/HistoryContext';
+import { useFavorites } from '../../src/state/FavoritesContext';
+import { favoriteName, favoriteNotePreview, matchFavorites } from '../../src/logic/favorites';
 import { searchPlaces, type Place } from '../../src/api/geocode';
 import { radius, shadow, space, type, emphasize } from '../../src/theme';
 import { t } from '../../src/i18n';
@@ -27,6 +29,7 @@ export default function BuscarScreen() {
   const p = usePalette();
   const router = useRouter();
   const { entries } = useHistory();
+  const { favorites } = useFavorites();
 
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
@@ -90,6 +93,13 @@ export default function BuscarScreen() {
     });
   };
 
+  /**
+   * Tus sitios guardados salen antes que los de internet y desde la primera
+   * letra: son locales, no cuestan una petición, y si te has molestado en
+   * ponerle nombre a un sitio es porque quieres volver a él.
+   */
+  const savedMatches = useMemo(() => matchFavorites(favorites, query), [favorites, query]);
+
   const showIdle = query.trim().length === 0;
   const showRecents = showIdle && entries.length > 0;
 
@@ -141,6 +151,52 @@ export default function BuscarScreen() {
           </Pressable>
         ) : null}
       </View>
+
+      {savedMatches.length > 0 ? (
+        <View style={{ gap: space.md }}>
+          <SectionTitle>{t('search.saved')}</SectionTitle>
+          <View
+            style={[
+              { backgroundColor: p.surface, borderRadius: radius.lg, overflow: 'hidden' },
+              shadow.chip,
+            ]}
+          >
+            {savedMatches.map((f, i) => {
+              const name = favoriteName(f);
+              const note = favoriteNotePreview(f);
+              return (
+                <View key={f.id}>
+                  {i > 0 ? <Separator inset={space.lg + 20 + space.md} /> : null}
+                  <Pressable
+                    onPress={() => open(f.lat, f.lon, name)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => ({
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: space.md,
+                      paddingHorizontal: space.lg,
+                      paddingVertical: space.md,
+                      minHeight: 60,
+                      backgroundColor: pressed ? p.surfaceSunken : 'transparent',
+                    })}
+                  >
+                    <Ionicons name="star" size={18} color={p.tint} />
+                    <View style={{ flex: 1, gap: 1 }}>
+                      <Text style={[emphasize(type.callout), { color: p.label }]} numberOfLines={1}>
+                        {name}
+                      </Text>
+                      <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
+                        {note ?? f.label}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={p.labelTertiary} />
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
 
       {loading ? (
         <Card>

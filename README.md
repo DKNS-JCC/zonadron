@@ -7,7 +7,7 @@
 
 Can I fly my drone here? Zona Dron answers that question for any point in Spain,
 using the UAS Geographical Zones published by ENAIRE. Point at a place — with
-GPS, on the map, by address or by coordinates — and you get one of five plain
+GPS, on the map, by address or by coordinates — and you get one of six plain
 answers:
 
 - You can fly.
@@ -15,6 +15,7 @@ answers:
 - Authorization is required.
 - You cannot fly.
 - The check could not be completed.
+- Outside Spain: the app does not apply here, and it points you to the right authority.
 
 Runs on **Android** and **iPhone/iPad**, in **Spanish or English**. No account,
 no ads, no tracking, no API keys.
@@ -150,7 +151,8 @@ map, directions to the point, sharing, the official ENAIRE viewer, the light and
 shadow forecast, the zones that affect you, NOTAMs, whether you are standing in
 an urban environment, and protected natural areas.
 
-The star saves the place to your notebook; the circular arrow re-queries ENAIRE.
+The star saves the place to your notebook and asks for the name you want to
+know it by; the circular arrow re-queries ENAIRE.
 
 ### Map
 
@@ -196,6 +198,13 @@ Your saved places, your flight log and the rules, in one tab.
 <td width="33%"><img src="docs/capturas/en/light-normas.png" alt="Rules and sources"></td>
 </tr>
 </table>
+
+Every saved place has its own details: the **name** you know it by ("the
+reservoir, east shore"), the **notes** no official dataset holds — where to
+park, how to get in, the power line to the north — and the **height you usually
+fly at there**, which it is checked with when you open it, with nothing to
+change each time. Your notes show up on the result itself, and the search finds
+your places by name or by what you wrote in them.
 
 Saved places are re-checked when you open them — a spot that was clear last
 month may have a temporary restriction today. **Log flight** on any result adds

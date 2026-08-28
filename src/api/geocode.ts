@@ -8,6 +8,7 @@
  */
 
 import { acceptLanguage, t } from '../i18n';
+import type { OutsideCountry } from '../logic/airspace';
 
 const BASE = 'https://nominatim.openstreetmap.org';
 /**
@@ -131,6 +132,14 @@ export interface PlaceDetails {
   city: string | null;
   /** Comunidad autónoma en ISO 3166-2 (ES-PV, ES-NC…), para saber qué datos hay. */
   regionIso: string | null;
+  /**
+   * País en ISO 3166-1 alfa-2 y en minúsculas ('es', 'pt'…). Es lo que permite
+   * decir «esto está en Portugal» cuando el punto se sale de España. null si la
+   * búsqueda inversa no ha respondido o el punto está en mar abierto.
+   */
+  countryCode: string | null;
+  /** Nombre del país en el idioma de la app. */
+  country: string | null;
 }
 
 const EMPTY_PLACE: PlaceDetails = {
@@ -138,6 +147,8 @@ const EMPTY_PLACE: PlaceDetails = {
   neighbourhood: null,
   city: null,
   regionIso: null,
+  countryCode: null,
+  country: null,
 };
 
 /**
@@ -191,10 +202,12 @@ export async function describePlace(
       neighbourhood: a.neighbourhood ?? a.suburb ?? a.quarter ?? null,
       city: a.city ?? a.town ?? a.village ?? a.municipality ?? null,
       regionIso: a['ISO3166-2-lvl4'] ?? null,
+      countryCode: a.country_code ? a.country_code.toLowerCase() : null,
+      country: a.country ?? null,
     };
     // Sólo se cachea lo que ha respondido de verdad: un fallo de red no debe
     // dejar el punto marcado como "sin nombre" para el resto de la sesión.
-    if (place.label || place.regionIso) placeCache.set(key, place);
+    if (place.label || place.regionIso || place.countryCode) placeCache.set(key, place);
     return place;
   } catch {
     return EMPTY_PLACE;
@@ -202,6 +215,22 @@ export async function describePlace(
     clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
   }
+}
+
+/**
+ * En qué país cae un punto.
+ *
+ * Va por la misma caché que el resto de la búsqueda inversa: la pantalla de
+ * resultado ya pide el nombre del sitio para la cabecera, así que preguntar
+ * también por el país no suele costar ni una petición extra.
+ */
+export async function describeCountry(
+  lat: number,
+  lon: number,
+  signal?: AbortSignal,
+): Promise<OutsideCountry> {
+  const place = await describePlace(lat, lon, signal);
+  return { code: place.countryCode, name: place.country };
 }
 
 /** Nombre aproximado de un punto, para dar contexto al resultado. */

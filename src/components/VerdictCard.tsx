@@ -67,6 +67,13 @@ export function VerdictCard({
   const softened = Boolean(protectedArea) && result.verdict.level === 'LIBRE';
   const style = softened ? verdictStyles.CONDICIONES : verdictStyles[result.verdict.level];
 
+  /**
+   * Fuera de España la tarjeta se queda en el titular y el porqué: la altura de
+   * vuelo no cambia nada —no hay zonas contra las que compararla— y dejar el
+   * control puesto invita a jugar con un número que aquí no significa nada.
+   */
+  const outside = result.verdict.level === 'FUERA_DE_ESPANA';
+
   return (
     <Appear animationKey={`${result.verdict.level}-${result.queriedAt}`}>
       <View
@@ -193,7 +200,7 @@ export function VerdictCard({
           </View>
         ) : null}
 
-        <MaxHeightBand result={result} compact={compact} />
+        {outside ? null : <MaxHeightBand result={result} compact={compact} />}
 
         {/* El lugar, y colgando de él la precisión: es un matiz de dónde estás,
             no una alarma, así que va en el mismo tono tenue y sin icono propio. */}
@@ -208,6 +215,7 @@ export function VerdictCard({
           </View>
         ) : null}
 
+        {outside ? null : (
         <View style={{ marginTop: space.lg, gap: space.sm }}>
           <PressableScale
             onPress={() => onHeightChange && setOpenHeight((v) => !v)}
@@ -246,6 +254,7 @@ export function VerdictCard({
             </Collapsible>
           ) : null}
         </View>
+        )}
 
         <Text style={[type.caption, { color: '#FFFFFF99', marginTop: space.md }]}>
           {t('verdictCard.queriedAt', timeAgo(result.queriedAt))}
@@ -266,6 +275,7 @@ const ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   AUTORIZACION: 'shield-half',
   PROHIBIDO: 'close-circle',
   DESCONOCIDO: 'help-circle',
+  FUERA_DE_ESPANA: 'earth',
 };
 
 /**
@@ -361,11 +371,15 @@ export function VerdictPill({ result }: { result: QueryResult }) {
           {result.verdict.headline}
         </Text>
         <Text style={[type.footnote, { color: p.labelSecondary }]} numberOfLines={1}>
-          {free !== null
-            ? free > 0
-              ? t('verdictPill.free', free, affecting)
-              : t('verdictPill.blocked', affecting)
-            : t('verdictPill.zones', affecting)}
+          {result.verdict.level === 'FUERA_DE_ESPANA'
+            ? result.verdict.outside?.name
+              ? t('verdictPill.outside', result.verdict.outside.name)
+              : t('verdictPill.outsideUnknown')
+            : free !== null
+              ? free > 0
+                ? t('verdictPill.free', free, affecting)
+                : t('verdictPill.blocked', affecting)
+              : t('verdictPill.zones', affecting)}
         </Text>
       </View>
     </View>

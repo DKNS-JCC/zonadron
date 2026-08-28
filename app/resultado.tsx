@@ -23,11 +23,19 @@ export default function ResultadoScreen() {
   const params = useLocalSearchParams<{ lat?: string; lon?: string; label?: string }>();
   const { flightHeight, setFlightHeight } = useSettings();
   const { remember } = useHistory();
-  const { checkForChange } = useFavorites();
+  const { checkForChange, favoriteAt, updateFavorite, ready: favoritesReady } = useFavorites();
 
   const lat = Number(params.lat);
   const lon = Number(params.lon);
   const valid = Number.isFinite(lat) && Number.isFinite(lon);
+
+  /**
+   * Si este punto está guardado y le has puesto altura propia, se comprueba con
+   * ella. Es la razón de que exista esa altura: llegar al sitio, abrirlo y que
+   * ya esté a los 30 m a los que vuelas ahí, sin tocar nada.
+   */
+  const saved = valid ? favoriteAt(lat, lon) : null;
+  const startHeight = saved?.heightM ?? flightHeight;
 
   const [result, setResult] = useState<QueryResult | null>(null);
   const [place, setPlace] = useState<string | null>(params.label ?? null);
@@ -65,10 +73,14 @@ export default function ResultadoScreen() {
     [lat, lon, valid, remember, checkForChange],
   );
 
+  // Se espera a que carguen los favoritos antes de la primera consulta: sin eso
+  // el sitio se comprobaría con la altura general y habría que repetirlo entero
+  // medio segundo después. La lectura es de disco local y tarda un suspiro.
   useEffect(() => {
-    run(flightHeight);
+    if (!favoritesReady) return;
+    run(startHeight);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lat, lon]);
+  }, [lat, lon, favoritesReady]);
 
   // Nombre del sitio: se cancela junto con la pantalla para no tocar el estado
   // de un componente ya desmontado.
@@ -87,6 +99,9 @@ export default function ResultadoScreen() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  /** La altura con la que está hecho lo que se ve: es la que hay que repetir. */
+  const currentHeight = result?.flightHeightAgl ?? startHeight;
+
   if (!valid) {
     return (
       <ScreenScroll>
@@ -102,7 +117,7 @@ export default function ResultadoScreen() {
       <Stack.Screen options={{ title: place ?? t('point.title') }} />
       <ScreenScroll
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={() => run(flightHeight)} tintColor={p.tint} />
+          <RefreshControl refreshing={loading} onRefresh={() => run(currentHeight)} tintColor={p.tint} />
         }
       >
         {loading && !result ? (
@@ -126,7 +141,7 @@ export default function ResultadoScreen() {
                   <GhostButton
                     label={t('point.retry')}
                     icon="refresh"
-                    onPress={() => run(flightHeight)}
+                    onPress={() => run(currentHeight)}
                   />
                 </View>
               </View>
@@ -149,10 +164,14 @@ export default function ResultadoScreen() {
             result={result}
             place={place}
             onHeightChange={(h) => {
-              setFlightHeight(h);
+              // En un sitio con altura propia, la altura que se toca es la
+              // suya: cambiar la general desde aquí le movería el ajuste a
+              // toda la app por tocar un sitio concreto.
+              if (saved?.heightM) updateFavorite(saved.id, { heightM: h });
+              else setFlightHeight(h);
               run(h);
             }}
-            onRefresh={() => run(flightHeight)}
+            onRefresh={() => run(currentHeight)}
             refreshing={loading}
             onOpenMap={() =>
               router.push({ pathname: '/mapa', params: { lat: String(lat), lon: String(lon) } })

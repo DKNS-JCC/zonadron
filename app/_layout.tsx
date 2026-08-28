@@ -82,6 +82,10 @@ function Navegacion() {
           name="dron/[id]"
           options={{ headerShown: true, title: t('fleet.editTitle') }}
         />
+        <Stack.Screen
+          name="favorito/[id]"
+          options={{ headerShown: true, title: t('favorite.title') }}
+        />
       </Stack>
     </React.Fragment>
   );

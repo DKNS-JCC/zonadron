@@ -76,6 +76,7 @@ export const es = {
   'level.AUTORIZACION': 'Necesitas autorización',
   'level.PROHIBIDO': 'No puedes volar',
   'level.DESCONOCIDO': 'Sin comprobar del todo',
+  'level.FUERA_DE_ESPANA': 'Fuera de España',
 
   /* --- Motor de decisión (verdict.ts) ------------------------------- */
 
@@ -84,6 +85,7 @@ export const es = {
   'verdict.headline.AUTORIZACION': 'Necesitas autorización',
   'verdict.headline.PROHIBIDO': 'No puedes volar',
   'verdict.headline.DESCONOCIDO': 'No se ha podido comprobar',
+  'verdict.headline.FUERA_DE_ESPANA': 'Fuera de España',
 
   'verdict.vertical.referenceMissing':
     'Esta zona mide sus alturas desde el punto de referencia del aeródromo, pero ENAIRE no ' +
@@ -133,9 +135,21 @@ export const es = {
   'verdict.summary.conditional': (n: number) =>
     `Estás dentro de ${n} ${plural(n, 'zona con condiciones', 'zonas con condiciones')}. Puedes volar si cumples lo que indica cada una.`,
   'verdict.summary.review': 'Revisa las zonas listadas antes de volar.',
+  'verdict.summary.noCoverage':
+    'Este punto es español, pero ENAIRE no publica datos de espacio aéreo para él (pasa en enclaves ' +
+    'como Llívia). No hay nada que confirme que puedas volar: da por hecho que puede haber restricciones ' +
+    'y comprueba con la autoridad antes de despegar.',
+  'verdict.summary.outside': (pais: string) =>
+    `El punto consultado está en ${pais}, así que las zonas de ENAIRE no aplican aquí. `+
+    'Esta app no puede decirte si puedes volar: consulta las normas de ese país.',
+  'verdict.summary.outsideUnknown':
+    'El punto consultado está fuera del espacio aéreo español, así que las zonas de ENAIRE no ' +
+    'aplican aquí. Esta app no puede decirte si puedes volar: consulta las normas del país en el que estés.',
   'verdict.summary.allAtOnce': (n: number) =>
     ` En total te ${plural(n, 'afecta', 'afectan')} ${n} ${plural(n, 'zona', 'zonas')}: se cumplen todas a la vez, no vale con la menos restrictiva.`,
 
+  'verdict.maxFree.noCoverage': 'No se puede determinar: ENAIRE no publica datos de este punto.',
+  'verdict.maxFree.outside': 'Fuera de España no hay altura que valga: aquí no rige lo que publica ENAIRE.',
   'verdict.maxFree.unknownLayer': 'No se ha podido determinar: falta consultar alguna capa oficial.',
   'verdict.maxFree.unknownBand': (zona: string) =>
     `No se puede calcular hasta qué altura puedes subir sin permiso: la franja de "${zona}" no se ha podido determinar.`,
@@ -207,11 +221,11 @@ export const es = {
   /* --- Mapa de altura libre (offline/coverage.ts) ------------------- */
 
   'coverage.legend.max': 'Hasta 120 m',
-  'coverage.legend.high': '60 – 119 m',
-  'coverage.legend.mid': '30 – 59 m',
-  'coverage.legend.low': 'Menos de 30 m',
   'coverage.legend.none': 'Nada sin permiso',
   'coverage.legend.unknown': 'Sin determinar',
+  'coverage.cellSize': (metros: number) => `Celdas de ${metros} m`,
+  'coverage.cellCoarse': (metros: number) =>
+    `Celdas de ${metros} m · acércate para más detalle`,
 
   /* --- Pestañas ----------------------------------------------------- */
 
@@ -257,6 +271,8 @@ export const es = {
   'verdictPill.blocked': (n: number) =>
     `Sin autorización, aquí no se vuela · ${n} ${n === 1 ? 'zona' : 'zonas'}`,
   'verdictPill.zones': (n: number) => `${n} ${n === 1 ? 'zona te afecta' : 'zonas te afectan'}`,
+  'verdictPill.outside': (pais: string) => `${pais} · esta app sólo cubre España`,
+  'verdictPill.outsideUnknown': 'Fuera del espacio aéreo español',
 
   /* --- Pantalla de resultado ---------------------------------------- */
 
@@ -270,6 +286,30 @@ export const es = {
     `No ha respondido ${capas}. Esta comprobación está incompleta: no la des por buena.`,
   'result.noTerrain':
     'No se ha podido obtener la elevación del terreno en este punto. Las zonas con límites referidos al nivel del mar se muestran como si te afectaran, por prudencia.',
+
+  /* --- Punto fuera de España (airspace.ts / OutsideSpainCard) -------- */
+
+  'outside.title': 'Aquí esta app no aplica',
+  'outside.inCountry': (pais: string) => `El punto consultado está en ${pais}.`,
+  'outside.inUnknown': 'El punto consultado está fuera del espacio aéreo español.',
+  'outside.body':
+    'ZonaDron sólo consulta las zonas geográficas UAS que publica ENAIRE, y ENAIRE sólo publica ' +
+    'las de España. Que aquí no salga ninguna zona no quiere decir que puedas volar: quiere decir ' +
+    'que esta app no tiene el dato.',
+  'outside.easa': (pais: string) =>
+    `${pais} aplica el mismo Reglamento (UE) 2019/947 que España: las mismas categorías, los mismos ` +
+    '120 m y tu registro de operador europeo siguen valiendo. Lo que cambia son las zonas geográficas, ' +
+    'que publica cada país por su cuenta.',
+  'outside.nonEasa':
+    'Fuera del ámbito europeo cambian también las categorías, los requisitos de registro y los ' +
+    'límites de altura. Da por hecho que nada de lo que sabes de España sirve hasta comprobarlo.',
+  'outside.authority': (nombre: string) => `Consultar ${nombre}`,
+  'outside.authorityMap': (nombre: string) => `Mapa de zonas · ${nombre}`,
+  'outside.easaList': 'Autoridades nacionales (EASA)',
+  'outside.searchSpain': 'Buscar un punto en España',
+  'outside.offlineNote':
+    'Sin conexión no se ha podido averiguar de qué país es el punto, pero sí que no es español.',
+
   'result.directions': 'Cómo llegar',
   'result.logged': 'Registrado',
   'result.logFlight': 'Registrar vuelo',
@@ -409,6 +449,18 @@ export const es = {
   'notam.footnote':
     'Fuente: servicio de NOTAM para UAS de ENAIRE. El horario viene en texto libre y no se interpreta: léelo. Un NOTAM en vigor puede prohibir el vuelo aunque las zonas salgan en verde.',
 
+  'notam.layer': 'Áreas de NOTAM',
+  'notam.layerNote': 'Los avisos temporales, dibujados enteros. Sin esto sólo los ves cuando la cruz ya está dentro.',
+  'notam.legendActive': 'En vigor ahora',
+  'notam.legendScheduled': 'Programado',
+  'notam.mapLoading': 'Buscando avisos…',
+  'notam.mapCount': (n: number) =>
+    n === 0 ? 'Ningún aviso a la vista' : `${n} ${n === 1 ? 'aviso' : 'avisos'} a la vista`,
+  'notam.mapHidden': (n: number, altura: number) =>
+    `${n} ${n === 1 ? 'oculto' : 'ocultos'}: empiezan por encima de tus ${altura} m y no te pueden alcanzar.`,
+  'notam.mapFar': 'Acércate un poco para ver los avisos: de tan lejos se solapan unos con otros.',
+  'notam.mapFailed': 'No se han podido traer los avisos. Que no se vea ninguno no quiere decir que no los haya.',
+
   'offline.title': 'Volar sin cobertura',
   'offline.packSummary': (km: number, zonas: number, mb: string) =>
     `${km} km de radio · ${zonas} zonas · ${mb} MB`,
@@ -416,7 +468,11 @@ export const es = {
   'offline.stale': ' Las zonas de ENAIRE cambian: conviene volver a descargarla antes de fiarte.',
   'offline.fresh': ' Si te quedas sin datos dentro de esa área, la app responde igual.',
   'offline.noElevation':
-    'No se pudo descargar la elevación del terreno de esta zona. Sin ella, toda zona referida al nivel del mar se trata como si te afectara. Vuelve a descargarla con mejor conexión para tener el margen exacto.',
+    'Falta el relieve del terreno de esta zona, así que verás menos altura disponible de la que tienes en realidad. Vuelve a descargar la zona.',
+  'offline.noElevationHour':
+    'Falta el relieve del terreno: hoy ya se ha descargado mucho y la fuente no admite más por ahora. Vuelve a intentarlo dentro de una hora.',
+  'offline.noElevationDay':
+    'Falta el relieve del terreno: la fuente no admite más descargas hasta mañana. La zona funciona igual, pero mostrará menos altura de la que tienes.',
   'offline.change': 'Cambiar zona',
   'offline.delete': 'Borrar',
   'offline.empty':
@@ -441,6 +497,48 @@ export const es = {
     `${sitio}. ${veredicto}. Consultado ${cuando}.`,
   'history.line': (veredicto: string, metros: number, cuando: string) =>
     `${veredicto} · a ${metros} m · ${cuando}`,
+  /* --- Ficha de un sitio guardado (app/favorito/[id].tsx) ------------ */
+
+  'favoritePrompt.title': 'Ponle un nombre',
+  'favoritePrompt.save': 'Guardar',
+  'favoritePrompt.skip': 'Ahora no',
+  'favorite.title': 'Sitio guardado',
+  'favorite.gone': 'Este sitio ya no está guardado.',
+  'favorite.section.yours': 'Lo tuyo',
+  'favorite.field.name': 'Nombre',
+  'favorite.field.namePlaceholder': 'La presa, orilla este',
+  'favorite.field.nameHint': 'Si lo dejas vacío se usa el nombre que dio el mapa.',
+  'favorite.field.note': 'Notas',
+  'favorite.field.notePlaceholder':
+    'Dónde se aparca, por dónde se entra, qué hay que vigilar, a quién avisar…',
+  'favorite.field.noteHint':
+    'Lo que no está en ningún dato oficial y se te olvida entre una visita y la siguiente.',
+  'favorite.savedNote': 'Se guarda solo, según escribes.',
+  'favorite.section.height': 'Altura habitual aquí',
+  'favorite.heightSet': (metros: number) =>
+    `Este sitio se comprueba a ${metros} m sobre el terreno, sin tener que cambiar nada cada vez.`,
+  'favorite.heightUnset': (metros: number) =>
+    `Ahora mismo se comprueba con la altura general (${metros} m). Ponle la suya si aquí sueles volar a otra.`,
+  'favorite.heightUse': 'Darle una altura propia',
+  'favorite.heightClear': 'Volver a la altura general',
+  'favorite.section.point': 'El punto',
+  'favorite.coords': 'Coordenadas',
+  'favorite.lastCheck': (veredicto: string, cuando: string) => `${veredicto} · ${cuando}`,
+  'favorite.lastCheckLabel': 'Última comprobación',
+  'favorite.savedAt': 'Guardado',
+  'favorite.check': 'Comprobar ahora',
+  'favorite.directions': 'Cómo llegar',
+  'favorite.share': 'Compartir el sitio',
+  'favorite.remove': 'Quitar de guardados',
+  'favorite.removeConfirm': (nombre: string) =>
+    `Se quita "${nombre}" de la lista, con su nombre y sus notas. El punto en sí lo puedes volver a guardar cuando quieras.`,
+  'favorites.editA11y': (sitio: string) => `Abrir la ficha de ${sitio}`,
+  'favorites.hasNote': 'Con notas',
+  'result.favoriteNote': 'Tus notas de este sitio',
+  'result.favoriteEdit': 'Editar el sitio',
+  'result.favoriteHeightNote': (metros: number) =>
+    `Comprobado a ${metros} m, la altura que le tienes puesta a este sitio.`,
+
   'favorites.a11y': (sitio: string, veredicto: string) => `${sitio}. ${veredicto}.`,
   'favorites.removeA11y': (sitio: string) => `Quitar ${sitio} de favoritos`,
 
@@ -451,7 +549,9 @@ export const es = {
     'Tus sitios guardados, tus vuelos registrados y la normativa, todo en un mismo sitio.',
   'notebook.favorites': 'Favoritos',
   'notebook.favoritesEmpty':
-    'Guarda un sitio tocando la estrella en cualquier resultado — el campo donde entrenas, la finca de un cliente — para tenerlo siempre a mano aquí.',
+    'Guarda un sitio tocando la estrella en cualquier resultado — el campo donde entrenas, la finca de un cliente — y ponle aquí su nombre, tus notas de acceso y la altura a la que vuelas ahí.',
+  'notebook.favoritesHint':
+    'Toca un sitio para comprobarlo otra vez, o el lápiz para su nombre, sus notas y su altura.',
   'notebook.logTitle': 'Diario de vuelos',
   'notebook.logCount': (n: number) => `${n} vuelo${n === 1 ? '' : 's'} registrado${n === 1 ? '' : 's'}.`,
   'notebook.logLast': (sitio: string, veredicto: string, cuando: string) =>
@@ -530,6 +630,7 @@ export const es = {
   'search.a11y': 'Buscar un lugar',
   'search.clear': 'Borrar búsqueda',
   'search.failed': 'No se ha podido buscar. Comprueba tu conexión e inténtalo de nuevo.',
+  'search.saved': 'Tus sitios',
   'search.results': 'Resultados',
   'search.noResults': 'No se ha encontrado ningún lugar con ese nombre en España.',
   'search.recent': 'Últimas consultas',
@@ -555,6 +656,8 @@ export const es = {
   'settings.privacyRow': 'Privacidad',
   'settings.privacyHint': 'Nada sale de tu móvil',
   'settings.version': (version: string) => `Zona Dron ${version}`,
+  'settings.secret':
+    'No dejes que el miedo de unos pocos limite la libertad de muchos, vuela libre.',
   'settings.defaultHeight': 'Altura de vuelo por defecto',
   'settings.yourData': 'Tus datos',
   'settings.operatorAndAircraft': 'Operador y aeronave',
@@ -580,7 +683,7 @@ export const es = {
   'basemap.satelite': 'Satélite',
   'basemap.note.mapa': 'Callejero de OpenStreetMap',
   'basemap.note.topo': 'MTN oficial del IGN, con curvas de nivel',
-  'basemap.note.satelite': 'Ortofoto PNOA del IGN',
+  'basemap.note.satelite': 'Ortofoto PNOA del IGN, con nombres de sitios',
 
   /* --- Luz y sombras -------------------------------------------------- */
 
@@ -657,6 +760,13 @@ export const es = {
   'download.step.zonas': 'Descargando las zonas de ENAIRE…',
   'download.step.elevacion': 'Descargando la elevación del terreno…',
   'download.step.guardando': 'Guardando en el móvil…',
+  'download.remaining': (minutos: number) => `Quedan unos ${minutos} min`,
+  'download.remainingSoon': 'Queda menos de un minuto',
+  'download.background': 'Seguir en segundo plano',
+  'download.cancel': 'Cancelar',
+  'download.backgroundNote':
+    'Puedes salir de aquí: la descarga sigue sola y te avisa al terminar.',
+  'download.estimate': 'Puedes seguir usando la app mientras se descarga.',
   'download.button': 'Descargar esta zona',
   'download.moveFirst': 'Mueve el mapa…',
   'download.failedDetail': (motivo: string) => `No se ha podido descargar: ${motivo}`,
@@ -683,6 +793,8 @@ export const es = {
     `Consultado el ${cuando} a las Zonas Geográficas UAS de ENAIRE.`,
   'share.checkSource':
     'Comprueba siempre la fuente oficial antes de volar: https://drones.enaire.es/',
+  'share.favoriteFooter':
+    'Sitio guardado en Zona Dron. Las zonas cambian: comprueba el punto antes de volar.',
   'share.logTitle': (n: number) => `Diario de vuelos — ${n} vuelo(s) registrados`,
   'share.logEntry': (veredicto: string, metros: number, dron: string) =>
     `  ${veredicto} · ${metros} m · ${dron}`,

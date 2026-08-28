@@ -8,13 +8,14 @@
 ¿Puedo volar el dron aquí? Zona Dron responde a esa pregunta en cualquier punto
 de España, con las Zonas Geográficas UAS que publica ENAIRE. Señalas un sitio
 —con el GPS, en el mapa, por dirección o por coordenadas— y te da una de estas
-cinco respuestas:
+seis respuestas:
 
 - Puedes volar.
 - Puedes volar con condiciones.
 - Necesitas autorización.
 - No puedes volar.
 - No se ha podido comprobar.
+- Fuera de España: aquí no aplica, y te dice a qué autoridad preguntar.
 
 Funciona en **Android** y en **iPhone/iPad**, en **español o en inglés**. Sin
 cuenta, sin anuncios, sin seguimiento y sin claves de API.
@@ -151,8 +152,8 @@ compartir, el visor oficial de ENAIRE, la previsión de luz y sombras, las zonas
 que te afectan, los NOTAM, si estás en entorno urbano y los espacios naturales
 protegidos.
 
-La estrella guarda el sitio en el cuaderno; la flecha circular vuelve a
-preguntar a ENAIRE.
+La estrella guarda el sitio en el cuaderno y te pregunta el nombre con el que
+quieres reconocerlo; la flecha circular vuelve a preguntar a ENAIRE.
 
 ### Mapa
 
@@ -198,6 +199,13 @@ Tus sitios guardados, tu diario de vuelos y la normativa, en una pestaña.
 <td width="33%"><img src="docs/capturas/es/light-normas.png" alt="Normas y fuentes"></td>
 </tr>
 </table>
+
+Cada sitio guardado tiene su ficha: el **nombre** con el que lo reconoces («la
+presa, orilla este»), las **notas** de lo que no está en ningún dato oficial
+—dónde se aparca, por dónde se entra, que hay un tendido al norte— y la
+**altura a la que sueles volar ahí**, con la que se comprueba al abrirlo sin
+tener que cambiarla cada vez. Las notas se ven en el propio resultado, y el
+buscador encuentra tus sitios por nombre o por lo que escribiste en ellas.
 
 Los sitios guardados se vuelven a consultar al abrirlos: un punto que estaba
 libre el mes pasado puede tener hoy una restricción temporal. **Registrar

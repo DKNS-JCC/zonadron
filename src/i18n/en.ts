@@ -84,6 +84,7 @@ export const en: Messages = {
   'level.AUTORIZACION': 'Authorization required',
   'level.PROHIBIDO': 'You cannot fly',
   'level.DESCONOCIDO': 'Not fully checked',
+  'level.FUERA_DE_ESPANA': 'Outside Spain',
 
   /* --- Decision engine (verdict.ts) --------------------------------- */
 
@@ -92,6 +93,7 @@ export const en: Messages = {
   'verdict.headline.AUTORIZACION': 'You need authorization',
   'verdict.headline.PROHIBIDO': 'You cannot fly',
   'verdict.headline.DESCONOCIDO': 'The check could not be completed',
+  'verdict.headline.FUERA_DE_ESPANA': 'Outside Spain',
 
   'verdict.vertical.referenceMissing':
     'This zone measures its heights from the aerodrome reference point, but ENAIRE does not ' +
@@ -140,9 +142,21 @@ export const en: Messages = {
   'verdict.summary.conditional': (n: number) =>
     `You are inside ${n} ${plural(n, 'zone', 'zones')} with conditions attached. You can fly if you meet what each one asks for.`,
   'verdict.summary.review': 'Read the zones listed below before flying.',
+  'verdict.summary.noCoverage':
+    'This point is in Spain, but ENAIRE publishes no airspace data for it (this happens in enclaves ' +
+    'such as Llívia). Nothing confirms that you may fly: assume there may be restrictions and check with ' +
+    'the authority before taking off.',
+  'verdict.summary.outside': (country: string) =>
+    `The point you checked is in ${country}, so ENAIRE's zones do not apply here. ` +
+    "This app cannot tell you whether you may fly: check that country's rules.",
+  'verdict.summary.outsideUnknown':
+    "The point you checked is outside Spanish airspace, so ENAIRE's zones do not apply here. " +
+    'This app cannot tell you whether you may fly: check the rules of the country you are in.',
   'verdict.summary.allAtOnce': (n: number) =>
     ` ${n} ${plural(n, 'zone affects', 'zones affect')} you in total: all of them apply at once, you cannot go by the least restrictive one.`,
 
+  'verdict.maxFree.noCoverage': 'Cannot be determined: ENAIRE publishes no data for this point.',
+  'verdict.maxFree.outside': 'No height applies here: outside Spain, what ENAIRE publishes does not govern.',
   'verdict.maxFree.unknownLayer': 'Could not be determined: an official layer is still missing.',
   'verdict.maxFree.unknownBand': (zone: string) =>
     `There is no way to work out how high you can go without permission: the band of "${zone}" could not be determined.`,
@@ -213,11 +227,11 @@ export const en: Messages = {
   /* --- Available-height map (offline/coverage.ts) ------------------- */
 
   'coverage.legend.max': 'Up to 120 m',
-  'coverage.legend.high': '60 – 119 m',
-  'coverage.legend.mid': '30 – 59 m',
-  'coverage.legend.low': 'Under 30 m',
   'coverage.legend.none': 'Nothing without permission',
   'coverage.legend.unknown': 'Undetermined',
+  'coverage.cellSize': (metres: number) => `${metres} m cells`,
+  'coverage.cellCoarse': (metres: number) =>
+    `${metres} m cells · zoom in for finer detail`,
 
   /* --- Tabs --------------------------------------------------------- */
 
@@ -263,6 +277,8 @@ export const en: Messages = {
   'verdictPill.blocked': (n: number) =>
     `No flying here without authorization · ${n} ${n === 1 ? 'zone' : 'zones'}`,
   'verdictPill.zones': (n: number) => `${n} ${n === 1 ? 'zone affects' : 'zones affect'} you`,
+  'verdictPill.outside': (country: string) => `${country} · this app only covers Spain`,
+  'verdictPill.outsideUnknown': 'Outside Spanish airspace',
 
   /* --- Result screen ------------------------------------------------ */
 
@@ -276,6 +292,30 @@ export const en: Messages = {
     `${layers} did not answer. This check is incomplete: do not take it as good.`,
   'result.noTerrain':
     'The terrain elevation at this point could not be obtained. Zones with limits referred to sea level are shown as if they affected you, to be safe.',
+
+  /* --- Point outside Spain (airspace.ts / OutsideSpainCard) ---------- */
+
+  'outside.title': 'This app does not apply here',
+  'outside.inCountry': (country: string) => `The point you checked is in ${country}.`,
+  'outside.inUnknown': 'The point you checked is outside Spanish airspace.',
+  'outside.body':
+    'ZonaDron only queries the UAS geographical zones published by ENAIRE, and ENAIRE only publishes ' +
+    'those for Spain. No zones showing up here does not mean you may fly: it means this app has no ' +
+    'data for this place.',
+  'outside.easa': (country: string) =>
+    `${country} applies the same Regulation (EU) 2019/947 as Spain: same categories, same 120 m, and ` +
+    'your EU operator registration still counts. What changes are the geographical zones, which each ' +
+    'country publishes on its own.',
+  'outside.nonEasa':
+    'Outside the European framework the categories, registration requirements and height limits change ' +
+    'too. Assume nothing you know from Spain applies until you have checked.',
+  'outside.authority': (name: string) => `Check ${name}`,
+  'outside.authorityMap': (name: string) => `Zone map · ${name}`,
+  'outside.easaList': 'National authorities (EASA)',
+  'outside.searchSpain': 'Search for a point in Spain',
+  'outside.offlineNote':
+    'With no connection the country could not be identified, only that the point is not Spanish.',
+
   'result.directions': 'Directions',
   'result.logged': 'Logged',
   'result.logFlight': 'Log flight',
@@ -414,6 +454,18 @@ export const en: Messages = {
   'notam.footnote':
     'Source: ENAIRE’s NOTAM service for UAS. The schedule comes as free text and is not interpreted: read it. A NOTAM in force can ban the flight even when the zones come out green.',
 
+  'notam.layer': 'NOTAM areas',
+  'notam.layerNote': 'Temporary notices, drawn in full. Without this you only see them once the crosshair is already inside.',
+  'notam.legendActive': 'In force now',
+  'notam.legendScheduled': 'Scheduled',
+  'notam.mapLoading': 'Looking for notices…',
+  'notam.mapCount': (n: number) =>
+    n === 0 ? 'No notices in view' : `${n} ${n === 1 ? 'notice' : 'notices'} in view`,
+  'notam.mapHidden': (n: number, height: number) =>
+    `${n} hidden: they start above your ${height} m and cannot reach you.`,
+  'notam.mapFar': 'Zoom in a little to see the notices: this far out they overlap each other.',
+  'notam.mapFailed': 'The notices could not be fetched. Seeing none does not mean there are none.',
+
   'offline.title': 'Flying without coverage',
   'offline.packSummary': (km: number, zones: number, mb: string) =>
     `${km} km radius · ${zones} zones · ${mb} MB`,
@@ -421,7 +473,11 @@ export const en: Messages = {
   'offline.stale': ' ENAIRE zones change: download it again before trusting it.',
   'offline.fresh': ' If you run out of data inside that area, the app still answers.',
   'offline.noElevation':
-    'The terrain elevation for this area could not be downloaded. Without it, every zone referred to sea level is treated as affecting you. Download it again on a better connection to get the exact margin.',
+    'This area is missing its terrain relief, so you will see less available height than you actually have. Download the area again.',
+  'offline.noElevationHour':
+    'Missing terrain relief: a lot has been downloaded today and the source will not allow more right now. Try again in an hour.',
+  'offline.noElevationDay':
+    'Missing terrain relief: the source will not allow more downloads until tomorrow. The area still works, but shows less height than you have.',
   'offline.change': 'Change area',
   'offline.delete': 'Delete',
   'offline.empty':
@@ -446,6 +502,48 @@ export const en: Messages = {
     `${place}. ${verdict}. Checked ${when}.`,
   'history.line': (verdict: string, metres: number, when: string) =>
     `${verdict} · at ${metres} m · ${when}`,
+  /* --- Saved place detail (app/favorito/[id].tsx) -------------------- */
+
+  'favoritePrompt.title': 'Give it a name',
+  'favoritePrompt.save': 'Save',
+  'favoritePrompt.skip': 'Not now',
+  'favorite.title': 'Saved place',
+  'favorite.gone': 'This place is no longer saved.',
+  'favorite.section.yours': 'Yours',
+  'favorite.field.name': 'Name',
+  'favorite.field.namePlaceholder': 'The reservoir, east shore',
+  'favorite.field.nameHint': 'Leave it empty to keep the name the map gave it.',
+  'favorite.field.note': 'Notes',
+  'favorite.field.notePlaceholder':
+    'Where to park, how to get in, what to watch out for, who to tell…',
+  'favorite.field.noteHint':
+    'The things no official dataset holds and you forget between one visit and the next.',
+  'favorite.savedNote': 'Saved as you type.',
+  'favorite.section.height': 'Usual height here',
+  'favorite.heightSet': (metres: number) =>
+    `This place is checked at ${metres} m above ground, with nothing to change each time.`,
+  'favorite.heightUnset': (metres: number) =>
+    `Right now it uses the general height (${metres} m). Give it its own if you usually fly higher or lower here.`,
+  'favorite.heightUse': 'Give it its own height',
+  'favorite.heightClear': 'Back to the general height',
+  'favorite.section.point': 'The point',
+  'favorite.coords': 'Coordinates',
+  'favorite.lastCheck': (verdict: string, when: string) => `${verdict} · ${when}`,
+  'favorite.lastCheckLabel': 'Last check',
+  'favorite.savedAt': 'Saved',
+  'favorite.check': 'Check now',
+  'favorite.directions': 'Directions',
+  'favorite.share': 'Share this place',
+  'favorite.remove': 'Remove from saved',
+  'favorite.removeConfirm': (name: string) =>
+    `"${name}" is removed from the list, along with its name and notes. You can always save the point again.`,
+  'favorites.editA11y': (place: string) => `Open the details of ${place}`,
+  'favorites.hasNote': 'Has notes',
+  'result.favoriteNote': 'Your notes for this place',
+  'result.favoriteEdit': 'Edit this place',
+  'result.favoriteHeightNote': (metres: number) =>
+    `Checked at ${metres} m, the height you set for this place.`,
+
   'favorites.a11y': (place: string, verdict: string) => `${place}. ${verdict}.`,
   'favorites.removeA11y': (place: string) => `Remove ${place} from favourites`,
 
@@ -455,7 +553,9 @@ export const en: Messages = {
   'notebook.subtitle': 'Your saved places, your logged flights and the rules, all in one place.',
   'notebook.favorites': 'Favourites',
   'notebook.favoritesEmpty':
-    'Save a place by tapping the star on any result — the field where you practise, a client’s land — and it will always be here.',
+    'Save a place by tapping the star on any result — the field where you practise, a client’s land — then give it a name, your access notes and the height you fly at there.',
+  'notebook.favoritesHint':
+    'Tap a place to check it again, or the pencil for its name, notes and height.',
   'notebook.logTitle': 'Flight log',
   'notebook.logCount': (n: number) => `${n} flight${n === 1 ? '' : 's'} logged.`,
   'notebook.logLast': (place: string, verdict: string, when: string) =>
@@ -531,6 +631,7 @@ export const en: Messages = {
   'search.a11y': 'Search for a place',
   'search.clear': 'Clear the search',
   'search.failed': 'The search failed. Check your connection and try again.',
+  'search.saved': 'Your places',
   'search.results': 'Results',
   'search.noResults': 'No place with that name was found in Spain.',
   'search.recent': 'Recent checks',
@@ -555,6 +656,8 @@ export const en: Messages = {
   'settings.privacyRow': 'Privacy',
   'settings.privacyHint': 'Nothing leaves your phone',
   'settings.version': (version: string) => `Zona Dron ${version}`,
+  'settings.secret':
+    "Don't let the fear of a few limit the freedom of many, fly free.",
   'settings.defaultHeight': 'Default flight height',
   'settings.yourData': 'Your details',
   'settings.operatorAndAircraft': 'Operator and aircraft',
@@ -580,7 +683,7 @@ export const en: Messages = {
   'basemap.satelite': 'Satellite',
   'basemap.note.mapa': 'OpenStreetMap street map',
   'basemap.note.topo': 'Official IGN topographic map, with contour lines',
-  'basemap.note.satelite': 'IGN PNOA aerial imagery',
+  'basemap.note.satelite': 'IGN PNOA aerial imagery, with place names',
 
   /* --- Light and shadows ---------------------------------------------- */
 
@@ -658,6 +761,13 @@ export const en: Messages = {
   'download.step.zonas': 'Downloading the ENAIRE zones…',
   'download.step.elevacion': 'Downloading the terrain elevation…',
   'download.step.guardando': 'Saving to the phone…',
+  'download.remaining': (minutes: number) => `About ${minutes} min left`,
+  'download.remainingSoon': 'Less than a minute left',
+  'download.background': 'Keep going in the background',
+  'download.cancel': 'Cancel',
+  'download.backgroundNote':
+    'You can leave this screen: the download carries on and tells you when it is done.',
+  'download.estimate': 'You can keep using the app while it downloads.',
   'download.button': 'Download this area',
   'download.moveFirst': 'Move the map…',
   'download.failedDetail': (reason: string) => `Download failed: ${reason}`,
@@ -684,6 +794,8 @@ export const en: Messages = {
     `Checked on ${when} against ENAIRE’s UAS Geographical Zones.`,
   'share.checkSource':
     'Always check the official source before flying: https://drones.enaire.es/',
+  'share.favoriteFooter':
+    'Place saved in Zona Dron. Zones change: check the point before flying.',
   'share.logTitle': (n: number) => `Flight log — ${n} flight(s) recorded`,
   'share.logEntry': (verdict: string, metres: number, drone: string) =>
     `  ${verdict} · ${metres} m · ${drone}`,

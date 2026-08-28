@@ -84,6 +84,36 @@ test('mapa de altura libre con un paquete sintético', () => {
   assert.equal(este, 0, 'dentro de la zona la altura libre es cero');
 });
 
+test('el mapa de altura libre no pinta nada volable fuera de España', () => {
+  // Paquete pegado a la frontera: el FIR de ENAIRE sólo cubre la mitad oeste.
+  const bbox = { minLat: 40.0, maxLat: 40.02, minLon: -1.02, maxLon: -1.0 };
+  const pack = packFixture([[[-1.02, 40.0], [-1.02, 40.02], [-1.02, 40.0], [-1.02, 40.0]]], bbox, { lat: 40.01, lon: -1.01 }, 2);
+  pack.zones = [
+    {
+      layer: 'urbano',
+      // El polígono FIR: sólo la mitad oeste del paquete es espacio aéreo español.
+      rings: [[[-1.02, 40.0], [-1.02, 40.02], [-1.01, 40.02], [-1.01, 40.0], [-1.02, 40.0]]],
+      attributes: { identifier: 'NPDRID', type: 'CONDITIONAL', uom: 'M', name: 'FIR' },
+    },
+  ];
+
+  const grid = computeCoverageGrid(pack, bbox, 8);
+  const dentro = grid.values[3 * grid.cols + 1]; // mitad oeste: España
+  const fuera = grid.values[3 * grid.cols + 6]; // mitad este: el otro país
+
+  assert.equal(dentro, 120, 'dentro de España se sigue pudiendo subir a 120 m');
+  assert.equal(fuera, -1, 'fuera de España no hay altura libre, ni siquiera cero');
+});
+
+test('sin polígono FIR en el paquete no se enmascara nada', () => {
+  // Los paquetes viejos y los sintéticos no tienen por qué traerlo: es
+  // preferible el mapa de siempre a un mapa entero en gris.
+  const bbox = { minLat: 40.0, maxLat: 40.02, minLon: -1.02, maxLon: -1.0 };
+  const pack = packFixture([[[-1.02, 40.0], [-1.02, 40.0], [-1.02, 40.0]]], bbox, { lat: 40.01, lon: -1.01 }, 2);
+  const grid = computeCoverageGrid(pack, bbox, 8);
+  assert.equal(grid.values[3 * grid.cols + 1], 120);
+});
+
 test('punto volable más cercano a un objetivo fotográfico', async (t) => {
   // Zona que exige permiso en la mitad este; el objetivo cae dentro de ella.
   const bbox = { minLat: 40.0, maxLat: 40.06, minLon: -1.06, maxLon: -1.0 };

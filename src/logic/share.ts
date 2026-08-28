@@ -1,7 +1,9 @@
+import type { FavoriteEntry } from '../state/FavoritesContext';
 import type { FlightLogEntry } from '../state/FlightLogContext';
 import type { QueryResult } from '../types';
 import { dateLocale, t } from '../i18n';
 import { verdictLevelLabel, zoneTypeLabel } from './labels';
+import { favoriteName } from './favorites';
 
 /**
  * Texto plano para compartir un resultado (WhatsApp, correo, la solicitud de
@@ -34,6 +36,31 @@ export function buildShareText(result: QueryResult, place?: string | null): stri
   lines.push('');
   lines.push(t('share.checkedAt', new Date(result.queriedAt).toLocaleString(dateLocale())));
   lines.push(t('share.checkSource'));
+
+  return lines.join('\n');
+}
+
+/**
+ * Un sitio guardado en texto plano: para pasarle a alguien el punto de quedada
+ * con sus notas, que es justo por lo que se guardan.
+ *
+ * NO lleva veredicto: el guardado puede ser de hace meses y las zonas cambian.
+ * Quien lo reciba tiene que comprobarlo él, y el texto se lo dice.
+ */
+export function buildFavoriteShareText(f: FavoriteEntry): string {
+  const lines: string[] = [favoriteName(f), ''];
+
+  const note = (f.note ?? '').trim();
+  if (note) {
+    lines.push(note);
+    lines.push('');
+  }
+
+  lines.push(t('share.coords', f.lat.toFixed(5), f.lon.toFixed(5)));
+  if (f.heightM) lines.push(t('share.height', f.heightM));
+  lines.push(drivingDirectionsUrl(f.lat, f.lon));
+  lines.push('');
+  lines.push(t('share.favoriteFooter'));
 
   return lines.join('\n');
 }

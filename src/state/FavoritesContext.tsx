@@ -8,7 +8,26 @@ export interface FavoriteEntry {
   id: string;
   lat: number;
   lon: number;
+  /** Nombre que vino de la búsqueda inversa al guardarlo. No se toca nunca. */
   label: string;
+  /**
+   * Nombre puesto por ti. Manda sobre `label`: "Presa del Atazar — orilla este"
+   * dice muchísimo más que "Cervera de Buitrago, Madrid".
+   */
+  name?: string;
+  /**
+   * Lo que hay que recordar de este sitio y no está en ningún dato oficial:
+   * dónde se aparca, por dónde se accede, que hay un tendido al norte, que el
+   * guarda pasa a las ocho. Es la mitad del valor de guardar un punto.
+   */
+  note?: string;
+  /**
+   * Altura a la que sueles volar AQUÍ. Al abrir el sitio se comprueba con ella
+   * en vez de con la altura general: en el pantano vuelas a 100 m y en el
+   * parque de al lado de casa a 30, y volver a ponerlo cada vez es justo la
+   * clase de fricción que hace que no se use.
+   */
+  heightM?: number;
   /** ISO. */
   savedAt: string;
   /** Veredicto la última vez que se comprobó — de ahí sale el aviso de cambio. */
@@ -16,11 +35,19 @@ export interface FavoriteEntry {
   lastCheckedAt: string;
 }
 
+/** Lo que se puede cambiar de un sitio guardado desde su ficha. */
+export type FavoritePatch = Pick<FavoriteEntry, 'name' | 'note' | 'heightM'>;
+
 interface FavoritesContextValue {
   favorites: FavoriteEntry[];
   ready: boolean;
   isFavorite: (lat: number, lon: number) => boolean;
+  /** El sitio guardado que cae en este punto, si lo hay (~100 m de tolerancia). */
+  favoriteAt: (lat: number, lon: number) => FavoriteEntry | null;
+  getFavorite: (id: string | undefined) => FavoriteEntry | null;
   toggleFavorite: (result: QueryResult, label: string | null) => void;
+  /** Cambia nombre, notas o altura. Se guarda según se escribe, como los ajustes. */
+  updateFavorite: (id: string, patch: Partial<FavoritePatch>) => void;
   removeFavorite: (id: string) => void;
   /**
    * Compara el veredicto de una consulta fresca con el que había guardado para
@@ -35,7 +62,10 @@ const Ctx = createContext<FavoritesContextValue>({
   favorites: [],
   ready: false,
   isFavorite: () => false,
+  favoriteAt: () => null,
+  getFavorite: () => null,
   toggleFavorite: () => {},
+  updateFavorite: () => {},
   removeFavorite: () => {},
   checkForChange: () => null,
 });
@@ -77,6 +107,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     [favorites],
   );
 
+  const favoriteAt = useCallback(
+    (lat: number, lon: number) => favorites.find((f) => f.id === keyFor(lat, lon)) ?? null,
+    [favorites],
+  );
+
+  const getFavorite = useCallback(
+    (id: string | undefined) => (id ? (favorites.find((f) => f.id === id) ?? null) : null),
+    [favorites],
+  );
+
+  const updateFavorite = useCallback((id: string, patch: Partial<FavoritePatch>) => {
+    // Se escribe sobre el estado anterior y no sobre `favorites` capturado: la
+    // ficha guarda letra a letra y dos pulsaciones seguidas se pisarían.
+    setFavorites((prev) => {
+      const next = prev.map((f) => (f.id === id ? { ...f, ...patch } : f));
+      AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+      return next;
+    });
+  }, []);
+
   const toggleFavorite = useCallback(
     (result: QueryResult, label: string | null) => {
       const id = keyFor(result.coords.lat, result.coords.lon);
@@ -117,18 +167,45 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       if (!fav) return null;
 
       const changed = fav.lastLevel !== result.verdict.level;
-      const next = favorites.map((f) =>
-        f.id === id ? { ...f, lastLevel: result.verdict.level, lastCheckedAt: result.queriedAt } : f,
-      );
-      persist(next);
+      // La escritura va sobre el estado anterior y no sobre `favorites`: si
+      // acabas de escribir una nota, este refresco no puede deshacerla.
+      setFavorites((prev) => {
+        const next = prev.map((f) =>
+          f.id === id
+            ? { ...f, lastLevel: result.verdict.level, lastCheckedAt: result.queriedAt }
+            : f,
+        );
+        AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+        return next;
+      });
       return changed ? fav.lastLevel : null;
     },
-    [favorites, persist],
+    [favorites],
   );
 
   const value = useMemo<FavoritesContextValue>(
-    () => ({ favorites, ready, isFavorite, toggleFavorite, removeFavorite, checkForChange }),
-    [favorites, ready, isFavorite, toggleFavorite, removeFavorite, checkForChange],
+    () => ({
+      favorites,
+      ready,
+      isFavorite,
+      favoriteAt,
+      getFavorite,
+      toggleFavorite,
+      updateFavorite,
+      removeFavorite,
+      checkForChange,
+    }),
+    [
+      favorites,
+      ready,
+      isFavorite,
+      favoriteAt,
+      getFavorite,
+      toggleFavorite,
+      updateFavorite,
+      removeFavorite,
+      checkForChange,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

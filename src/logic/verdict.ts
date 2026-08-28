@@ -13,6 +13,7 @@
  */
 
 import { dateLocale, t, type MessageKey } from '../i18n';
+import { UNKNOWN_COUNTRY, type OutsideCountry } from './airspace';
 import type {
   EvaluatedZone,
   LayerKey,
@@ -100,13 +101,68 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(0);
 }
 
+/** Franja de una zona en metros sobre el terreno, sin texto. */
+export interface ZoneBand {
+  lowerAgl: number | null;
+  upperAgl: number | null;
+  /** true si algún límite no se ha podido convertir con seguridad. */
+  unknown: boolean;
+  usedTerrain: boolean;
+  usedReferencePoint: boolean;
+}
+
+/**
+ * Núcleo numérico de la conversión vertical.
+ *
+ * Está separado de `evaluateVertical` porque el mapa de altura libre lo llama
+ * una vez por celda — decenas de miles de veces por repintado — y allí no hace
+ * falta ni una sola cadena de texto. Que los dos caminos compartan esta función
+ * es lo que garantiza que el color de una celda diga exactamente lo mismo que
+ * el veredicto de ese punto.
+ */
+export function zoneBandAgl(zone: Zone, terrainElevation: number | null): ZoneBand {
+  // El texto dice que las alturas se miden desde el punto de referencia del
+  // aeródromo, pero ENAIRE no publica su elevación: no hay forma de calcularlo.
+  if (zone.referenceElevationMissing) {
+    return {
+      lowerAgl: null,
+      upperAgl: null,
+      unknown: true,
+      usedTerrain: false,
+      usedReferencePoint: true,
+    };
+  }
+
+  const arp = zone.referenceElevation;
+  const low = toAgl(zone.lower, zone.lowerRef, terrainElevation, arp);
+  const high = toAgl(zone.upper, zone.upperRef, terrainElevation, arp);
+
+  return {
+    lowerAgl: low.agl,
+    upperAgl: high.agl,
+    unknown: low.unknown || high.unknown,
+    usedTerrain: low.usedTerrain || high.usedTerrain,
+    usedReferencePoint: low.usedReference || high.usedReference,
+  };
+}
+
+/**
+ * true si la franja de la zona se mueve con el terreno. Las que no (p. ej. «45 m
+ * AGL» a secas) valen lo mismo en toda su superficie y el mapa de altura libre
+ * las resuelve una sola vez en vez de celda a celda.
+ */
+export function bandDependsOnTerrain(zone: Zone): boolean {
+  if (zone.referenceElevationMissing) return false;
+  if (zone.referenceElevation !== null) return true;
+  return zone.lowerRef === 'AMSL' || zone.upperRef === 'AMSL';
+}
+
 export function evaluateVertical(
   zone: Zone,
   flightHeightAgl: number,
   terrainElevation: number | null,
 ): ZoneVerticalCheck {
-  // El texto dice que las alturas se miden desde el punto de referencia del
-  // aeródromo, pero ENAIRE no publica su elevación: no hay forma de calcularlo,
+  // Sin la elevación del punto de referencia no hay forma de calcular nada,
   // así que se asume que la zona te afecta.
   if (zone.referenceElevationMissing) {
     return {
@@ -120,17 +176,15 @@ export function evaluateVertical(
   }
 
   const arp = zone.referenceElevation;
-  const low = toAgl(zone.lower, zone.lowerRef, terrainElevation, arp);
-  const high = toAgl(zone.upper, zone.upperRef, terrainElevation, arp);
-
-  const usedTerrain = low.usedTerrain || high.usedTerrain;
-  const usedReferencePoint = low.usedReference || high.usedReference;
+  const band = zoneBandAgl(zone, terrainElevation);
+  const usedTerrain = band.usedTerrain;
+  const usedReferencePoint = band.usedReferencePoint;
 
   // Si no hemos podido convertir algún límite, asumimos que la zona te afecta.
-  if (low.unknown || high.unknown) {
+  if (band.unknown) {
     return {
-      lowerAgl: low.agl,
-      upperAgl: high.agl,
+      lowerAgl: band.lowerAgl,
+      upperAgl: band.upperAgl,
       affects: true,
       usedTerrain,
       usedReferencePoint,
@@ -140,8 +194,8 @@ export function evaluateVertical(
     };
   }
 
-  const floorAgl = low.agl ?? 0;
-  const ceilingAgl = high.agl; // null = sin techo declarado
+  const floorAgl = band.lowerAgl ?? 0;
+  const ceilingAgl = band.upperAgl; // null = sin techo declarado
 
   // Explicación del origen de las alturas, para que se pueda contrastar.
   const origin =
@@ -270,6 +324,7 @@ const HEADLINE_KEYS = {
   AUTORIZACION: 'verdict.headline.AUTORIZACION',
   PROHIBIDO: 'verdict.headline.PROHIBIDO',
   DESCONOCIDO: 'verdict.headline.DESCONOCIDO',
+  FUERA_DE_ESPANA: 'verdict.headline.FUERA_DE_ESPANA',
 } satisfies Record<VerdictLevel, MessageKey>;
 
 /** Titular del veredicto, en el idioma activo. */
@@ -361,6 +416,79 @@ export function computeMaxFreeHeight(evaluated: EvaluatedZone[]): MaxFreeHeight 
   }
 
   return { metres, limitedBy, legalLimit, label };
+}
+
+/**
+ * Veredicto para un punto que no está en España.
+ *
+ * No es un veredicto más suave ni más duro: es la ausencia de veredicto, dicha
+ * en voz alta. Antes de existir esta rama, un punto de Portugal caía en `LIBRE`
+ * —cero zonas, cero capas caídas— y la app respondía en verde y con 120 m, que
+ * es exactamente lo contrario de lo que sabe.
+ *
+ * `maxFreeHeight.metres` va deliberadamente a null: el límite de la categoría
+ * abierta es europeo, pero afirmarlo aquí sería volver a colar el número que
+ * causaba el problema. Quien mira esta pantalla necesita ir a la autoridad del
+ * país, no un número.
+ */
+export function buildOutsideVerdict(
+  country: OutsideCountry = UNKNOWN_COUNTRY,
+  failedLayers: LayerKey[] = [],
+): Verdict {
+  return {
+    level: 'FUERA_DE_ESPANA',
+    headline: verdictHeadline('FUERA_DE_ESPANA'),
+    summary: country.name
+      ? t('verdict.summary.outside', country.name)
+      : t('verdict.summary.outsideUnknown'),
+    affecting: [],
+    notAffecting: [],
+    advisories: [],
+    maxFreeHeight: {
+      metres: null,
+      limitedBy: null,
+      legalLimit: false,
+      label: t('verdict.maxFree.outside'),
+    },
+    incomplete: false,
+    failedLayers,
+    outside: country,
+  };
+}
+
+/**
+ * Punto que sí es español pero del que ENAIRE no publica ni el FIR.
+ *
+ * Existe por Llívia: enclave español rodeado de Francia, y los polígonos FIR de
+ * ENAIRE no lo cubren (comprobado contra el servicio). Ahí no vale ni «puedes
+ * volar» —no hay dato que lo respalde— ni «estás fuera de España» —lo dice el
+ * mapa y lo desmentiría la propia búsqueda inversa—. Lo honesto es lo que ya
+ * hace la app cuando le falta una capa: decir que no se ha podido comprobar.
+ *
+ * Si en el punto hubiera algo más severo publicado, manda eso: una respuesta
+ * incompleta nunca puede acabar siendo más permisiva que la completa.
+ */
+export function buildNoCoverageVerdict(
+  evaluated: EvaluatedZone[],
+  flightHeightAgl: number,
+  failedLayers: LayerKey[] = [],
+): Verdict {
+  const base = buildVerdict(evaluated, flightHeightAgl, failedLayers);
+  if (base.level !== 'LIBRE') return base;
+
+  return {
+    ...base,
+    level: 'DESCONOCIDO',
+    headline: verdictHeadline('DESCONOCIDO'),
+    summary: t('verdict.summary.noCoverage'),
+    maxFreeHeight: {
+      metres: null,
+      limitedBy: null,
+      legalLimit: false,
+      label: t('verdict.maxFree.noCoverage'),
+    },
+    incomplete: true,
+  };
 }
 
 /**

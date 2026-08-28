@@ -13,17 +13,29 @@ import type { Coords } from '../types';
  * (posiblemente vacío) si la consulta fue bien: son tres cosas distintas y la
  * interfaz las cuenta distinto.
  */
-export function useProtectedAreas(coords: Coords): ProtectedArea[] | null | undefined {
+export function useProtectedAreas(
+  coords: Coords,
+  /**
+   * Con `false` no se consulta nada y se devuelve `null`. Es para los casos en
+   * los que el inventario español no pinta nada: sin cobertura, o cuando el
+   * punto está fuera de España.
+   */
+  enabled = true,
+): ProtectedArea[] | null | undefined {
   const [areas, setAreas] = useState<ProtectedArea[] | null | undefined>(undefined);
 
   useEffect(() => {
+    if (!enabled) {
+      setAreas(null);
+      return;
+    }
     const controller = new AbortController();
     setAreas(undefined);
     getProtectedAreasAt(coords.lat, coords.lon, controller.signal).then(
       (a) => !controller.signal.aborted && setAreas(a),
     );
     return () => controller.abort();
-  }, [coords.lat, coords.lon]);
+  }, [coords.lat, coords.lon, enabled]);
 
   return areas;
 }

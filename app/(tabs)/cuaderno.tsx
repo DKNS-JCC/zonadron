@@ -44,7 +44,12 @@ export default function CuadernoScreen() {
       <View style={{ gap: space.md }}>
         <SectionTitle>{t('notebook.favorites')}</SectionTitle>
         {favorites.length > 0 ? (
-          <FavoritesList onOpen={open} />
+          <>
+            <FavoritesList onOpen={open} />
+            <Text style={[type.caption, { color: p.labelTertiary, paddingHorizontal: space.xs }]}>
+              {t('notebook.favoritesHint')}
+            </Text>
+          </>
         ) : (
           <Card>
             <Text style={[type.callout, { color: p.labelSecondary }]}>

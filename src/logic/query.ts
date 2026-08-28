@@ -1,9 +1,11 @@
 import { t } from '../i18n';
 import { QUERY_BUDGET_MS, queryZonesAt } from '../api/enaire';
-import { ELEVATION_SOURCE, getTerrainElevation } from '../api/elevation';
+import { getTerrainElevation } from '../api/elevation';
 import { getNotamsAt } from '../api/notam';
+import { describeCountry } from '../api/geocode';
 import type { Coords, QueryResult } from '../types';
-import { buildVerdict, evaluateZones } from './verdict';
+import { buildNoCoverageVerdict, buildOutsideVerdict, buildVerdict, evaluateZones } from './verdict';
+import { UNKNOWN_COUNTRY, isSpanishAirspace } from './airspace';
 import { checkPointOffline } from '../offline/evaluate';
 
 /**
@@ -30,18 +32,45 @@ export async function checkPoint(
   const notamsPromise = getNotamsAt(coords.lat, coords.lon, budget.signal).catch(() => null);
 
   try {
-    const [zonesResult, terrainElevation] = await Promise.all([
+    const [zonesResult, terrain] = await Promise.all([
       queryZonesAt(coords.lat, coords.lon, budget.signal),
       getTerrainElevation(coords.lat, coords.lon, budget.signal),
     ]);
 
+    const terrainElevation = terrain === null ? null : terrain.metres;
     const evaluated = evaluateZones(zonesResult.zones, flightHeightAgl, terrainElevation);
-    const verdict = buildVerdict(evaluated, flightHeightAgl, zonesResult.failedLayers);
+
+    /*
+     * Antes que nada: ¿es este punto español?
+     *
+     * ENAIRE contesta a cualquier coordenada del mundo, y para un punto de
+     * Portugal contesta lo mismo que para un descampado de Cuenca: cero zonas.
+     * Sin esta rama el veredicto salía «Puedes volar, 120 m» en Lisboa.
+     *
+     * Sólo se pregunta el país si de verdad hace falta: es una petición más y
+     * el 99,9 % de las consultas son españolas.
+     */
+    const airspaceKnown = !zonesResult.failedLayers.includes('urbano');
+    const outside = airspaceKnown && !isSpanishAirspace(zonesResult.zones);
+    const country = outside
+      ? await describeCountry(coords.lat, coords.lon, budget.signal).catch(() => UNKNOWN_COUNTRY)
+      : UNKNOWN_COUNTRY;
+
+    let verdict;
+    if (!outside) {
+      verdict = buildVerdict(evaluated, flightHeightAgl, zonesResult.failedLayers);
+    } else if (country.code === 'es') {
+      // Punto español que se le escapa al FIR de ENAIRE: Llívia. Ver
+      // `buildNoCoverageVerdict`.
+      verdict = buildNoCoverageVerdict(evaluated, flightHeightAgl, zonesResult.failedLayers);
+    } else {
+      verdict = buildOutsideVerdict(country, zonesResult.failedLayers);
+    }
 
     return {
       coords,
       terrainElevation,
-      terrainSource: terrainElevation === null ? null : ELEVATION_SOURCE,
+      terrainSource: terrain === null ? null : terrain.source,
       flightHeightAgl,
       zones: evaluated,
       verdict,

@@ -80,8 +80,12 @@ export default function HomeScreen() {
         remember(res, placeRef.current);
         // El refinado no vuelve a vibrar: es el mismo sitio, ya avisamos.
         if (Platform.OS !== 'web' && !silent) {
+          // Fuera de España no vibra en «todo correcto»: no lo es. Va con las
+          // que piden mirar la pantalla.
           const notify =
-            res.verdict.level === 'PROHIBIDO' || res.verdict.level === 'AUTORIZACION'
+            res.verdict.level === 'PROHIBIDO' ||
+            res.verdict.level === 'AUTORIZACION' ||
+            res.verdict.level === 'FUERA_DE_ESPANA'
               ? Haptics.NotificationFeedbackType.Warning
               : res.verdict.level === 'DESCONOCIDO'
                 ? Haptics.NotificationFeedbackType.Error

@@ -20,6 +20,9 @@ import { WeatherCard } from './WeatherCard';
 import { ProximityCard } from './ProximityCard';
 import { ProtectedAreaCard } from './ProtectedAreaCard';
 import { NotamCard } from './NotamCard';
+import { OutsideSpainCard } from './OutsideSpainCard';
+import { FavoriteNoteCard } from './FavoriteNoteCard';
+import { FavoriteNamePrompt } from './FavoriteNamePrompt';
 import { UrbanCard } from './UrbanCard';
 import { useFavorites } from '../state/FavoritesContext';
 import { useFlightLog } from '../state/FlightLogContext';
@@ -56,14 +59,28 @@ export function ResultView({
   const router = useRouter();
   const [showOthers, setShowOthers] = useState(false);
   const [showData, setShowData] = useState(false);
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorite, toggleFavorite, favoriteAt, updateFavorite } = useFavorites();
   const { logFlight } = useFlightLog();
   const { drone } = useSettings();
   const { activeDrone } = useFleet();
   const [justLogged, setJustLogged] = useState(false);
+  // Se pregunta el nombre al guardar, que es el único momento en el que sabes
+  // por qué guardas este sitio. Ver FavoriteNamePrompt.
+  const [naming, setNaming] = useState(false);
+
+  /**
+   * El punto no es español: ENAIRE no manda aquí y ninguna de las fuentes
+   * españolas de esta pantalla —NOTAM, entorno urbano, aeródromos cercanos,
+   * espacios protegidos— tiene nada que decir. Se apagan todas en vez de
+   * enseñar tarjetas vacías que parecerían un «no hay nada, adelante».
+   */
+  const outside = result.verdict.level === 'FUERA_DE_ESPANA';
+
+  /** El sitio guardado que corresponde a este punto, si lo hay. */
+  const saved = favoriteAt(result.coords.lat, result.coords.lon);
 
   // Sin conexión no se consulta el inventario ambiental: no está en el paquete.
-  const protectedAreas = useProtectedAreas(result.coords);
+  const protectedAreas = useProtectedAreas(result.coords, !result.offline && !outside);
   const strictArea = result.offline
     ? null
     : (protectedAreas?.find((a) => isStrictFigure(a.designation)) ?? null);
@@ -111,8 +128,35 @@ export function ResultView({
         onRefresh={onRefresh}
         refreshing={refreshing}
         isFavorite={isFavorite(result.coords.lat, result.coords.lon)}
-        onToggleFavorite={() => toggleFavorite(result, place ?? null)}
+        onToggleFavorite={() => {
+          const wasSaved = isFavorite(result.coords.lat, result.coords.lon);
+          toggleFavorite(result, place ?? null);
+          if (!wasSaved) setNaming(true);
+        }}
         protectedArea={strictArea}
+      />
+
+      {outside ? (
+        <Appear animationKey={result.queriedAt}>
+          <OutsideSpainCard country={result.verdict.outside ?? { code: null, name: null }} offline={result.offline} />
+        </Appear>
+      ) : null}
+
+      {/* Si el sitio está guardado, lo tuyo va justo debajo del veredicto: es
+          lo segundo que se mira al llegar, y en una ficha aparte no lo leería
+          nadie. */}
+      {saved ? <FavoriteNoteCard favorite={saved} /> : null}
+
+      <FavoriteNamePrompt
+        visible={naming}
+        suggestion={place ?? null}
+        onSave={(name) => {
+          // Se busca el sitio en el momento de guardar y no antes: cuando se
+          // abrió el diálogo acababa de crearse.
+          const fav = favoriteAt(result.coords.lat, result.coords.lon);
+          if (fav) updateFavorite(fav.id, { name });
+        }}
+        onClose={() => setNaming(false)}
       />
 
       {result.offline ? (
@@ -167,15 +211,18 @@ export function ResultView({
         <View style={{ flex: 1 }}>
           <GhostButton label={t('result.share')} icon="share-outline" onPress={share} />
         </View>
-        <View style={{ flex: 1 }}>
-          <GhostButton
-            label={t('result.openEnaire')}
-            icon="open-outline"
-            onPress={() =>
-              Linking.openURL(enaireViewerUrl(result.coords.lat, result.coords.lon)).catch(() => {})
-            }
-          />
-        </View>
+        {/* El visor de ENAIRE fuera de España abre un mapa sin nada que ver. */}
+        {outside ? null : (
+          <View style={{ flex: 1 }}>
+            <GhostButton
+              label={t('result.openEnaire')}
+              icon="open-outline"
+              onPress={() =>
+                Linking.openURL(enaireViewerUrl(result.coords.lat, result.coords.lon)).catch(() => {})
+              }
+            />
+          </View>
+        )}
       </View>
 
       <GhostButton
@@ -261,20 +308,20 @@ export function ResultView({
         </View>
       ) : null}
 
-      {!result.offline ? <NotamCard notams={result.notams} /> : null}
+      {!result.offline && !outside ? <NotamCard notams={result.notams} /> : null}
 
       {/* El entorno urbano no es una zona de ENAIRE —ellos avisan de que lo
           compruebes tú—, así que va aquí, entre las restricciones publicadas y
           el contexto del sitio, y nunca toca el veredicto. */}
-      {!result.offline ? (
+      {!result.offline && !outside ? (
         <UrbanCard coords={result.coords} enaireNotice={urbanNotice} />
       ) : null}
 
-      {!result.offline ? <ProximityCard coords={result.coords} /> : null}
+      {!result.offline && !outside ? <ProximityCard coords={result.coords} /> : null}
 
       {/* Va antes del tiempo porque es una restricción, no una condición: si el
           parque no te deja volar, da igual que haga buen día. */}
-      {!result.offline ? <ProtectedAreaCard areas={protectedAreas} /> : null}
+      {!result.offline && !outside ? <ProtectedAreaCard areas={protectedAreas} /> : null}
 
       {!result.offline ? <WeatherCard coords={result.coords} /> : null}
 

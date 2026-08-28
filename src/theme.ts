@@ -267,6 +267,10 @@ export const verdictStyles: Record<VerdictLevel, VerdictStyle> = {
   AUTORIZACION: { solid: '#B84A02', onLight: '#A03F00', onDark: '#FF9F45', icon: 'shield.lefthalf.filled' },
   PROHIBIDO: { solid: '#B3261E', onLight: '#A31E17', onDark: '#FF7A70', icon: 'xmark.circle' },
   DESCONOCIDO: { solid: '#4A4A4F', onLight: '#48484A', onDark: '#AEAEB2', icon: 'questionmark.circle' },
+  // Fuera de España no es ni un sí ni un no: es «esta app no aplica aquí».
+  // Un azul índigo sobrio lo separa a simple vista de los cuatro veredictos
+  // reales y, sobre todo, no se puede confundir con el verde.
+  FUERA_DE_ESPANA: { solid: '#3B4B7A', onLight: '#374A80', onDark: '#9FB4EC', icon: 'globe.europe.africa' },
 };
 
 /**

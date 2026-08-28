@@ -7,33 +7,30 @@ import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapFrame, type MapFrameHandle } from '../src/components/MapFrame';
-import { Banner, PrimaryButton } from '../src/components/ui';
+import { Banner, GhostButton, PrimaryButton } from '../src/components/ui';
+import { DownloadProgress } from '../src/components/DownloadProgress';
 import { Material } from '../src/components/Material';
 import { PressableScale } from '../src/components/motion';
 import { usePalette, useScheme } from '../src/hooks/useTheme';
 import { buildMapHtml } from '../src/map/mapHtml';
 import { getLayerIds } from '../src/api/enaire';
-import { describePoint } from '../src/api/geocode';
 import {
-  buildPack,
   DEFAULT_RADIUS_KM,
   getPackMeta,
   MAX_RADIUS_KM,
   MIN_RADIUS_KM,
-  type BuildProgress,
 } from '../src/offline/pack';
+import {
+  cancelDownload,
+  clearDownloadOutcome,
+  startDownload,
+  stepLabel,
+  useDownloadState,
+} from '../src/offline/downloadTask';
 import { radius as r, space, tabular, type, emphasize } from '../src/theme';
 import { t } from '../src/i18n';
 
 const FALLBACK_IDS = { aero: 2, urbano: 3, infraestructuras: 0 };
-
-function stepLabel(step: BuildProgress['step']): string {
-  return step === 'zonas'
-    ? t('download.step.zonas')
-    : step === 'elevacion'
-      ? t('download.step.elevacion')
-      : t('download.step.guardando');
-}
 
 /**
  * Elegir qué zona descargar.
@@ -53,12 +50,15 @@ export default function DescargarScreen() {
   const [start, setStart] = useState<{ lat: number; lon: number } | null>(null);
   const [radiusKm, setRadiusKm] = useState(DEFAULT_RADIUS_KM);
   const [center, setCenter] = useState<{ lat: number; lon: number } | null>(null);
-  const [progress, setProgress] = useState<BuildProgress | null>(null);
   // El panel cambia de alto según el estado, así que el botón de ubicación se
   // coloca midiéndolo en vez de con un número fijo.
   const [panelHeight, setPanelHeight] = useState(240);
   const [error, setError] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const task = useDownloadState();
+  const progress = task.status === 'running' ? task.progress : null;
+  // Sólo se cierra sola la pantalla que lanzó la descarga. Si no, volver aquí
+  // con una descarga ya terminada te echaría de vuelta nada más entrar.
+  const startedHere = useRef(false);
 
   // Punto de partida: la zona ya descargada, o donde estés, o Madrid.
   useEffect(() => {
@@ -87,9 +87,10 @@ export default function DescargarScreen() {
     getLayerIds()
       .then((ids) => alive && setLayerIds(ids))
       .catch(() => alive && setLayerIds(FALLBACK_IDS));
+    // Ojo: aquí NO se aborta la descarga. Salir de esta pantalla es
+    // precisamente lo que se quiere poder hacer mientras baja.
     return () => {
       alive = false;
-      abortRef.current?.abort();
     };
   }, []);
 
@@ -144,36 +145,28 @@ export default function DescargarScreen() {
     }
   }, [send]);
 
-  const download = useCallback(async () => {
+  // La descarga no vive en esta pantalla: se lanza y sigue por su cuenta, así
+  // que se puede salir de aquí y usar la app mientras tanto. Ver downloadTask.
+  const download = useCallback(() => {
     if (!center) return;
     setError(null);
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setProgress({ step: 'zonas', pct: 0 });
-    try {
-      const label =
-        (await describePoint(center.lat, center.lon).catch(() => null)) ??
-        t('download.fallbackName');
-      const meta = await buildPack(center, label, radiusKm, setProgress, controller.signal);
-      if (controller.signal.aborted) return;
-      // Si falta la elevación el paquete es utilizable pero más restrictivo de
-      // lo necesario: no es el mismo éxito que una descarga completa. El
-      // porqué se explica de forma persistente en la tarjeta de Ajustes.
+    clearDownloadOutcome();
+    startedHere.current = startDownload(center, radiusKm);
+  }, [center, radiusKm]);
+
+  // El resultado se enseña donde el usuario esté mirando: si sigue aquí, aquí.
+  useEffect(() => {
+    if (task.status === 'error') setError(t('download.failedDetail', task.message));
+    if (task.status === 'done' && startedHere.current) {
+      startedHere.current = false;
       Haptics.notificationAsync(
-        meta.elevationComplete
+        task.meta.elevationComplete
           ? Haptics.NotificationFeedbackType.Success
           : Haptics.NotificationFeedbackType.Warning,
       ).catch(() => {});
       router.back();
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      setError(
-        err instanceof Error ? t('download.failedDetail', err.message) : t('download.failed'),
-      );
-      setProgress(null);
     }
-  }, [center, radiusKm, router]);
+  }, [task, router]);
 
   const side = radiusKm * 2;
   const busy = progress !== null;
@@ -271,27 +264,35 @@ export default function DescargarScreen() {
 
           {progress ? (
             <View style={{ gap: space.sm }}>
-              <Text style={[type.footnote, { color: p.labelSecondary }]}>
-                {stepLabel(progress.step)}
-              </Text>
-              <View style={{ height: 6, borderRadius: 3, backgroundColor: p.skeleton, overflow: 'hidden' }}>
-                <View
-                  style={{
-                    width: `${Math.round(progress.pct * 100)}%`,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: p.tint,
-                  }}
-                />
+              <DownloadProgress progress={progress} />
+              <View style={{ flexDirection: 'row', gap: space.sm }}>
+                <View style={{ flex: 1 }}>
+                  <GhostButton
+                    label={t('download.background')}
+                    icon="chevron-back"
+                    onPress={() => router.back()}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <GhostButton label={t('download.cancel')} icon="close" onPress={cancelDownload} />
+                </View>
               </View>
+              <Text style={[type.caption, { color: p.labelTertiary }]}>
+                {t('download.backgroundNote')}
+              </Text>
             </View>
           ) : (
-            <PrimaryButton
-              label={center ? t('download.button') : t('download.moveFirst')}
-              icon="cloud-download-outline"
-              onPress={download}
-              disabled={!center}
-            />
+            <>
+              <Text style={[type.caption, { color: p.labelTertiary }]}>
+                {t('download.estimate')}
+              </Text>
+              <PrimaryButton
+                label={center ? t('download.button') : t('download.moveFirst')}
+                icon="cloud-download-outline"
+                onPress={download}
+                disabled={!center}
+              />
+            </>
           )}
 
           {error ? <Banner tone="warn">{error}</Banner> : null}

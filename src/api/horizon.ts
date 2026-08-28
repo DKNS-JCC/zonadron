@@ -77,7 +77,7 @@ export async function horizonProfile(
     for (const d of distances) points.push(destination(lat, lon, az, d));
   }
 
-  const heights = await elevations(points, signal);
+  const { values: heights } = await elevations(points, signal);
   if (!heights) return null;
 
   const originElevation = heights[0];

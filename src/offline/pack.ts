@@ -15,7 +15,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { t } from '../i18n';
 import { getLayerIds, LAYER_KEYS } from '../api/enaire';
 import { ENAIRE_SERVICE, fetchArcgisJson } from '../api/arcgisClient';
-import { elevations } from '../api/openMeteo';
+import { elevations, type ElevationFailure } from '../api/openMeteo';
+import { IGN_ELEVATION_SOURCE, ignElevationGrid, resolutionForSide } from '../api/ign';
+import { ELEVATION_SOURCE } from '../api/elevation';
 import type { LayerKey, RawZoneAttributes } from '../types';
 import { boxAround, type BBox, type ElevationGrid } from './geometry';
 
@@ -34,8 +36,8 @@ export type { OfflinePack, PackedZone, PackMeta } from './model';
 
 import {
   DEFAULT_RADIUS_KM,
-  ELEVATION_NODES_PER_SIDE,
   PACK_VERSION,
+  elevationNodesPerSide,
   elevationStepKm,
   type OfflinePack,
   type PackMeta,
@@ -93,17 +95,40 @@ async function fetchLayerZones(
 
 async function fetchElevationGrid(
   bbox: OfflinePack['bbox'],
-  stepKm: number,
+  radiusKm: number,
   signal?: AbortSignal,
-  onProgress?: (pct: number) => void,
-): Promise<ElevationGrid | null> {
+  onProgress?: (p: { pct: number; etaSeconds: number }) => void,
+): Promise<{
+  grid: ElevationGrid | null;
+  reason?: ElevationFailure;
+  stepKm: number;
+  source?: string;
+}> {
+  // Primero el IGN: la rejilla entera en UNA petición y sin cuota. Medido, los
+  // 50x50 km de una zona son 331x250 cotas en menos de medio segundo, frente a
+  // los cinco minutos que cuesta lo mismo por Open-Meteo. Ver src/api/ign.ts.
+  const sideKm = 2 * radiusKm;
+  const resolution = resolutionForSide(sideKm);
+  const fromIgn = await ignElevationGrid(bbox, resolution, signal);
+  if (signal?.aborted) throw new Error(t('error.downloadCancelled'));
+  if (fromIgn) {
+    onProgress?.({ pct: 1, etaSeconds: 0 });
+    return { grid: fromIgn, stepKm: resolution / 1000, source: IGN_ELEVATION_SOURCE };
+  }
+
+  // Respaldo: fuera de España, o si el IGN no contesta. Aquí sí hay cuota, así
+  // que se pide punto a punto y al ritmo que deja la fuente.
+  const stepKm = elevationStepKm(radiusKm);
   const midLat = (bbox.minLat + bbox.maxLat) / 2;
   const dLat = stepKm / 111.32;
   const dLon = stepKm / (111.32 * Math.cos((midLat * Math.PI) / 180));
 
-  // Se acota por si acaso: el coste son peticiones de 100 puntos.
-  const rows = Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((bbox.maxLat - bbox.minLat) / dLat) + 1);
-  const cols = Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((bbox.maxLon - bbox.minLon) / dLon) + 1);
+  // El número de nodos sale de `elevationNodesPerSide` y no de medir la caja:
+  // así la estimación de duración que se le enseña al usuario antes de empezar
+  // cuenta exactamente los mismos puntos que se van a pedir. Derivarlo dos
+  // veces dejaba un nodo de diferencia por el redondeo en coma flotante.
+  const rows = elevationNodesPerSide(radiusKm);
+  const cols = rows;
 
   const points: { lat: number; lon: number }[] = [];
   for (let r = 0; r < rows; r++) {
@@ -112,23 +137,37 @@ async function fetchElevationGrid(
     }
   }
 
-  // Mismo cliente espaciado y con reintentos que usa el resto de la app para
-  // Open-Meteo. Sin él, una rejilla de 25 km dispara ~28 peticiones seguidas y
-  // el primer 429 tira toda la descarga sin decir por qué.
-  const values = await elevations(points, signal, onProgress);
-  // elevations() traga cualquier error, incluida la cancelación, y devuelve
-  // null: hay que distinguirla aquí o cancelar a mitad de la rejilla acabaría
-  // guardando un paquete "completo" sin elevación en vez de abortar.
+  const { values, reason } = await elevations(points, signal, onProgress);
+  // Cancelar a mitad de la rejilla no puede acabar guardando un paquete
+  // "completo" sin elevación: se distingue aquí y se aborta.
   if (signal?.aborted) throw new Error(t('error.downloadCancelled'));
-  if (!values) return null;
+  if (!values) return { grid: null, reason, stepKm };
 
-  return { lat0: bbox.minLat, lon0: bbox.minLon, dLat, dLon, rows, cols, values };
+  return {
+    grid: { lat0: bbox.minLat, lon0: bbox.minLon, dLat, dLon, rows, cols, values },
+    stepKm,
+    source: ELEVATION_SOURCE,
+  };
 }
 
 export interface BuildProgress {
   step: 'zonas' | 'elevacion' | 'guardando';
+  /**
+   * Avance de la descarga ENTERA, 0-1. Es de la descarga y no de la fase para
+   * que la barra no se vacíe al cambiar de paso: una barra que retrocede es
+   * una barra en la que no se confía.
+   */
   pct: number;
+  /** Segundos que se estima que queda. Ausente si aún no se puede saber. */
+  etaSeconds?: number;
 }
+
+/**
+ * Cuánto pesa cada fase en la barra. El relieve se lleva casi todo porque es
+ * casi todo el tiempo; medido, unos cinco minutos frente a unos segundos de
+ * las otras dos.
+ */
+const PHASE = { zonas: 0.05, elevacion: 0.92, guardando: 0.03 };
 
 /** Descarga y guarda el paquete de un área. Devuelve sus metadatos. */
 export async function buildPack(
@@ -144,20 +183,28 @@ export async function buildPack(
   const zones: PackedZone[] = [];
   let done = 0;
   for (const layer of LAYER_KEYS) {
-    onProgress?.({ step: 'zonas', pct: done / LAYER_KEYS.length });
+    onProgress?.({ step: 'zonas', pct: PHASE.zonas * (done / LAYER_KEYS.length) });
     zones.push(...(await fetchLayerZones(layer, ids[layer], bbox, signal)));
     done++;
     // Respiro entre capas: el servicio limita las peticiones seguidas.
     await new Promise((r) => setTimeout(r, 250));
   }
-  onProgress?.({ step: 'zonas', pct: 1 });
+  onProgress?.({ step: 'zonas', pct: PHASE.zonas });
 
-  const stepKm = elevationStepKm(radiusKm);
-  const elevation = await fetchElevationGrid(bbox, stepKm, signal, (pct) =>
-    onProgress?.({ step: 'elevacion', pct }),
+  const {
+    grid: elevation,
+    reason: elevationError,
+    stepKm,
+    source: elevationSource,
+  } = await fetchElevationGrid(bbox, radiusKm, signal, (p) =>
+    onProgress?.({
+      step: 'elevacion',
+      pct: PHASE.zonas + PHASE.elevacion * p.pct,
+      etaSeconds: p.etaSeconds,
+    }),
   );
 
-  onProgress?.({ step: 'guardando', pct: 0 });
+  onProgress?.({ step: 'guardando', pct: PHASE.zonas + PHASE.elevacion });
   const pack: OfflinePack = {
     version: PACK_VERSION,
     createdAt: new Date().toISOString(),
@@ -167,6 +214,7 @@ export async function buildPack(
     zones,
     elevation,
     elevationStepKm: stepKm,
+    elevationSource,
     label,
   };
 
@@ -185,6 +233,7 @@ export async function buildPack(
     bytes: json.length,
     label,
     elevationComplete: elevation !== null,
+    elevationError,
   };
   await AsyncStorage.setItem(META_KEY, JSON.stringify(meta));
   // Si no se actualiza aquí, loadPack() sigue devolviendo el paquete anterior

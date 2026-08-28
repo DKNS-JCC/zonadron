@@ -24,6 +24,17 @@ export function elevationStepKm(radiusKm: number): number {
 }
 
 /**
+ * Nodos por lado que acabará teniendo la rejilla de un radio dado.
+ *
+ * Sólo lo usa el camino de respaldo por Open-Meteo, cuando el IGN no cubre el
+ * área o no contesta. Ver `fetchElevationGrid`.
+ */
+export function elevationNodesPerSide(radiusKm: number): number {
+  const step = elevationStepKm(radiusKm);
+  return Math.min(ELEVATION_NODES_PER_SIDE + 2, Math.ceil((2 * radiusKm) / step) + 1);
+}
+
+/**
  * Margen de seguridad de la elevación interpolada: entre dos nodos de la
  * rejilla puede haber un cerro, y cuanto más separados están, más margen hace
  * falta. Se aplica siempre hacia el lado restrictivo.
@@ -53,6 +64,8 @@ export interface OfflinePack {
   elevation: ElevationGrid | null;
   /** Separación real de la rejilla de elevaciones, en km. */
   elevationStepKm?: number;
+  /** De dónde salió el relieve: el IGN o el respaldo mundial. */
+  elevationSource?: string;
   label: string;
 }
 
@@ -64,6 +77,13 @@ export interface PackMeta {
   zoneCount: number;
   bytes: number;
   label: string;
+  /**
+   * Por qué falta la elevación, si falta. Distinguirlo importa: un tope horario
+   * de la fuente se arregla volviendo dentro de un rato, y un fallo de red se
+   * arregla reintentando. Decir sólo "no se pudo" deja al usuario sin saber
+   * cuál de las dos cosas hacer.
+   */
+  elevationError?: 'hour' | 'day' | 'network';
   /** false si la rejilla de elevaciones no se pudo descargar: sin ella, toda
    *  zona referida al nivel del mar se trata como si te afectara. */
   elevationComplete: boolean;

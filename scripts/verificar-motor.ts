@@ -104,7 +104,8 @@ async function main() {
         getTerrainElevation(caso.lat, caso.lon),
       ]);
 
-      const evaluated = evaluateZones(zones, caso.altura, elev);
+      const terreno = elev === null ? null : elev.metres;
+      const evaluated = evaluateZones(zones, caso.altura, terreno);
       const verdict = buildVerdict(evaluated, caso.altura, failedLayers);
       const ok = caso.esperado.includes(verdict.level);
       if (!ok) fallos++;
@@ -118,7 +119,7 @@ async function main() {
 
       console.log(
         `${ok ? COLORS.ok + 'OK' : COLORS.fail + 'FALLO'}${COLORS.reset} ` +
-          `${COLORS.dim}(${verdict.level}; ${zones.length} zonas; terreno ${elev === null ? '?' : Math.round(elev) + ' m'})${COLORS.reset}`,
+          `${COLORS.dim}(${verdict.level}; ${zones.length} zonas; terreno ${terreno === null ? '?' : Math.round(terreno) + ' m'})${COLORS.reset}`,
       );
       console.log(`  ${COLORS.dim}${verdict.summary}${COLORS.reset}`);
       if (verdict.advisories.length) {

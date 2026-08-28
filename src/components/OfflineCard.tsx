@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Switch, Text, View } from 'react-native';
+import { Pressable, Switch, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { usePalette } from '../hooks/useTheme';
 import { t } from '../i18n';
 import { space, systemColor, tabular, type, emphasize } from '../theme';
 import { deletePack, getPackMeta, type PackMeta } from '../offline/pack';
+import { cancelDownload, clearDownloadOutcome, useDownloadState } from '../offline/downloadTask';
+import { DownloadProgress } from './DownloadProgress';
 import { useSettings } from '../state/SettingsContext';
 import { Card, GhostButton, PrimaryButton, SectionTitle, Separator } from './ui';
 import { timeAgo } from '../state/HistoryContext';
@@ -26,12 +28,18 @@ export function OfflineCard() {
   const router = useRouter();
   const { showCoverage, setShowCoverage } = useSettings();
   const [meta, setMeta] = useState<PackMeta | null>(null);
+  const task = useDownloadState();
 
   const refresh = useCallback(() => {
     getPackMeta().then(setMeta).catch(() => {});
   }, []);
 
   useEffect(refresh, [refresh]);
+  // La descarga puede terminar con el usuario en esta pantalla: la tarjeta
+  // tiene que enterarse sola, sin depender de volver a entrar.
+  useEffect(() => {
+    if (task.status === 'done') refresh();
+  }, [task.status, refresh]);
   // Al volver de elegir zona, la tarjeta tiene que reflejar la descarga nueva.
   useFocusEffect(refresh);
 
@@ -53,7 +61,20 @@ export function OfflineCard() {
     <Card>
       <SectionTitle>{t('offline.title')}</SectionTitle>
 
-      {meta ? (
+      {task.status === 'running' ? (
+        <View style={{ gap: space.md }}>
+          <Text style={[emphasize(type.callout), { color: p.label }]} numberOfLines={1}>
+            {task.target.label ?? t('download.fallbackName')}
+          </Text>
+          <DownloadProgress progress={task.progress} />
+          <GhostButton
+            label={t('download.cancel')}
+            icon="close"
+            onPress={cancelDownload}
+            color={p.labelSecondary}
+          />
+        </View>
+      ) : meta ? (
         <View style={{ gap: space.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
             <Ionicons
@@ -82,7 +103,21 @@ export function OfflineCard() {
           </Text>
 
           {meta.elevationComplete === false ? (
-            <Text style={[type.footnote, { color: warn }]}>{t('offline.noElevation')}</Text>
+            <Text style={[type.footnote, { color: warn }]}>
+              {meta.elevationError === 'hour'
+                ? t('offline.noElevationHour')
+                : meta.elevationError === 'day'
+                  ? t('offline.noElevationDay')
+                  : t('offline.noElevation')}
+            </Text>
+          ) : null}
+
+          {task.status === 'error' ? (
+            <Pressable onPress={clearDownloadOutcome}>
+              <Text style={[type.footnote, { color: warn }]}>
+                {t('download.failedDetail', task.message)}
+              </Text>
+            </Pressable>
           ) : null}
 
           <View style={{ flexDirection: 'row', gap: space.sm }}>

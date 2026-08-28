@@ -57,3 +57,13 @@ certificates*.zip
 /_to_delete/
 /_to_delete_entrega/
 /_to_delete_entrega2/
+
+# trastos que caen en la carpeta del proyecto y no son del proyecto: modelos 3D
+# de la peana impresa, instaladores de DJI, manuales y los PDF de mis propios
+# trámites (que llevan datos personales dentro)
+*.stl
+*.exe
+/DJI_Mini_2_User_Manual_ES.pdf
+/Formato-Solicitud-Comunicacion.pdf
+/C0000496822-*.pdf
+/qr-code.png

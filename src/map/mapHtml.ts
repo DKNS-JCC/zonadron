@@ -10,6 +10,8 @@ export interface MapOptions {
   /** Capas visibles al abrir el mapa. */
   visible: { aero: boolean; urbano: boolean; infraestructuras: boolean };
   dark: boolean;
+  /** Mapa base con el que se abre: el que el usuario dejó guardado. */
+  basemap?: 'mapa' | 'topo' | 'satelite';
   /** false para una vista previa estática (no se puede mover ni hacer zoom). */
   interactive?: boolean;
   /** Marcador fijo, para las vistas previas de un punto concreto. */
@@ -19,7 +21,7 @@ export interface MapOptions {
 /**
  * Mapa Leaflet embebido en un WebView.
  *
- * - Base: OpenStreetMap (y CARTO en modo oscuro).
+ * - Base: OpenStreetMap (oscurecido con un filtro CSS en el tema oscuro).
  * - Encima: las capas oficiales de ENAIRE, pedidas al endpoint `export` del
  *   propio servicio ArcGIS. El dibujo de las zonas es el que publica ENAIRE.
  *
@@ -32,7 +34,17 @@ export interface MapOptions {
  * WebView y el usuario pierde la posición, el zoom y el marcador.
  */
 export function buildMapHtml(opts: MapOptions): string {
-  const { lat, lon, zoom, layerIds, visible, dark, interactive = true, marker = null } = opts;
+  const {
+    lat,
+    lon,
+    zoom,
+    layerIds,
+    visible,
+    dark,
+    basemap = 'mapa',
+    interactive = true,
+    marker = null,
+  } = opts;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -46,6 +58,17 @@ export function buildMapHtml(opts: MapOptions): string {
   .leaflet-control-attribution { font-size: 9px; opacity: .8; }
   .leaflet-bottom.leaflet-right { margin-bottom: 4px; }
 
+  /* Mapa base oscuro sin depender de nadie: las mismas teselas claras de OSM,
+     invertidas en claridad. Antes se pedía el dark_all de CARTO, pero desde que
+     exige clave estampa "API KEY REQUIRED" sobre la tesela en cuanto la IP del
+     usuario supera su cuota anónima: una operadora móvil entera comparte IP, así
+     que a unos usuarios les salía y a otros no. El filtro va en el contenedor de
+     la capa base, no en el panel de teselas, para que las zonas de ENAIRE y la
+     capa de alturas que van encima conserven sus colores. */
+  .base-dark {
+    filter: invert(1) hue-rotate(185deg) brightness(.82) contrast(.88) saturate(.35);
+  }
+
   /* Retícula: mismo lenguaje visual que el marcador de posición */
   .crosshair {
     display: ${interactive ? 'block' : 'none'};
@@ -57,6 +80,20 @@ export function buildMapHtml(opts: MapOptions): string {
   /* Las celdas se ven como celdas: la resolución es la que es y disimularla
      con un degradado sería fingir una precisión que no hay. */
   .coverage { image-rendering: pixelated; image-rendering: crisp-edges; }
+
+  /* Tu posición: punto azul y, si el móvil tiene brújula, hacia dónde miras */
+  .me-wrap { position: relative; width: 76px; height: 76px; }
+  .me-cone {
+    position: absolute; left: 0; top: 0; width: 76px; height: 76px;
+    transform-origin: 50% 50%; opacity: 0;
+    transition: transform .18s linear, opacity .2s linear;
+  }
+  .me-dot {
+    position: absolute; left: 50%; top: 50%;
+    width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+    background: #1355E8; border: 3px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,.45);
+  }
 
   .crosshair:after {
     content: ''; position: absolute; left: 50%; top: 50%;
@@ -115,36 +152,58 @@ export function buildMapHtml(opts: MapOptions): string {
       '&TileMatrix={z}&TileCol={x}&TileRow={y}';
   }
 
+  // dim: la tesela llega en claro y el tema oscuro la oscurece con .base-dark.
+  // El MTN y la ortofoto no lo llevan: invertir curvas de nivel o una foto aérea
+  // no da un mapa oscuro, da un negativo.
   var BASES = {
-    mapa: {
-      light: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap', max: 19 },
-      dark: { url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attr: '&copy; OpenStreetMap &copy; CARTO', max: 19 }
-    },
-    topo: {
-      any: { url: ignUrl('mapa-raster', 'MTN', 'image/jpeg'), attr: 'MTN &copy; Instituto Geográfico Nacional', max: 18 }
-    },
+    mapa: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap', max: 19, dim: true },
+    topo: { url: ignUrl('mapa-raster', 'MTN', 'image/jpeg'), attr: 'MTN &copy; Instituto Geográfico Nacional', max: 18 },
+    // over: rotulación transparente encima. La ortofoto sola es bonita pero no
+    // dice dónde está uno; el IGN publica un callejero preparado justo para eso
+    // (IGNBaseOrto: núcleos, viales, hidrografía y límites sobre fondo vacío),
+    // que es lo que hace el híbrido de Google.
     satelite: {
-      any: { url: ignUrl('pnoa-ma', 'OI.OrthoimageCoverage', 'image/jpeg'), attr: 'PNOA &copy; Instituto Geográfico Nacional', max: 19 }
+      url: ignUrl('pnoa-ma', 'OI.OrthoimageCoverage', 'image/jpeg'),
+      attr: 'PNOA &copy; Instituto Geográfico Nacional', max: 19,
+      over: ignUrl('ign-base', 'IGNBaseOrto', 'image/png')
     }
   };
 
   var baseLayer = null;
-  var baseId = '${'mapa'}';
+  var baseLayerId = null;
+  var overLayer = null;
+  var baseId = '${basemap}';
   var isDark = ${dark ? 'true' : 'false'};
 
   function setBase(id, dark) {
     if (id) baseId = id;
     if (dark !== undefined && dark !== null) isDark = dark;
-    var group = BASES[baseId] || BASES.mapa;
-    var cfg = group.any || (isDark ? group.dark : group.light);
-    if (baseLayer) map.removeLayer(baseLayer);
-    baseLayer = L.tileLayer(cfg.url, { maxZoom: 19, maxNativeZoom: cfg.max, attribution: cfg.attr });
-    baseLayer.addTo(map);
-    baseLayer.bringToBack();
+    var cfg = BASES[baseId] || BASES.mapa;
+    // El tema ya no cambia la URL de las teselas, sólo el filtro: mientras la
+    // base sea la misma se conserva la capa y cambiar de tema no recarga nada.
+    if (!baseLayer || baseLayerId !== baseId) {
+      if (baseLayer) map.removeLayer(baseLayer);
+      if (overLayer) { map.removeLayer(overLayer); overLayer = null; }
+      baseLayer = L.tileLayer(cfg.url, { maxZoom: 19, maxNativeZoom: cfg.max, attribution: cfg.attr });
+      baseLayerId = baseId;
+      baseLayer.addTo(map);
+      baseLayer.bringToBack();
+      // zIndex por encima del 1 que traen las demás capas de teselas: los
+      // nombres se leen también sobre las zonas de ENAIRE, que van teñidas.
+      if (cfg.over) {
+        overLayer = L.tileLayer(cfg.over, { maxZoom: 19, maxNativeZoom: cfg.max, zIndex: 3 });
+        overLayer.addTo(map);
+      }
+    }
+    var box = baseLayer.getContainer();
+    if (box) {
+      if (isDark && cfg.dim) box.classList.add('base-dark');
+      else box.classList.remove('base-dark');
+    }
     // Sobre satélite el fondo oscuro disimula las teselas que faltan.
     document.body.style.background = (baseId === 'satelite' || isDark) ? '#0A1017' : '#F1F4F9';
   }
-  setBase('mapa', ${dark ? 'true' : 'false'});
+  setBase('${basemap}', ${dark ? 'true' : 'false'});
 
   // --- Capas oficiales de ENAIRE (endpoint export del servicio ArcGIS) ---
   // Una sola capa que pide las tres a la vez (layers=show:a,b,c): una petición
@@ -190,23 +249,81 @@ export function buildMapHtml(opts: MapOptions): string {
     enaire.redraw();
   }
 
-  // --- Capa de alturas libres ("dónde sí puedo volar") ---
-  // Se pinta como una imagen: una rejilla de 48x48 con miles de rectángulos
-  // vectoriales dejaría el mapa inservible en un móvil.
+  // --- Capa de alturas libres ("hasta dónde puedo subir") ---
+  // Se pinta como una imagen: una rejilla de cien mil rectángulos vectoriales
+  // dejaría el mapa inservible en un móvil.
+  //
+  // Llega un byte por celda (metros de altura libre, o unknownByte) y las
+  // paradas de la rampa; el color se interpola aqui. Ver encodeCoverage en
+  // src/offline/coverage.ts.
   var coverageLayer = null;
 
+  /** 256 colores precalculados: uno por cada metro posible, más el gris. */
+  function buildRamp(stops, unknownColor) {
+    function hex(c) {
+      var n = parseInt(c.slice(1), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    var top = stops[stops.length - 1][0];
+    var lut = new Uint8Array(256 * 3);
+    for (var m = 0; m <= 255; m++) {
+      var v = m > top ? top : m;
+      var rgb = hex(stops[stops.length - 1][1]);
+      if (v <= stops[0][0]) {
+        rgb = hex(stops[0][1]);
+      } else {
+        for (var i = 1; i < stops.length; i++) {
+          if (v > stops[i][0]) continue;
+          var a = hex(stops[i - 1][1]);
+          var b = hex(stops[i][1]);
+          var tt = (v - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]);
+          rgb = [
+            a[0] + (b[0] - a[0]) * tt,
+            a[1] + (b[1] - a[1]) * tt,
+            a[2] + (b[2] - a[2]) * tt
+          ];
+          break;
+        }
+      }
+      lut[m * 3] = rgb[0];
+      lut[m * 3 + 1] = rgb[1];
+      lut[m * 3 + 2] = rgb[2];
+    }
+    return lut;
+  }
+
   function drawCoverage(msg) {
+    var bin = atob(msg.data);
+    var lut = buildRamp(msg.stops, msg.unknownColor);
+    var unknown = (function () {
+      var n = parseInt(msg.unknownColor.slice(1), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    })();
+
     var canvas = document.createElement('canvas');
     canvas.width = msg.cols;
     canvas.height = msg.rows;
     var ctx = canvas.getContext('2d');
+    var img = ctx.createImageData(msg.cols, msg.rows);
+    var px = img.data;
+
     for (var r = 0; r < msg.rows; r++) {
+      // La fila 0 de los datos es el borde sur; en el lienzo es la de abajo.
+      var dstRow = (msg.rows - 1 - r) * msg.cols;
+      var srcRow = r * msg.cols;
       for (var c = 0; c < msg.cols; c++) {
-        ctx.fillStyle = msg.colors[r * msg.cols + c];
-        // La fila 0 de los datos es el borde sur; en el lienzo es la de abajo.
-        ctx.fillRect(c, msg.rows - 1 - r, 1, 1);
+        var byte = bin.charCodeAt(srcRow + c);
+        var o = (dstRow + c) * 4;
+        if (byte === msg.unknownByte) {
+          px[o] = unknown[0]; px[o + 1] = unknown[1]; px[o + 2] = unknown[2];
+        } else {
+          px[o] = lut[byte * 3]; px[o + 1] = lut[byte * 3 + 1]; px[o + 2] = lut[byte * 3 + 2];
+        }
+        px[o + 3] = 255;
       }
     }
+    ctx.putImageData(img, 0, 0);
+
     if (coverageLayer) map.removeLayer(coverageLayer);
     coverageLayer = L.imageOverlay(
       canvas.toDataURL(),
@@ -380,14 +497,119 @@ export function buildMapHtml(opts: MapOptions): string {
     }
   }
 
+  // --- Áreas de los NOTAM ---
+  // El polígono del aviso, no un icono en su centro: lo que hace falta saber
+  // es si el sitio al que vas cae dentro o fuera del borde.
+  //
+  // Naranja porque es el color con el que la app habla de avisos temporales
+  // (ver NotamCard); relleno flojo para no tapar las zonas de ENAIRE, que
+  // mandan más, y borde de trazos en los que todavía no están en vigor.
+  var notamLayers = [];
+
+  function clearNotams() {
+    notamLayers.forEach(function (l) { map.removeLayer(l); });
+    notamLayers = [];
+  }
+
+  function drawNotams(msg) {
+    clearNotams();
+    (msg.areas || []).forEach(function (area) {
+      var active = !!area.activeNow;
+      var poly = L.polygon(area.rings, {
+        color: active ? '#E8720C' : '#B8791F',
+        weight: active ? 2.5 : 2,
+        opacity: active ? 0.95 : 0.7,
+        dashArray: active ? null : '5,6',
+        fillColor: '#E8720C',
+        fillOpacity: active ? 0.16 : 0.07,
+        interactive: false
+      }).addTo(map);
+      notamLayers.push(poly);
+    });
+  }
+
   var marker = null;
-  var accuracyCircle = null;
 
   function setMarker(lat, lon) {
     if (marker) map.removeLayer(marker);
     marker = L.circleMarker([lat, lon], {
       radius: 7, color: '#FFFFFF', weight: 3, fillColor: '#1355E8', fillOpacity: 1
     }).addTo(map);
+  }
+
+  // --- Dónde estás y hacia dónde miras ---
+  // Punto azul, círculo de precisión y, si el móvil tiene brújula, un cono en
+  // la dirección a la que apuntas. Es lo mismo que enseña cualquier app de
+  // mapas, y aquí sirve para saber si la cruz está delante o detrás de ti.
+  var meMarker = null;
+  var meCircle = null;
+  // Ángulo acumulado, sin recortar a [0,360): girar de 359° a 1° son dos
+  // grados, no una vuelta entera al revés, y la transición CSS interpola por
+  // donde le digamos.
+  var meAngle = 0;
+
+  var ME_HTML =
+    '<div class="me-wrap">' +
+      '<div class="me-cone">' +
+        '<svg width="76" height="76" viewBox="0 0 76 76" xmlns="http://www.w3.org/2000/svg">' +
+          '<defs><radialGradient id="meCone" cx="50%" cy="50%" r="50%">' +
+            // Arranca justo fuera del punto: por debajo de eso el degradado
+            // queda tapado por el propio punto y sólo ensucia el borde.
+            '<stop offset="22%" stop-color="#1355E8" stop-opacity=".85"/>' +
+            '<stop offset="100%" stop-color="#1355E8" stop-opacity="0"/>' +
+          '</radialGradient></defs>' +
+          '<path d="M38 38 L17.9 5.8 A38 38 0 0 1 58.1 5.8 Z" fill="url(#meCone)"/>' +
+        '</svg>' +
+      '</div>' +
+      '<div class="me-dot"></div>' +
+    '</div>';
+
+  function setMe(msg) {
+    var latlng = [msg.lat, msg.lon];
+    if (!meMarker) {
+      meMarker = L.marker(latlng, {
+        interactive: false,
+        // Por encima de todo lo demás: es la referencia de dónde estás.
+        zIndexOffset: 1000,
+        icon: L.divIcon({ className: '', html: ME_HTML, iconSize: [76, 76], iconAnchor: [38, 38] })
+      }).addTo(map);
+    } else {
+      meMarker.setLatLng(latlng);
+    }
+
+    // El círculo de precisión sólo cuando dice algo: con dos metros no se ve
+    // bajo el punto, y con dos kilómetros tapa la pantalla sin informar.
+    if (msg.accuracy > 8 && msg.accuracy < 2000) {
+      if (!meCircle) {
+        meCircle = L.circle(latlng, {
+          radius: msg.accuracy, color: '#1355E8', weight: 1, fillOpacity: 0.08, interactive: false
+        }).addTo(map);
+      } else {
+        meCircle.setLatLng(latlng);
+        meCircle.setRadius(msg.accuracy);
+      }
+    } else if (meCircle) {
+      map.removeLayer(meCircle);
+      meCircle = null;
+    }
+
+    var el = meMarker.getElement();
+    var cone = el ? el.querySelector('.me-cone') : null;
+    if (!cone) return;
+    // Sin brújula (o con una que no se ha calibrado) no se enseña dirección:
+    // un cono apuntando a un sitio cualquiera es peor que ningún cono.
+    if (msg.heading === null || msg.heading === undefined) {
+      cone.style.opacity = '0';
+      return;
+    }
+    meAngle += ((msg.heading - meAngle) % 360 + 540) % 360 - 180;
+    cone.style.opacity = '1';
+    cone.style.transform = 'rotate(' + meAngle + 'deg)';
+  }
+
+  function clearMe() {
+    if (meMarker) { map.removeLayer(meMarker); meMarker = null; }
+    if (meCircle) { map.removeLayer(meCircle); meCircle = null; }
   }
 
   map.on('click', function (e) {
@@ -409,11 +631,14 @@ export function buildMapHtml(opts: MapOptions): string {
       map.setView([msg.lat, msg.lon], msg.zoom || map.getZoom(), { animate: true });
     } else if (msg.type === 'marker') {
       setMarker(msg.lat, msg.lon);
-    } else if (msg.type === 'accuracy') {
-      if (accuracyCircle) map.removeLayer(accuracyCircle);
-      accuracyCircle = L.circle([msg.lat, msg.lon], {
-        radius: msg.radius, color: '#1355E8', weight: 1, fillOpacity: 0.08
-      }).addTo(map);
+    } else if (msg.type === 'notams') {
+      drawNotams(msg);
+    } else if (msg.type === 'notamsOff') {
+      clearNotams();
+    } else if (msg.type === 'me') {
+      setMe(msg);
+    } else if (msg.type === 'meOff') {
+      clearMe();
     } else if (msg.type === 'layers') {
       applyVisibility(msg.visible);
     } else if (msg.type === 'theme') {

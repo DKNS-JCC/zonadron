@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { getLayerIds } from '../../api/enaire';
-import { computeCoverageGrid, coverageColor } from '../../offline/coverage';
+import {
+  COVERAGE_STOPS,
+  COVERAGE_UNKNOWN_BYTE,
+  COVERAGE_UNKNOWN_COLOR,
+  computeCoverageGrid,
+  encodeCoverage,
+} from '../../offline/coverage';
 import { loadPack } from '../../offline/pack';
 import { useSettings } from '../../state/SettingsContext';
 import type { LayerKey } from '../../types';
@@ -37,6 +43,9 @@ export function useMapLayers(send: (msg: object) => void, scheme: 'light' | 'dar
   const initialVisible = useRef(visible);
   const [legendOpen, setLegendOpen] = useState(false);
   const [coverageState, setCoverageState] = useState<'off' | 'calculando' | 'on' | 'sin-paquete'>('off');
+  // Lado real de la celda pintada: al alejar el mapa la celda crece, y la
+  // leyenda tiene que decir con qué resolución se está mirando.
+  const [cellMetres, setCellMetres] = useState<number | null>(null);
   const viewRef = useRef<MapView | null>(null);
 
   useEffect(() => {
@@ -56,6 +65,17 @@ export function useMapLayers(send: (msg: object) => void, scheme: 'light' | 'dar
   useEffect(() => {
     send({ type: 'basemap', base: basemap });
   }, [basemap, send]);
+
+  /**
+   * Repite tema y mapa base. Se llama en el 'ready' del mapa: los efectos de
+   * arriba se disparan aunque todavía no exista el WebView, y esos mensajes se
+   * pierden por el camino. Sin esto, el mapa base guardado en los ajustes no
+   * llegaba nunca y el mapa se abría siempre con el callejero.
+   */
+  const resync = useCallback(() => {
+    send({ type: 'theme', dark: scheme === 'dark' });
+    send({ type: 'basemap', base: basemap });
+  }, [send, scheme, basemap]);
 
   const toggleLayer = useCallback(
     (key: LayerKey) => {
@@ -92,19 +112,26 @@ export function useMapLayers(send: (msg: object) => void, scheme: 'light' | 'dar
       minLon: view.lon - spanLon / 2,
       maxLon: view.lon + spanLon / 2,
     };
-    const grid = computeCoverageGrid(pack, area, 48);
+    const grid = computeCoverageGrid(pack, area);
     if (grid.bbox.maxLat <= grid.bbox.minLat || grid.bbox.maxLon <= grid.bbox.minLon) {
       setCoverageState('sin-paquete');
       send({ type: 'coverageOff' });
       return;
     }
+    // Las alturas van empaquetadas (un byte por celda) y el color lo pone el
+    // mapa con estas mismas paradas: a 10 m de celda, mandar cien mil cadenas
+    // de color por cada movimiento del mapa no es viable. Ver encodeCoverage.
     send({
       type: 'coverage',
       bbox: grid.bbox,
       rows: grid.rows,
       cols: grid.cols,
-      colors: grid.values.map(coverageColor),
+      data: encodeCoverage(grid.values),
+      stops: COVERAGE_STOPS,
+      unknownByte: COVERAGE_UNKNOWN_BYTE,
+      unknownColor: COVERAGE_UNKNOWN_COLOR,
     });
+    setCellMetres(Math.round(grid.cellMetres));
     setCoverageState('on');
   }, [send]);
 
@@ -132,9 +159,11 @@ export function useMapLayers(send: (msg: object) => void, scheme: 'light' | 'dar
     legendOpen,
     setLegendOpen,
     coverageState,
+    cellMetres,
     showCoverage,
     basemap,
     setBasemap,
     onViewChanged,
+    resync,
   };
 }

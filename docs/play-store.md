@@ -269,6 +269,28 @@ perfil con la flota, la descarga sin cobertura y los ajustes.
 Play las pide por idioma y con un máximo de 500 caracteres. Se escriben en la
 misma voz que la ficha: qué cambia para quien vuela, no qué se ha refactorizado.
 
+### 1.6.0 — español
+
+```
+Ahora la app te dice quién gestiona cada zona y cómo se tramita: ENAIRE, Aena, Skyway, Saerco o la base aérea. Dentro de un CTR o un ATZ no te daba ni una dirección.
+
+· La solicitud se rellena por pantalla —fecha, horas, altura, papeles— y no a mano dentro del correo. Con la hora UTC hecha y aviso si no llegas al plazo.
+· Genera tu EARO sobre la plantilla oficial de ENAIRE.
+· Elige tu DJI de una lista y la ficha se rellena sola.
+· La comunicación a Interior te lleva a la web del Ministerio.
+```
+
+### 1.6.0 — English
+
+```
+The app now tells you who manages each zone and how to file: ENAIRE, Aena, Skyway, Saerco or the air base. Inside a CTR or an ATZ it gave you no address at all.
+
+· The request is filled in on screen —date, times, height, paperwork— not by hand in your mail app. UTC worked out, and a warning if you are late.
+· Generate your EARO on ENAIRE's official template.
+· Pick your DJI from a list and the drone sheet fills itself in.
+· The notice to the Interior Ministry now opens their own site.
+```
+
 ### 1.5.0 — español
 
 ```

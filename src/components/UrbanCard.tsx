@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { usePalette } from '../hooks/useTheme';
@@ -14,6 +14,7 @@ import {
   type UrbanLevel,
 } from '../api/urbano';
 import { describePlace } from '../api/geocode';
+import { INTERIOR_FORM_URL, INTERIOR_INFO_URL } from '../logic/interior';
 import {
   emphasize,
   noticeTint,
@@ -170,6 +171,31 @@ export function UrbanCard({
               icon="book-outline"
               onPress={() => router.push({ pathname: '/normas', params: { seccion: 'urbano' } })}
             />
+          ) : null}
+
+          {/* El trámite en sí lo tiene resuelto el Ministerio con su propia
+              plataforma, y bastante mejor de lo que lo haría un impreso
+              generado aquí: en una comunicación entran los cinco días enteros
+              y recuerda pilotos y aeronaves de las veces anteriores. Así que
+              la app se limita a llevarte allí. */}
+          {applies ? (
+            <View style={{ gap: space.xs }}>
+              <GhostButton
+                label={t('urban.interiorForm')}
+                icon="open-outline"
+                onPress={() => Linking.openURL(INTERIOR_FORM_URL).catch(() => {})}
+              />
+              <Text style={[type.caption, { color: p.labelTertiary }]}>
+                {t('urban.interiorHint')}
+              </Text>
+              <Pressable
+                onPress={() => Linking.openURL(INTERIOR_INFO_URL).catch(() => {})}
+                accessibilityRole="link"
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, minHeight: 32, justifyContent: 'center' })}
+              >
+                <Text style={[type.footnote, { color: p.tint }]}>{t('urban.interiorInfo')}</Text>
+              </Pressable>
+            </View>
           ) : null}
 
           <Text style={[type.caption, { color: p.labelTertiary }]}>{t('urban.footnote')}</Text>

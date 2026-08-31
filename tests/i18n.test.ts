@@ -58,6 +58,7 @@ test('no queda ningún texto sin traducir', () => {
     // EARO y MTOM son siglas del sector, iguales en los dos idiomas.
     'earoForm.title',
     'earoForm.mtom',
+    'docs.category.earo',
   ]);
   const same: string[] = [];
   for (const key of Object.keys(es) as (keyof typeof es)[]) {

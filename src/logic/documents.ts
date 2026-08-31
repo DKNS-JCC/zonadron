@@ -16,17 +16,18 @@
 import { dateLocale, t } from '../i18n';
 
 /** Para qué sirve el papel. Sólo ordena y filtra: no cambia nada legal. */
-export type DocCategory = 'operador' | 'piloto' | 'dron' | 'seguro' | 'otro';
+export type DocCategory = 'operador' | 'piloto' | 'dron' | 'seguro' | 'earo' | 'otro';
 
 export const DOC_CATEGORIES: { id: DocCategory; icon: string }[] = [
   { id: 'piloto', icon: 'person-outline' },
   { id: 'operador', icon: 'id-card-outline' },
   { id: 'dron', icon: 'hardware-chip-outline' },
   { id: 'seguro', icon: 'shield-outline' },
+  { id: 'earo', icon: 'shield-checkmark-outline' },
   { id: 'otro', icon: 'document-outline' },
 ];
 
-const VALID_CATEGORIES: DocCategory[] = ['operador', 'piloto', 'dron', 'seguro', 'otro'];
+const VALID_CATEGORIES: DocCategory[] = ['operador', 'piloto', 'dron', 'seguro', 'earo', 'otro'];
 
 export function docCategoryLabel(id: DocCategory): string {
   return id === 'operador'
@@ -37,7 +38,9 @@ export function docCategoryLabel(id: DocCategory): string {
         ? t('docs.category.dron')
         : id === 'seguro'
           ? t('docs.category.seguro')
-          : t('docs.category.otro');
+          : id === 'earo'
+            ? t('docs.category.earo')
+            : t('docs.category.otro');
 }
 
 export function docCategoryIcon(id: DocCategory): string {

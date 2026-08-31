@@ -9,7 +9,7 @@ import {
   type DocCategory,
   type StoredDocument,
 } from '../logic/documents';
-import { deleteStored, pickAndStore } from '../documents/files';
+import { deleteStored, pickAndStore, storeExistingFile } from '../documents/files';
 
 const KEY = 'zonadron.documentos.v1';
 
@@ -34,6 +34,18 @@ interface DocumentsContextValue {
   forOwner: (droneId: string | null) => StoredDocument[];
   /** Abre el selector del sistema y guarda lo que se elija. Devuelve cuántos. */
   addFromPicker: (droneId: string | null, category: DocCategory) => Promise<number>;
+  /**
+   * Archiva un fichero que ya está en el móvil, sin pasar por el selector.
+   * Lo usa lo que genera la propia app: pedirte que busques un documento que
+   * acabamos de escribir nosotros sería absurdo.
+   */
+  addExistingFile: (
+    uri: string,
+    fileName: string,
+    mimeType: string | null,
+    category: DocCategory,
+    title?: string,
+  ) => boolean;
   updateDocument: (id: string, patch: Partial<StoredDocument>) => void;
   removeDocument: (id: string) => void;
   /** Se lleva por delante los papeles de un dron que ya no está. */
@@ -47,6 +59,7 @@ const Ctx = createContext<DocumentsContextValue>({
   ready: false,
   forOwner: () => [],
   addFromPicker: async () => 0,
+  addExistingFile: () => false,
   updateDocument: () => {},
   removeDocument: () => {},
   removeForDrone: () => {},
@@ -85,6 +98,39 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
     setDocuments(next);
     AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
   }, []);
+
+  const addExistingFile = useCallback(
+    (
+      uri: string,
+      fileName: string,
+      mimeType: string | null,
+      category: DocCategory,
+      title?: string,
+    ) => {
+      const stored = storeExistingFile(uri, fileName, mimeType);
+      if (!stored) return false;
+      const doc: StoredDocument = {
+        id: stored.id,
+        title: title ?? titleFromFileName(stored.fileName),
+        category,
+        droneId: null,
+        fileName: stored.fileName,
+        storedName: stored.storedName,
+        mimeType: stored.mimeType,
+        size: stored.size,
+        addedAt: new Date().toISOString(),
+        expiresAt: null,
+        notes: '',
+      };
+      setDocuments((prev) => {
+        const next = [doc, ...prev];
+        AsyncStorage.setItem(KEY, JSON.stringify(next)).catch(() => {});
+        return next;
+      });
+      return true;
+    },
+    [],
+  );
 
   const addFromPicker = useCallback(
     async (droneId: string | null, category: DocCategory) => {
@@ -150,6 +196,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
       ready,
       forOwner: (droneId) => sortDocuments(documents.filter((d) => d.droneId === droneId)),
       addFromPicker,
+      addExistingFile,
       updateDocument,
       removeDocument,
       removeForDrone,

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { usePalette } from '../hooks/useTheme';
 import { useDocuments } from '../state/DocumentsContext';
-import { documentsSupported, openStored } from '../documents/files';
+import { documentsSupported, openStored, saveStored, shareStored } from '../documents/files';
 import {
   DOC_CATEGORIES,
   docCategoryLabel,
@@ -163,6 +163,22 @@ function DocumentRow({
     else if (res === 'unsupported') onError(t('docs.openError'));
   };
 
+  // Guardar fuera de la app. Un papel que sólo vive dentro de la app se pierde
+  // con la app, y hasta ahora lo único que había era compartirlo.
+  const save_ = async () => {
+    onError(null);
+    const res = await saveStored(doc);
+    if (res === 'missing') onError(t('docs.missingFile'));
+    else if (res === 'error' || res === 'unsupported') onError(t('docs.saveError'));
+  };
+
+  const share_ = async () => {
+    onError(null);
+    const res = await shareStored(doc);
+    if (res === 'missing') onError(t('docs.missingFile'));
+    else if (res === 'unsupported') onError(t('docs.openError'));
+  };
+
   const confirmDelete = () => {
     Alert.alert(t('docs.delete'), t('docs.deleteConfirm', doc.title), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -295,6 +311,38 @@ function DocumentRow({
             >
               <Ionicons name="open-outline" size={16} color={p.tint} />
               <Text style={[emphasize(type.subheadline), { color: p.tint }]}>{t('docs.open')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={save_}
+              accessibilityRole="button"
+              accessibilityLabel={t('docs.save')}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.md,
+                backgroundColor: p.surfaceSunken,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Ionicons name="download-outline" size={18} color={p.labelSecondary} />
+            </Pressable>
+            <Pressable
+              onPress={share_}
+              accessibilityRole="button"
+              accessibilityLabel={t('docs.share')}
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: radius.md,
+                backgroundColor: p.surfaceSunken,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Ionicons name="share-outline" size={18} color={p.labelSecondary} />
             </Pressable>
             <Pressable
               onPress={confirmDelete}

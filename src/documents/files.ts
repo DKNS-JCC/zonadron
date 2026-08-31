@@ -16,7 +16,9 @@
  */
 
 import { Directory, File, Paths } from 'expo-file-system';
+import { getContentUriAsync, readAsStringAsync, StorageAccessFramework } from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
+import * as IntentLauncher from 'expo-intent-launcher';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
@@ -104,6 +106,27 @@ export async function pickAndStore(): Promise<PickedFile[]> {
   return stored;
 }
 
+/**
+ * Copia a la carpeta un archivo que ya está en el móvil.
+ *
+ * Lo usa lo que genera la propia app —hoy la EARO— para poder archivarse junto
+ * al resto de papeles sin pasar por el selector de documentos, que sería pedirle
+ * al usuario que buscase un fichero que acabamos de escribir nosotros.
+ */
+export function storeExistingFile(uri: string, fileName: string, mimeType: string | null): PickedFile | null {
+  if (!documentsSupported) return null;
+  try {
+    const id = newId();
+    const ext = extensionOf(fileName) || guessExtension(mimeType);
+    const storedName = ext ? `${id}.${ext}` : id;
+    const target = new File(documentsDir(), storedName);
+    new File(uri).copy(target);
+    return { id, fileName, storedName, mimeType, size: target.size ?? 0 };
+  } catch {
+    return null;
+  }
+}
+
 /** Borra el archivo. Que ya no esté no es un error: el objetivo era ése. */
 export function deleteStored(storedName: string): void {
   try {
@@ -117,24 +140,115 @@ export function deleteStored(storedName: string): void {
 export type OpenResult = 'ok' | 'missing' | 'unsupported';
 
 /**
- * Enseña el documento con la hoja de compartir del sistema, que es la que sabe
- * abrir un PDF o una foto con la app que el usuario tenga. Desde ahí también
- * puede mandárselo a quien se lo pida — un `Linking.openURL` sobre un
- * `file://` no funciona en Android, así que esto no es un rodeo: es la manera.
+ * Abre el documento con el visor del sistema.
+ *
+ * Antes esto llamaba a la hoja de compartir, que es lo que hay a mano en Expo
+ * pero no es lo que la gente espera: para leer un PDF te ofrecía mandárselo a
+ * alguien. En Android se lanza ahora un ACTION_VIEW con un `content://` y el
+ * permiso de lectura, que es lo que abre el visor de PDF que tengas puesto. En
+ * iOS la hoja de compartir SÍ es el visor —la vista previa de Quick Look sale
+ * ahí dentro—, así que allí se deja como estaba.
+ *
+ * Un `Linking.openURL` sobre un `file://` no vale: Android lo rechaza desde
+ * hace años porque el otro proceso no puede leer nuestro almacenamiento.
  */
+export async function openFile(uri: string, mimeType: string | null): Promise<OpenResult> {
+  if (!documentsSupported) return 'unsupported';
+  if (Platform.OS === 'android') {
+    try {
+      const content = await getContentUriAsync(uri);
+      await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+        data: content,
+        // FLAG_GRANT_READ_URI_PERMISSION: sin esto el visor abre en blanco.
+        flags: 1,
+        type: mimeType ?? undefined,
+      });
+      return 'ok';
+    } catch {
+      // Sin ninguna app capaz de abrirlo, la hoja de compartir al menos deja
+      // hacer algo con el archivo en vez de no hacer nada.
+      return shareFile(uri, mimeType, '');
+    }
+  }
+  return shareFile(uri, mimeType, '');
+}
+
 export async function openStored(doc: StoredDocument): Promise<OpenResult> {
   if (!documentsSupported) return 'unsupported';
   if (!storedExists(doc.storedName)) return 'missing';
+  return openFile(storedUri(doc.storedName), doc.mimeType);
+}
+
+async function shareFile(uri: string, mimeType: string | null, title: string): Promise<OpenResult> {
   if (!(await Sharing.isAvailableAsync())) return 'unsupported';
   try {
-    await Sharing.shareAsync(storedUri(doc.storedName), {
-      mimeType: doc.mimeType ?? undefined,
-      dialogTitle: doc.title,
+    await Sharing.shareAsync(uri, {
+      mimeType: mimeType ?? undefined,
+      dialogTitle: title || undefined,
     });
     return 'ok';
   } catch {
     return 'unsupported';
   }
+}
+
+/** Manda el documento a otra persona o a otra app. */
+export async function shareStored(doc: StoredDocument): Promise<OpenResult> {
+  if (!documentsSupported) return 'unsupported';
+  if (!storedExists(doc.storedName)) return 'missing';
+  return shareFile(storedUri(doc.storedName), doc.mimeType, doc.title);
+}
+
+export type SaveResult = 'ok' | 'cancelled' | 'missing' | 'unsupported' | 'error';
+
+/**
+ * Guarda una copia donde el usuario diga, fuera de la app.
+ *
+ * Es lo que falta cuando lo único que hay es «compartir»: un papel que sólo
+ * vive dentro de la app se pierde con la app. En Android se usa el marco de
+ * acceso al almacenamiento —eliges carpeta una vez y el archivo aparece en
+ * Descargas o donde tú digas—; en iOS la hoja de compartir ya trae «Guardar en
+ * Archivos», que es exactamente esto y no hay API mejor.
+ */
+export async function saveToDevice(
+  uri: string,
+  fileName: string,
+  mimeType: string | null,
+): Promise<SaveResult> {
+  if (!documentsSupported) return 'unsupported';
+
+  if (Platform.OS !== 'android') {
+    const res = await shareFile(uri, mimeType, fileName);
+    return res === 'ok' ? 'ok' : 'unsupported';
+  }
+
+  let permiso;
+  try {
+    permiso = await StorageAccessFramework.requestDirectoryPermissionsAsync();
+  } catch {
+    return 'error';
+  }
+  if (!permiso.granted) return 'cancelled';
+
+  try {
+    const base64 = await readAsStringAsync(uri, { encoding: 'base64' });
+    const destino = await StorageAccessFramework.createFileAsync(
+      permiso.directoryUri,
+      fileName,
+      mimeType ?? 'application/octet-stream',
+    );
+    await StorageAccessFramework.writeAsStringAsync(destino, base64, { encoding: 'base64' });
+    return 'ok';
+  } catch {
+    return 'error';
+  }
+}
+
+/** Guarda en el móvil un documento de la carpeta. */
+export async function saveStored(doc: StoredDocument): Promise<SaveResult> {
+  if (!documentsSupported) return 'unsupported';
+  if (!storedExists(doc.storedName)) return 'missing';
+  return saveToDevice(storedUri(doc.storedName), doc.fileName || doc.storedName, doc.mimeType);
 }
 
 /** Extensión razonable cuando el archivo llega sin nombre útil. */

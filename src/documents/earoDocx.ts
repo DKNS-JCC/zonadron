@@ -111,7 +111,7 @@ export async function generateEaro(
   }
 }
 
-const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
 /** Pasa la EARO a la hoja de compartir del sistema. */
 export async function shareEaro(uri: string): Promise<boolean> {

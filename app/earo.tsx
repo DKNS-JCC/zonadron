@@ -39,7 +39,9 @@ import {
   type EaroDaylight,
   type EaroScope,
 } from '../src/logic/earo';
-import { earoSupported, generateEaro, shareEaro } from '../src/documents/earoDocx';
+import { DOCX_MIME, earoSupported, generateEaro, shareEaro } from '../src/documents/earoDocx';
+import { saveToDevice } from '../src/documents/files';
+import { useDocuments } from '../src/state/DocumentsContext';
 import { t } from '../src/i18n';
 import { radius, space, systemColor, type } from '../src/theme';
 import { verticalBandShort } from '../src/logic/verdict';
@@ -68,6 +70,7 @@ export default function EaroScreen() {
 
   const { operator, drone: droneProfile, flightHeight } = useSettings();
   const { drones } = useFleet();
+  const { addExistingFile } = useDocuments();
 
   const lat = Number(params.lat);
   const lon = Number(params.lon);
@@ -88,6 +91,7 @@ export default function EaroScreen() {
   const [openMitigations, setOpenMitigations] = useState(false);
   const [generated, setGenerated] = useState<{ uri: string; fileName: string } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -620,12 +624,46 @@ export default function EaroScreen() {
                 {t('earoForm.generated', generated.fileName)}
               </Text>
               <GhostButton
+                label={t('earoForm.save')}
+                icon="download-outline"
+                onPress={() => {
+                  void (async () => {
+                    const res = await saveToDevice(generated.uri, generated.fileName, DOCX_MIME);
+                    setSaved(res === 'ok' ? t('earoForm.saved') : null);
+                    if (res === 'error') setError(t('earoForm.errorWrite'));
+                  })();
+                }}
+              />
+              {/* Una EARO firmada por las dos partes vale para las siguientes
+                  coordinaciones, así que su sitio es la carpeta de documentos y
+                  no la bandeja de descargas. Aquí se archiva el borrador; el
+                  que de verdad guarda es el que te devuelvan firmado, y ése
+                  entra por el selector con esta misma categoría. */}
+              <GhostButton
+                label={t('earoForm.file')}
+                icon="folder-open-outline"
+                onPress={() => {
+                  const ok = addExistingFile(
+                    generated.uri,
+                    generated.fileName,
+                    DOCX_MIME,
+                    'earo',
+                    t('earoForm.fileTitle', ctx.atspName || '—'),
+                  );
+                  setSaved(ok ? t('earoForm.filed') : null);
+                  if (!ok) setError(t('earoForm.errorWrite'));
+                }}
+              />
+              <GhostButton
                 label={t('earoForm.share')}
                 icon="share-outline"
                 onPress={() => {
                   void shareEaro(generated.uri);
                 }}
               />
+              {saved ? (
+                <Text style={[type.footnote, { color: p.labelSecondary }]}>{saved}</Text>
+              ) : null}
             </>
           ) : null}
 

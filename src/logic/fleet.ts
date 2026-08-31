@@ -32,6 +32,14 @@ export interface FleetDrone {
   serial: string;
   /** Clase / subcategoría con la que operas este dron. */
   profile: DroneProfileId;
+  /**
+   * Modelo del catálogo del que salió esta ficha, si se eligió de la lista.
+   * Cadena vacía cuando se ha metido a mano. Sirve para que los trámites
+   * puedan recuperar lo que el fabricante publica y la ficha no guarda —la
+   * dimensión característica y la velocidad máxima, que sólo pide la EARO—
+   * sin obligarte a teclearlas otra vez. Ver `droneCatalog.ts`.
+   */
+  catalogId: string;
   /** Peso al despegue en gramos. null = no lo has puesto. */
   weightGrams: number | null;
   notes: string;
@@ -70,6 +78,7 @@ export function emptyDrone(): FleetDrone {
     model: '',
     serial: '',
     profile: 'sub250',
+    catalogId: '',
     weightGrams: null,
     notes: '',
     addedAt: new Date().toISOString(),
@@ -148,6 +157,7 @@ export function normaliseDrone(raw: unknown): FleetDrone | null {
     profile: VALID_PROFILES.includes(r.profile as DroneProfileId)
       ? (r.profile as DroneProfileId)
       : 'otro',
+    catalogId: text(r.catalogId),
     weightGrams: Number.isFinite(weight) && weight > 0 ? Math.round(weight) : null,
     notes: text(r.notes),
     addedAt: typeof r.addedAt === 'string' ? r.addedAt : new Date().toISOString(),

@@ -7,6 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenScroll } from '../../src/components/Screen';
 import { Card, Chip, EmptyState, GhostButton, SectionTitle } from '../../src/components/ui';
 import { Field } from '../../src/components/Field';
+import { Select } from '../../src/components/Select';
+import {
+  catalogEntry,
+  catalogHint,
+  catalogLabel,
+  catalogPatch,
+  DRONE_CATALOG,
+} from '../../src/logic/droneCatalog';
 import { DocumentSection } from '../../src/components/DocumentSection';
 import { usePalette } from '../../src/hooks/useTheme';
 import { useFleet } from '../../src/state/FleetContext';
@@ -40,6 +48,17 @@ export default function DronScreen() {
   const [weightText, setWeightText] = React.useState(
     drone?.weightGrams !== null && drone?.weightGrams !== undefined ? String(drone.weightGrams) : '',
   );
+
+  // El peso también puede cambiar sin que lo teclees: al elegir un modelo del
+  // catálogo lo pone el fabricante. Si no se recogiera aquí, la casilla seguiría
+  // enseñando el valor viejo mientras la ficha ya guarda el nuevo.
+  const storedWeight = drone?.weightGrams ?? null;
+  React.useEffect(() => {
+    setWeightText((prev) => {
+      const typed = prev.trim() === '' ? null : Math.round(Number(prev.replace(',', '.')));
+      return typed === storedWeight ? prev : storedWeight === null ? '' : String(storedWeight);
+    });
+  }, [storedWeight]);
 
   // Una ficha en blanco que se abandona no debería quedarse en la lista. Se
   // mira al salir, con lo último que hubiera escrito.
@@ -113,6 +132,26 @@ export default function DronScreen() {
           </SectionTitle>
           <Card>
             <View style={{ gap: space.md }}>
+              {/* Elegir el modelo rellena de golpe fabricante, modelo, clase,
+                  peso, autonomía y frecuencias, y deja anotado de qué modelo
+                  se trata para que la EARO pueda sacar después la dimensión y
+                  la velocidad. El alias, el número de serie y las notas no se
+                  tocan: son tuyos. */}
+              <Select
+                label={t('fleet.field.catalog')}
+                value={drone.catalogId || null}
+                options={DRONE_CATALOG.map((e) => ({
+                  id: e.id,
+                  label: catalogLabel(e),
+                  hint: catalogHint(e),
+                }))}
+                onChange={(catalogId) => {
+                  const entry = catalogEntry(catalogId);
+                  if (entry) updateDrone(drone.id, { catalogId, ...catalogPatch(entry) });
+                }}
+                placeholder={t('fleet.field.catalogPlaceholder')}
+                hint={t('fleet.field.catalogHint')}
+              />
               <Field
                 label={t('fleet.field.alias')}
                 value={drone.alias}
@@ -123,14 +162,14 @@ export default function DronScreen() {
               <Field
                 label={t('fleet.field.manufacturer')}
                 value={drone.manufacturer}
-                onChange={(manufacturer) => updateDrone(drone.id, { manufacturer })}
+                onChange={(manufacturer) => updateDrone(drone.id, { manufacturer, catalogId: '' })}
                 placeholder="DJI"
                 autoCapitalize="words"
               />
               <Field
                 label={t('fleet.field.model')}
                 value={drone.model}
-                onChange={(model) => updateDrone(drone.id, { model })}
+                onChange={(model) => updateDrone(drone.id, { model, catalogId: '' })}
                 placeholder="Mini 4 Pro"
               />
               <Field

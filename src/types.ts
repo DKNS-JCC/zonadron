@@ -51,6 +51,8 @@ export interface RawZoneAttributes {
   day?: string | null;
   startTime?: string | null;
   endTime?: string | null;
+  /** Antelación exigida para coordinar, en duración ISO-8601 («PT72H»). */
+  intervalBefore?: string | null;
   limitedApplicability?: string | null;
   updateDateTime?: string | null;
   creationDateTime?: string | null;
@@ -66,6 +68,15 @@ export interface Zone {
   identifier: string;
   /** Nombre legible; si ENAIRE no publica uno, se deriva de la capa. */
   title: string;
+  /**
+   * Qué clase de volumen es, tal y como lo etiqueta ENAIRE en
+   * `extendedProperties`: 'CTR', 'ATZ', 'TMA', 'CTA', 'FIZ', 'Aeródromo',
+   * 'Helipuerto', 'RVF', 'R-Restringida'… Es vocabulario abierto —ENAIRE
+   * publica quince valores distintos y puede añadir más—, así que se guarda
+   * en crudo y quien lo use compara sin dar por hecho que están todos.
+   * Decide con quién se coordina antes: ver `src/logic/coordination.ts`.
+   */
+  category: string;
   type: ZoneType;
   reasons: string[];
   /** Texto oficial de ENAIRE, ya convertido de HTML a texto plano. */
@@ -86,6 +97,14 @@ export interface Zone {
   referenceElevation: number | null;
   /** El texto dice que se mide desde el ARP pero no publica su elevación. */
   referenceElevationMissing: boolean;
+  /**
+   * Con cuánta antelación exige el gestor que se le pida la coordinación, tal
+   * y como lo publica ENAIRE en `intervalBefore`: una duración ISO-8601 como
+   * `PT72H` o `P7D`. Muy pocas zonas la traen —casi todas helipuertos—, así
+   * que lo normal es que sea undefined y haya que estar al plazo general.
+   * Se interpreta en `src/logic/operation.ts`.
+   */
+  leadInterval?: string;
   lower: number | null;
   lowerRef: VerticalRef;
   upper: number | null;

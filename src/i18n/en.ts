@@ -361,6 +361,16 @@ export const en: Messages = {
   'zoneCard.requestReady':
     'Your mail app will open with the request drafted and your details filled in. Check it before sending: you send it, not the app.',
   'zoneCard.requestSpanish': 'The request is written in Spanish: it goes to the zone manager.',
+  'zoneCard.managedBy': (gestor: string) => `This zone is handled by ${gestor}.`,
+  'zoneCard.managerUnknown':
+    'ENAIRE does not publish who manages this zone. Look for it in the official text below before assuming anything.',
+  'zoneCard.earoButton': 'Prepare the EARO',
+  'zoneCard.openPlanea': 'Open ENAIRE Planea',
+  'zoneCard.planeaNote':
+    'ENAIRE does not coordinate these zones by e-mail: the request goes through Planea, with your signed EARO.',
+  'zoneCard.leadHours': (horas: number) => `Ask for it ${horas} hours in advance.`,
+  'zoneCard.leadDays': (dias: number) =>
+    dias === 1 ? 'Ask for it one day in advance.' : `Ask for it ${dias} days in advance.`,
   'zoneCard.officialDetail': 'Official ENAIRE detail',
   'zoneCard.noOfficialText':
     'ENAIRE publishes no descriptive text for this zone. What is available is the structured fields shown below.',
@@ -378,6 +388,200 @@ export const en: Messages = {
   'operator.missing.email': 'your e-mail',
   'operator.missing.phone': 'your phone number',
   'operator.missing.droneModel': 'the drone model',
+
+  /* --- Operation details (operation.ts) ------------------------------ */
+
+  'operation.purpose.foto': 'Aerial photography',
+  'operation.purpose.video': 'Video recording',
+  'operation.purpose.inspeccion': 'Technical inspection',
+  'operation.purpose.cartografia': 'Mapping or surveying',
+  'operation.purpose.recreativo': 'Recreational flight',
+  'operation.purpose.formacion': 'Training or practice',
+  'operation.purpose.emergencia': 'Emergency or public service',
+  'operation.purpose.otro': 'Other',
+
+  'operation.duration.minutes': (m: number) => `${m} min`,
+  'operation.duration.hours': (h: number) => (h === 1 ? '1 hour' : `${h} hours`),
+  'operation.duration.hoursMinutes': (h: number, m: number) => `${h} h ${m} min`,
+
+  'operation.lead.published': (horas: number) =>
+    `ENAIRE publishes a minimum notice of ${horas} hours for this zone, and the date you picked does not make it. Choose another one or the manager will turn it down.`,
+  'operation.lead.default': (piden: number, quedan: number) =>
+    `At least ${piden} working days of notice are expected and only ${quedan} are left. The app does not know public holidays either, so it may well be fewer.`,
+
+  'operation.missing.date': 'the date of the flight',
+  'operation.missing.startTime': 'the start time',
+  'operation.missing.endTime': 'the end time',
+  'operation.missing.height': 'the maximum height',
+  'operation.missing.purposeDetail': 'what exactly you are going to do',
+  'operation.missing.drone': 'which drone you are flying',
+
+  /* --- EARO (earo.ts) ------------------------------------------------ */
+
+  'earo.missing.atsp': 'who it is signed with',
+  'earo.missing.scope': 'which zones it applies to',
+  'earo.missing.aircraft': 'at least one aircraft',
+  'earo.missing.mtom': 'the maximum take-off mass',
+  'earo.missing.size': 'the characteristic dimension',
+  'earo.missing.speed': 'the maximum speed',
+  'earo.missing.autonomy': 'the endurance',
+  'earo.missing.arcid': 'the ARCID code',
+  'earo.missing.callsign': 'the call sign',
+
+  'earo.byHand.signature': 'Sign the document and date it.',
+  'earo.byHand.notam': 'Add a screenshot of your NOTAM check to Annex II.',
+  'earo.byHand.atis': 'Add a screenshot of the ATIS check to Annex II.',
+  'earo.byHand.procedures':
+    "Add the aerodrome's departure and arrival procedures to Annex II, taken from the AIP.",
+  'earo.byHand.registration': 'Attach your UAS operator registration certificate.',
+
+  /* --- EARO screen (app/earo.tsx) ------------------------------------ */
+
+  'earoForm.title': 'EARO',
+  'earoForm.intro':
+    'The operational risk assessment and mitigation is the agreement that lets you fly in controlled airspace. It is not per flight: you sign it once per concept of operations and it holds as long as you keep to these conditions.',
+
+  'earoForm.atspTitle': 'Who you sign it with',
+  'earoForm.atspName': 'Air traffic service provider',
+  'earoForm.atspNameHint':
+    'The template comes with ENAIRE filled in, and it is not always ENAIRE: it may be Skyway, Saerco or an air base.',
+  'earoForm.atspContact': 'Contact',
+  'earoForm.signPlace': 'Town where you sign',
+
+  'earoForm.scopeTitle': 'Where it applies',
+  'earoForm.scopeEmpty': 'Add the units and zones the agreement covers.',
+  'earoForm.scopeLabel': 'Zone or unit',
+  'earoForm.scopeNote': 'Remarks',
+  'earoForm.scopeRemove': 'Remove this zone',
+  'earoForm.scopeAdd': 'Add a zone',
+
+  'earoForm.conopsTitle': 'How you are going to fly',
+  'earoForm.subcategories': 'Subcategories covered',
+  'earoForm.maxHeight': 'Maximum height (m AGL)',
+  'earoForm.maxHeightHint':
+    'It is the ceiling of the agreement, not of the flight: the unit can impose less on any given operation.',
+  'earoForm.daylight': 'Time of day',
+  'earoForm.day': 'Daytime',
+  'earoForm.night': 'Night',
+  'earoForm.both': 'Both',
+  'earoForm.insideZone': 'Relative to the aerodrome zone',
+  'earoForm.inside': 'Inside',
+  'earoForm.outside': 'Outside',
+  'earoForm.range': 'Maximum pilot-drone distance (m)',
+  'earoForm.rangeHint': 'The radius of the flight geography, not the range of the controller.',
+  'earoForm.contingencyH': 'Horizontal contingency (m)',
+  'earoForm.contingencyV': 'Vertical contingency (m)',
+  'earoForm.session': 'Maximum length per session (min)',
+  'earoForm.sessionHint': 'Mitigation MAE11: the less time in the air, the less exposure.',
+  'earoForm.vehicle': 'From a moving vehicle?',
+  'earoForm.tethered': 'Tethered aircraft?',
+  'earoForm.fpv': 'With an FPV system?',
+  'earoForm.yes': 'Yes',
+  'earoForm.no': 'No',
+
+  'earoForm.aircraftTitle': 'Aircraft in the agreement',
+  'earoForm.aircraftEmpty': 'You have no drones saved. Add them in your profile.',
+  'earoForm.config': 'Configuration',
+  'earoForm.multirotor': 'Multirotor',
+  'earoForm.fixedWing': 'Fixed wing',
+  'earoForm.mtom': 'MTOM (kg)',
+  'earoForm.size': 'Characteristic dimension (m)',
+  'earoForm.sizeHint': 'The largest measurement of the aircraft with the propellers on.',
+  'earoForm.speed': 'Maximum speed (m/s)',
+  'earoForm.autonomy': 'Endurance (min)',
+  'earoForm.energy': (julios: number) => `Impact energy: ${julios} J, worked out as ½·m·v².`,
+  'earoForm.energyUnknown':
+    'The app works out the impact energy as soon as you enter the mass and the speed.',
+
+  'earoForm.commsTitle': 'Communications',
+  'earoForm.arcid': 'ARCID code',
+  'earoForm.arcidHint': 'Propose one; the unit either validates it or gives you another.',
+  'earoForm.callsign': 'Call sign',
+  'earoForm.primary': 'Primary means',
+  'earoForm.alternate': 'Alternative means',
+  'earoForm.radio': 'Do you have an air band radio?',
+  'earoForm.radioCert': 'Do you have a radio operator certificate?',
+
+  'earoForm.mitigationsTitle': 'Mitigation measures',
+  'earoForm.mitigationsHint':
+    "The ones matching your concept of operations come ticked, following ENAIRE's official catalogue. You can add and remove.",
+  'earoForm.mitigationsOpen': 'See and choose the measures',
+  'earoForm.selected': (n: number) => (n === 1 ? '1 measure included' : `${n} measures included`),
+  'earoForm.strategic': 'Strategic',
+  'earoForm.tactical': 'Tactical',
+
+  'earoForm.generateTitle': 'Generate the document',
+  'earoForm.missing': (lista: string) => `Still missing: ${lista}.`,
+  'earoForm.ready': 'Everything the app can fill in is there.',
+  'earoForm.byHandTitle': 'You have to add this yourself before sending it:',
+  'earoForm.generate': 'Generate the EARO',
+  'earoForm.share': 'Share the document',
+  'earoForm.generated': (nombre: string) => `Done: ${nombre}. Open it and check it before signing.`,
+  'earoForm.version': (v: string) => `Based on the official ${v} template.`,
+  'earoForm.unsupported': 'This does not work in the browser: do it from the phone.',
+  'earoForm.errorTemplate':
+    'The bundled template is not the one the filler expected. Better to generate nothing than to hand you a document with the data in the wrong boxes.',
+  'earoForm.errorWrite': 'The document could not be saved on the phone.',
+
+  /* --- Date and time pickers (DateTimeField.tsx) --------------------- */
+
+  'dateField.placeholder': 'Pick the date',
+  'dateField.webHint': 'In YYYY-MM-DD format.',
+  'timeField.placeholder': '--:--',
+  'timeField.webHint': 'In HH:MM format, local time.',
+
+  /* --- Request screen (app/solicitud.tsx) ---------------------------- */
+
+  'solicitud.title': 'Coordination request',
+  'solicitud.forZone': 'Zone you are asking about',
+  'solicitud.zoneNotFound':
+    'At this height no zone requiring permission affects you any more. Check the point again.',
+
+  'solicitud.whenTitle': 'When are you flying?',
+  'solicitud.date': 'Date of the flight',
+  'solicitud.start': 'Start time',
+  'solicitud.end': 'End time',
+  'solicitud.utcNote':
+    'The e-mail carries both times: yours and UTC, which is the only one an air traffic unit works with.',
+
+  'solicitud.whatTitle': 'What are you flying?',
+  'solicitud.drone': 'Drone',
+  'solicitud.dronePlaceholder': 'Pick a drone',
+  'solicitud.noDrones': 'Add a drone to your profile',
+  'solicitud.height': 'Maximum height planned',
+  'solicitud.radius': 'Radius of the working area (m)',
+  'solicitud.radiusHint':
+    'The circle you will move within, measured from the take-off point. Asking for more than you need slows the answer down.',
+  'solicitud.mode': 'Type of flight',
+  'solicitud.modeVlos': 'VLOS',
+  'solicitud.modeBvlos': 'BVLOS',
+  'solicitud.modeHint': 'In the open category it is always VLOS: the drone in sight at all times.',
+  'solicitud.daylight': 'Time of day',
+  'solicitud.day': 'Daytime',
+  'solicitud.night': 'Night',
+
+  'solicitud.whyTitle': 'What for?',
+  'solicitud.purpose': 'Purpose of the flight',
+  'solicitud.purposeDetail': 'Detail',
+  'solicitud.purposeDetailHint': 'One line. It is what the manager actually reads to decide.',
+  'solicitud.notes': 'Remarks',
+
+  'solicitud.docsTitle': 'Paperwork you are attaching',
+  'solicitud.docsEmpty': 'You have no documents saved. Whatever you upload to your profile shows up here.',
+  'solicitud.docsHint':
+    'They are listed in the e-mail, but attaching them is up to you: a mail link cannot carry files.',
+
+  'solicitud.sendTitle': 'Who it goes to',
+  'solicitud.noRecipient':
+    'ENAIRE publishes no e-mail address for this zone. The contact sits inside the official text: look at it on the zone card.',
+  'solicitud.viaPlanea':
+    'This zone is not handled by e-mail: the request goes through ENAIRE Planea. The text below is here in case you want to copy it into the form.',
+  'solicitud.missing': (lista: string) => `Before sending it, ${lista} is still missing.`,
+  'solicitud.ready':
+    'Everything is there. Your mail app will open with the message written; check it and send it yourself.',
+  'solicitud.preview': 'See the e-mail before sending it',
+  'solicitud.open': 'Open the e-mail',
+  'solicitud.share': 'Share the paperwork',
 
   /* --- Drone card --------------------------------------------------- */
 
@@ -836,6 +1040,10 @@ export const en: Messages = {
   'urban.catastro.sinServicio': 'No answer',
   'urban.siose.none': 'No data at this point',
 
+  'urban.interiorForm': 'Notify the Ministry of the Interior',
+  'urban.interiorHint':
+    "This opens the Ministry's own platform. You need a digital certificate or Cl@ve to sign in, and the notice goes in five calendar days ahead.",
+  'urban.interiorInfo': 'How the procedure works',
   'urban.readRule': 'What article 40 says',
   'urban.summaryFallback': 'Checked against the cadastre and land cover',
   'urban.footnote':
@@ -894,6 +1102,10 @@ export const en: Messages = {
   'fleet.missing.serial': 'the serial number',
   'fleet.newTitle': 'New drone',
   'fleet.editTitle': 'Drone details',
+  'fleet.field.catalog': 'Known model',
+  'fleet.field.catalogPlaceholder': 'Pick it and it fills itself in',
+  'fleet.field.catalogHint':
+    'Fills in weight, class, endurance and frequencies with what the manufacturer publishes. Typing the maker or model by hand unlinks it.',
   'fleet.field.alias': 'What you call it',
   'fleet.field.aliasPlaceholder': 'The little one in the backpack',
   'fleet.field.manufacturer': 'Make',

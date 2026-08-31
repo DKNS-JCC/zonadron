@@ -50,6 +50,14 @@ test('no queda ningún texto sin traducir', () => {
     'weather.metric.temp',
     'settings.appearanceA11y',
     'settings.languageA11y',
+    // VLOS y BVLOS son siglas aeronáuticas: se escriben igual en los dos
+    // idiomas y traducirlas sería inventarse un término que nadie usa.
+    'solicitud.modeVlos',
+    'solicitud.modeBvlos',
+    'timeField.placeholder',
+    // EARO y MTOM son siglas del sector, iguales en los dos idiomas.
+    'earoForm.title',
+    'earoForm.mtom',
   ]);
   const same: string[] = [];
   for (const key of Object.keys(es) as (keyof typeof es)[]) {

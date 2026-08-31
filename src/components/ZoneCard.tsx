@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { usePalette } from '../hooks/useTheme';
 import { getLocale, t } from '../i18n';
 import { radius, shadow, space, systemColor, type, verdictStyles, emphasize, tabular } from '../theme';
@@ -16,7 +17,8 @@ import {
 import { actionAdvice, rawBandLabel, verticalBandShort } from '../logic/verdict';
 import { toParagraphs } from '../logic/html';
 import { Chip, GhostButton, Separator } from './ui';
-import { buildMailto, missingRequestFields } from '../logic/request';
+import { missingRequestFields } from '../logic/request';
+import { coordinationFor, coordinationPriority } from '../logic/coordination';
 import { useSettings } from '../state/SettingsContext';
 import { useFleet } from '../state/FleetContext';
 import type { QueryResult } from '../types';
@@ -59,6 +61,7 @@ export function ZoneCard({
   requestContext?: { result: QueryResult; place?: string | null };
 }) {
   const p = usePalette();
+  const router = useRouter();
   const { operator, drone } = useSettings();
   const { activeDrone } = useFleet();
   const [open, setOpen] = useState(Boolean(defaultOpen));
@@ -73,25 +76,48 @@ export function ZoneCard({
   const symbolColor = dimmed ? p.labelTertiary : tint;
   const paragraphs = toParagraphs(zone.officialText);
 
-  const contactLinks: Array<{ icon: keyof typeof Ionicons.glyphMap; text: string; url: string }> = [];
-  if (zone.contact.email)
-    contactLinks.push({ icon: 'mail-outline', text: zone.contact.email, url: `mailto:${zone.contact.email}` });
-  if (zone.contact.phone)
-    contactLinks.push({ icon: 'call-outline', text: zone.contact.phone, url: `tel:${zone.contact.phone.replace(/\s+/g, '')}` });
-  if (zone.contact.url)
-    contactLinks.push({ icon: 'globe-outline', text: zone.contact.url, url: zone.contact.url });
+  /**
+   * Con quién se tramita y por dónde. Antes esto se sacaba de los campos
+   * estructurados de ENAIRE, que en los CTR y los ATZ vienen vacíos: el
+   * contacto vive dentro del HTML del mensaje y se perdía por el camino. Ahora
+   * lo resuelve `coordination.ts`, que además sabe distinguir a ENAIRE de
+   * Skyway, Saerco, Aena o una dependencia militar.
+   */
+  const coordination = coordinationFor(zone);
+  const contacts = coordination?.contacts ?? { emails: [], phones: [], urls: [] };
 
-  const mailto =
-    requestContext && !zone.advisory && zone.type !== 'NO_RESTRICTION' && zone.contact.email
-      ? buildMailto(zone, {
-          result: requestContext.result,
-          place: requestContext.place,
-          operator,
-          drone,
-          aircraft: activeDrone,
-        })
-      : null;
+  const contactLinks: Array<{ icon: keyof typeof Ionicons.glyphMap; text: string; url: string }> = [
+    ...contacts.emails.map((e) => ({
+      icon: 'mail-outline' as const,
+      text: e,
+      url: `mailto:${e}`,
+    })),
+    ...contacts.phones.map((ph) => ({
+      icon: 'call-outline' as const,
+      text: ph,
+      url: `tel:${ph.replace(/[\s()-]/g, '')}`,
+    })),
+    // La plataforma tiene su propio botón arriba: repetirla aquí sólo estorba.
+    ...contacts.urls
+      .filter((u) => !(coordination?.viaPlatform && u.includes('planea')))
+      .map((u) => ({ icon: 'globe-outline' as const, text: u, url: u })),
+  ];
+
+  /**
+   * La solicitud ya no se abre desde aquí. Antes este botón lanzaba el cliente
+   * de correo con un borrador a medio escribir y el piloto terminaba de
+   * rellenarlo allí dentro; ahora lleva a una pantalla que pregunta lo que
+   * falta —fecha, horas, altura, para qué— antes de redactar nada.
+   */
+  const canRequest = Boolean(requestContext && contacts.emails.length > 0);
   const missing = missingRequestFields(operator, activeDrone);
+
+  const leadLabel =
+    coordination?.leadHours != null
+      ? coordination.leadHours >= 24 && coordination.leadHours % 24 === 0
+        ? t('zoneCard.leadDays', coordination.leadHours / 24)
+        : t('zoneCard.leadHours', coordination.leadHours)
+      : null;
 
   const subtitle = zone.advisory
     ? t('zoneCard.advisorySubtitle')
@@ -196,12 +222,75 @@ export function ZoneCard({
             <Text style={[type.footnote, { color: p.label, flex: 1 }]}>{actionAdvice(zone)}</Text>
           </View>
 
-          {mailto ? (
+          {coordination ? (
+            <View style={{ gap: space.sm }}>
+              {/* Sin nombre pero con contacto no es «no se sabe»: es un gestor
+                  que no está en la lista, y sus direcciones salen aquí debajo.
+                  Decir que ENAIRE no publica nada sería mentira. */}
+              {coordination.name || contactLinks.length === 0 || leadLabel ? (
+                <Text style={[type.footnote, { color: p.labelSecondary }]}>
+                  {coordination.name
+                    ? t('zoneCard.managedBy', coordination.name)
+                    : contactLinks.length === 0
+                      ? t('zoneCard.managerUnknown')
+                      : ''}
+                  {leadLabel ? (coordination.name ? ` ${leadLabel}` : leadLabel) : ''}
+                </Text>
+              ) : null}
+              {/* La EARO sólo tiene sentido en espacio aéreo controlado y en
+                  el entorno de un aeródromo: es lo que exige el capítulo V del
+                  RD 517/2024. Ofrecerla en una zona de ferrocarril o en una
+                  restricción de vuelo fotográfico sería mandar al piloto a
+                  redactar un documento que allí no le pide nadie. */}
+              {requestContext && coordinationPriority(zone) <= 5 ? (
+                <GhostButton
+                  label={t('zoneCard.earoButton')}
+                  icon="document-text-outline"
+                  onPress={() =>
+                    router.push({
+                      pathname: '/earo',
+                      params: {
+                        lat: String(requestContext.result.coords.lat),
+                        lon: String(requestContext.result.coords.lon),
+                        height: String(requestContext.result.flightHeightAgl),
+                      },
+                    })
+                  }
+                />
+              ) : null}
+
+              {coordination.viaPlatform && coordination.platformUrl ? (
+                <>
+                  <GhostButton
+                    label={t('zoneCard.openPlanea')}
+                    icon="open-outline"
+                    onPress={() => Linking.openURL(coordination.platformUrl!).catch(() => {})}
+                  />
+                  <Text style={[type.caption, { color: p.labelTertiary }]}>
+                    {t('zoneCard.planeaNote')}
+                  </Text>
+                </>
+              ) : null}
+            </View>
+          ) : null}
+
+          {canRequest && requestContext ? (
             <View style={{ gap: space.sm }}>
               <GhostButton
                 label={t('zoneCard.requestButton')}
                 icon="mail-open-outline"
-                onPress={() => Linking.openURL(mailto).catch(() => {})}
+                onPress={() =>
+                  router.push({
+                    pathname: '/solicitud',
+                    params: {
+                      lat: String(requestContext.result.coords.lat),
+                      lon: String(requestContext.result.coords.lon),
+                      zone: zone.identifier,
+                      label: requestContext.place ?? '',
+                      height: String(requestContext.result.flightHeightAgl),
+                    },
+                  })
+                }
               />
               <Text style={[type.footnote, { color: p.labelTertiary }]}>
                 {missing.length > 0

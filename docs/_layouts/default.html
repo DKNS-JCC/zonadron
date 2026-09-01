@@ -9,7 +9,8 @@
     <meta property="og:title" content="{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}">
     <meta property="og:description" content="{{ page.description | default: site.description | strip_newlines }}">
     <meta property="og:type" content="website">
-    <link rel="icon" href="{{ '/capturas/es/light-home.png' | relative_url }}">
+    <link rel="icon" href="{{ '/favicon.png' | relative_url }}">
+    <link rel="apple-touch-icon" href="{{ '/tienda/icono-512.png' | relative_url }}">
     <style>
       /* El mismo criterio que la app: tipografía del sistema, color semántico
          que sigue al del aparato y nada puesto al azar. */
@@ -147,7 +148,7 @@
 
       <footer class="sitio">
         <p>
-          Zona Dron es software libre (MIT) de Jorge Cuadrado ·
+          Zona Dron es de Jorge Cuadrado, con el código a la vista &middot;
           <a href="https://github.com/DKNS-JCC/zonadron">código</a> ·
           <a href="{{ '/privacidad' | relative_url }}">privacidad</a>
         </p>

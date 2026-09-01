@@ -39,32 +39,13 @@ es lo que se hace en esta página.
 </div>
 
 <!--
-  ────────────────────────────────────────────────────────────────────────
   PENDIENTE: sustituir ID_DEL_FORMULARIO por el identificador real.
 
-  1. forms.google.com → formulario en blanco.
-  2. Preguntas (las de abajo son el texto exacto que conviene poner):
-
-     · «Tu correo de Google» — respuesta corta, obligatoria.
-       Descripción: «El mismo con el que tienes abierta la Play Store en el
-       móvil. Si no es ése, el enlace de descarga no te funcionará.»
-
-     · «¿Con qué dron vuelas?» — respuesta corta, opcional.
-       Descripción: «Sólo por curiosidad, para saber con qué se está probando.»
-
-     · «¿Por dónde sueles volar?» — respuesta corta, opcional.
-       Descripción: «Una provincia me vale. Me sirve para comprobar zonas que
-       conoces mejor que yo.»
-
-     · «Entiendo que mi correo se usa sólo para añadirme a la lista de pruebas
-       de Google Play, que no se comparte con nadie más y que se borra al
-       terminar la beta.» — casilla obligatoria.
-
-  3. Enviar → pestaña «< >» → copiar el enlace del iframe → de ese enlace, el
-     trozo que va entre /d/e/ y /viewform es el ID.
-  4. Respuestas → «Vincular a Hojas de cálculo»: la columna de correos se pega
-     entera en el Grupo de Google que usas como lista de probadores.
-  ────────────────────────────────────────────────────────────────────────
+  El procedimiento entero —crear el formulario, el texto exacto de las cuatro
+  preguntas, de dónde se saca el identificador y cómo pasar los correos al Grupo
+  de Google— está en publicar.md, sección «Por dónde entran los testers». Aquí
+  no, porque un procedimiento metido en un comentario de HTML es un
+  procedimiento que nadie encuentra cuando lo necesita.
 -->
 
 <div class="formulario">

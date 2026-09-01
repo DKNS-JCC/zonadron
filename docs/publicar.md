@@ -58,6 +58,68 @@ Las respuestas exactas, campo por campo, están en
       Comprobar el requisito vigente en la consola y empezar a juntar testers
       cuanto antes: es lo que más tarda de todo esto.
 
+#### Por dónde entran los testers
+
+La página de alta ya está escrita: [`beta.md`](beta.md), publicada en
+<https://dkns-jcc.github.io/zonadron/beta>. Es el enlace que va en la biografía
+de Instagram. Le falta una sola cosa, el formulario, porque un formulario de
+Google hay que crearlo desde la cuenta y no se puede dejar hecho en el
+repositorio.
+
+**El orden no se puede invertir:** el enlace de la prueba sólo funciona si esa
+cuenta de Google ya está en la lista de testers. Si se manda antes de añadir a
+la persona, lo que ve es «la aplicación no está disponible» y no vuelve a
+intentarlo. Por eso la página promete *«te escribo con la descarga»* y no
+*«descarga aquí»*.
+
+- [ ] **La lista de testers, un Grupo de Google.** En Play Console la lista
+      puede ser un pegote de correos o un grupo. Con un grupo se añade gente sin
+      volver a entrar en la consola ni esperar a que propague, que con quince
+      altas de una en una se nota.
+
+- [ ] **Crear el formulario** en <https://forms.google.com>, en blanco. Título:
+      «Beta de Zona Dron para Android». Descripción: «Déjame tu correo de Google
+      y te añado a la lista de pruebas. Te escribo con el enlace de descarga en
+      cuanto estés dentro.»
+
+- [ ] **Las cuatro preguntas**, con este texto exacto. La primera es la única
+      que importa; las otras dos dan contexto y la cuarta es la que deja por
+      escrito qué se hace con el dato:
+
+      | # | Pregunta | Tipo | Descripción |
+      |---|---|---|---|
+      | 1 | Tu correo de Google | Respuesta corta, **obligatoria** | El mismo con el que tienes abierta la Play Store en el móvil. Si no es ése, el enlace de descarga no te funcionará. |
+      | 2 | ¿Con qué dron vuelas? | Respuesta corta, opcional | Sólo por curiosidad, para saber con qué se está probando. |
+      | 3 | ¿Por dónde sueles volar? | Respuesta corta, opcional | Una provincia me vale. Me sirve para comprobar zonas que conoces mejor que yo. |
+      | 4 | Entiendo que mi correo se usa sólo para añadirme a la lista de pruebas de Google Play, que no se comparte con nadie más y que se borra al terminar la beta. | Casillas, una sola opción («De acuerdo»), **obligatoria** | — |
+
+      En la pregunta 1, **validación de respuesta → Texto → Dirección de correo
+      electrónico**. Ahorra la mitad de las altas fallidas.
+
+      No activar «Recopilar direcciones de correo» en la configuración del
+      formulario: eso obliga a iniciar sesión, y quien llega desde Instagram con
+      otra cuenta abierta en el navegador acaba dándote la equivocada, que es
+      justo el fallo que se intenta evitar.
+
+- [ ] **Sacar el identificador.** Enviar → pestaña `< >` (insertar) → copiar el
+      HTML del iframe. Del `src`, el trozo largo que va entre `/d/e/` y
+      `/viewform` es el identificador.
+
+- [ ] **Pegarlo en [`beta.md`](beta.md)**, sustituyendo `ID_DEL_FORMULARIO`. Es
+      la única aparición y está dentro del `<iframe>`.
+
+- [ ] **Vincular las respuestas a una hoja de cálculo:** pestaña Respuestas →
+      icono verde de Hojas de cálculo. A partir de ahí, la columna de correos se
+      selecciona entera y se pega en el Grupo de Google. Sin abrir Play Console
+      una vez por persona.
+
+- [ ] **Abrir la página desde el móvil** antes de publicar nada en Instagram, y
+      mandarse una alta de prueba a uno mismo. Un enlace de biografía que no
+      carga el día del lanzamiento no se arregla luego: la gente no vuelve.
+
+- [ ] **Al terminar la beta:** borrar las respuestas del formulario y la hoja.
+      La página promete que el correo se borra, y eso hay que cumplirlo.
+
 ### Firma
 
 - [ ] Decidir firma de la app: Play App Signing (Google guarda la clave; lo

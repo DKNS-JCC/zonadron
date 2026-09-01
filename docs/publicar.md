@@ -77,7 +77,7 @@ intentarlo. Por eso la página promete *«te escribo con la descarga»* y no
       volver a entrar en la consola ni esperar a que propague, que con quince
       altas de una en una se nota.
 
-- [ ] **Crear el formulario** en <https://forms.google.com>, en blanco. Título:
+- [x] **Crear el formulario** en <https://forms.google.com>, en blanco. Título:
       «Beta de Zona Dron para Android». Descripción: «Déjame tu correo de Google
       y te añado a la lista de pruebas. Te escribo con el enlace de descarga en
       cuanto estés dentro.»
@@ -96,17 +96,33 @@ intentarlo. Por eso la página promete *«te escribo con la descarga»* y no
       En la pregunta 1, **validación de respuesta → Texto → Dirección de correo
       electrónico**. Ahorra la mitad de las altas fallidas.
 
+      **Pendiente en el formulario que hay montado** (nada de esto impide
+      publicar, pero conviene):
+
+      - La descripción repite entera la página: los tres pasos y el aviso del
+        correo salen dos veces seguidas cuando se ve embebido. Dejarla en una
+        línea: «Déjame tu correo de Google y te añado a la lista de pruebas. Te
+        escribo con el enlace en cuanto estés dentro.»
+      - «Con qué dron vuelas?» va sin la interrogación de apertura.
+      - Dice «correo de Gmail» en el paso 1 y «correo de Google» dos párrafos
+        después. Una cuenta de Google no tiene por qué ser de Gmail, y quien
+        tenga la suya en otro dominio se queda sin saber si vale. Google en los
+        dos sitios.
+      - Falta «¿Por dónde sueles volar?», que era opcional.
+
       No activar «Recopilar direcciones de correo» en la configuración del
       formulario: eso obliga a iniciar sesión, y quien llega desde Instagram con
       otra cuenta abierta en el navegador acaba dándote la equivocada, que es
       justo el fallo que se intenta evitar.
 
-- [ ] **Sacar el identificador.** Enviar → pestaña `< >` (insertar) → copiar el
+- [x] **Sacar el identificador.** Enviar → pestaña `< >` (insertar) → copiar el
       HTML del iframe. Del `src`, el trozo largo que va entre `/d/e/` y
       `/viewform` es el identificador.
 
-- [ ] **Pegarlo en [`beta.md`](beta.md)**, sustituyendo `ID_DEL_FORMULARIO`. Es
-      la única aparición y está dentro del `<iframe>`.
+- [x] **Pegarlo en [`beta.md`](beta.md)**. Hecho: el marco mide 1240 px de alto
+      en escritorio y 1560 en móvil, medido sobre el formulario de verdad.
+      Google no redimensiona el marco desde dentro, así que un alto corto mete
+      una barra de scroll dentro de otra.
 
 - [ ] **Vincular las respuestas a una hoja de cálculo:** pestaña Respuestas →
       icono verde de Hojas de cálculo. A partir de ahí, la columna de correos se

@@ -38,19 +38,9 @@ es lo que se hace en esta página.
   antes: <em>Play Store → tu foto arriba a la derecha → ahí sale la cuenta</em>.
 </div>
 
-<!--
-  PENDIENTE: sustituir ID_DEL_FORMULARIO por el identificador real.
-
-  El procedimiento entero —crear el formulario, el texto exacto de las cuatro
-  preguntas, de dónde se saca el identificador y cómo pasar los correos al Grupo
-  de Google— está en publicar.md, sección «Por dónde entran los testers». Aquí
-  no, porque un procedimiento metido en un comentario de HTML es un
-  procedimiento que nadie encuentra cuando lo necesita.
--->
-
 <div class="formulario">
   <iframe
-    src="https://docs.google.com/forms/d/e/ID_DEL_FORMULARIO/viewform?embedded=true"
+    src="https://docs.google.com/forms/d/e/1FAIpQLScUVMjfEPRfUBzK73kEl5mu0BM_eZd7Lwwtl1pugMfESExVyQ/viewform?embedded=true"
     title="Formulario de alta en la beta de Zona Dron"
     loading="lazy">Cargando el formulario…</iframe>
 </div>
@@ -161,8 +151,15 @@ Lo único que te pierdes es que se actualice sola.
   .formulario iframe {
     display: block;
     width: 100%;
-    height: 46rem;
+    /* Medido en el formulario real: 1511 px a 390 de ancho y 1207 px a 640.
+       Google no redimensiona el marco desde dentro, así que si el alto se queda
+       corto aparece una barra de scroll dentro de otra. Sobra antes que
+       falte. */
+    height: 1560px;
     border: 0;
+  }
+  @media (min-width: 34rem) {
+    .formulario iframe { height: 1240px; }
   }
   .alternativa { font-size: 0.92rem; color: var(--texto-2); }
 </style>

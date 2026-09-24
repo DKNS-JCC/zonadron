@@ -10,7 +10,7 @@ description: >-
 
 # Política de privacidad de Zona Dron
 
-*Última actualización: 21 de agosto de 2026. Se aplica a Zona Dron (`es.zonadron.app`) en todas sus versiones.*
+*Última actualización: 24 de septiembre de 2026. Se aplica a Zona Dron (`es.zonadron.app`) en todas sus versiones.*
 
 **English version: [privacy policy](privacy).**
 
@@ -52,6 +52,8 @@ punto consultado** —y sólo eso— a estos servicios:
 | Nominatim (OpenStreetMap) | Buscar sitios por nombre y nombres de lugar | Texto buscado o coordenadas |
 | IGN / IDEE / PNOA | Mapas base y cartografía | Coordenadas de las teselas del mapa |
 | Catastro, MITECO, IEPNB | Uso del suelo y espacios protegidos | Coordenadas del punto |
+| AIP de ENAIRE | Cartas y ficha del aeródromo, sólo al generar una EARO | Nada tuyo: se pide la página pública del aeródromo |
+| Aviation Weather Center (NOAA) | METAR del aeródromo, sólo al generar una EARO | El indicador del aeródromo (por ejemplo, LEVC) |
 | Google Maps / Apple Maps | Resolver un enlace que tú compartes con la app | El enlace compartido |
 
 Esas peticiones no llevan tu identidad, ni tu nombre, ni un identificador de
@@ -62,6 +64,10 @@ llega la petición.
 
 En modo sin cobertura, con un paquete descargado, la comprobación se hace entera
 en el dispositivo y no sale nada.
+
+Las solicitudes de autorización y demás correos que prepara la aplicación no los
+manda ella: se abren en tu aplicación de correo, con los papeles que marques
+adjuntos, y eres tú quien los revisa y los envía.
 
 ## Ubicación
 
@@ -74,8 +80,27 @@ o marcarlo en el mapa.
 
 Los archivos que añades a la carpeta de documentos se copian al almacenamiento
 privado de la aplicación en tu dispositivo. **No se suben a ningún sitio.** Sólo
-salen de ahí cuando tú pulsas «Abrir», que es cuando se le pasan a la aplicación
-que tú elijas para verlos o compartirlos.
+salen de ahí cuando tú lo pides: al pulsar «Abrir» o «Compartir», que es cuando
+se le pasan a la aplicación que tú elijas, o al marcarlos para adjuntarlos a un
+correo que luego mandas tú.
+
+## Avisos
+
+La aplicación puede mostrar avisos del sistema, por ejemplo la víspera de un
+vuelo que tengas apuntado o antes de que caduque un documento. Esos avisos se
+programan y se generan **en el propio móvil**: no hay servidor que los mande ni
+notificaciones push, y no sale ningún dato para ello. El permiso de avisos sólo
+se pide cuando hay algo que avisar, y puedes quitarlo cuando quieras desde los
+ajustes del sistema.
+
+## Compras
+
+Si la aplicación ofrece algo de pago, la compra se hace **con Google Play** y se
+rige por sus condiciones. Tus datos de pago los trata Google; el desarrollador
+no los ve. Google le da al desarrollador los datos del pedido que da a cualquier
+vendedor (número de pedido, producto, importe y país), que sólo se usan para
+atender devoluciones y consultas. La aplicación guarda en el móvil la
+confirmación de la compra, para seguir funcionando sin cobertura.
 
 ## Publicidad, analítica y perfilado
 
@@ -96,16 +121,21 @@ no hay nada que el desarrollador pueda consultar, corregir o borrar por ti: los
 datos son tuyos y están en tu móvil, y se borran desde la propia app o
 desinstalándola.
 
-## Código abierto
+## Código a la vista
 
-El código fuente completo está publicado y se puede revisar en
-<https://github.com/DKNS-JCC/zonadron>. Cualquiera puede comprobar que lo que
-dice este documento es lo que hace el programa.
+El código fuente está publicado y se puede leer en
+<https://github.com/DKNS-JCC/zonadron>, para que cualquiera pueda comprobar cómo
+trata la aplicación tus datos. Está a la vista, no es de código abierto: las
+condiciones de uso del código están en su licencia.
 
 ## Cambios en esta política
 
 Si alguna vez cambia, se actualizará este documento con su fecha y se contará en
 las notas de la versión correspondiente.
+
+## Condiciones de uso
+
+El uso de la aplicación se rige por sus [condiciones de uso](condiciones).
 
 ## Contacto
 

@@ -10,7 +10,7 @@ description: >-
 
 # Zona Dron privacy policy
 
-*Last updated: 21 August 2026. Applies to Zona Dron (`es.zonadron.app`), all versions.*
+*Last updated: 24 September 2026. Applies to Zona Dron (`es.zonadron.app`), all versions.*
 
 **Versión en español: [política de privacidad](privacidad).**
 
@@ -50,6 +50,8 @@ else — to these services:
 | Nominatim (OpenStreetMap) | Place search and place names | The search text or coordinates |
 | IGN / IDEE / PNOA | Base maps and cartography | Coordinates of the map tiles |
 | Catastro, MITECO, IEPNB | Land use and protected areas | Coordinates of the point |
+| ENAIRE AIP | Aerodrome charts and data sheet, only when generating an EARO | Nothing of yours: the aerodrome's public page is requested |
+| Aviation Weather Center (NOAA) | Aerodrome METAR, only when generating an EARO | The aerodrome identifier (for example, LEVC) |
 | Google Maps / Apple Maps | Resolving a link you share with the app | The shared link |
 
 Those requests carry no identity, no name, no device identifier, none of your
@@ -59,6 +61,10 @@ server, the IP address the request comes from.
 
 In offline mode, with a downloaded pack, the whole check runs on the device and
 nothing leaves it.
+
+Authorisation requests and other e-mails the app prepares are not sent by the
+app: they open in your own mail app, with the documents you ticked attached, and
+you are the one who reviews and sends them.
 
 ## Location
 
@@ -70,8 +76,28 @@ mark it on the map instead.
 ## The documents you save
 
 Files you add to the document folder are copied into the app's private storage on
-your device. **They are never uploaded anywhere.** They only leave when you tap
-"Open", which hands them to whichever app you choose to view or share them with.
+your device. **They are never uploaded anywhere.** They only leave when you ask
+them to: when you tap "Open" or "Share", which hands them to whichever app you
+choose, or when you tick them to be attached to an e-mail that you then send
+yourself.
+
+## Notifications
+
+The app may show system notifications, for example the day before a flight you
+have planned or before a document expires. Those notifications are scheduled
+and generated **on the phone itself**: there is no server sending them and no
+push notifications, and no data leaves the phone for them. The notification
+permission is only requested when there is something to notify, and you can
+revoke it at any time in the system settings.
+
+## Purchases
+
+If the app offers anything paid, the purchase is made **through Google Play**
+and is governed by its terms. Your payment details are handled by Google; the
+developer never sees them. Google gives the developer the order details it gives
+any seller (order number, product, amount and country), which are only used to
+handle refunds and enquiries. The app keeps the purchase confirmation on the
+phone so that it keeps working without coverage.
 
 ## Advertising, analytics and profiling
 
@@ -92,16 +118,21 @@ nothing the developer could look up, correct or delete on your behalf: the data
 is yours and it is on your phone, and it is deleted from the app itself or by
 uninstalling it.
 
-## Open source
+## Source available
 
-The complete source code is published and can be reviewed at
-<https://github.com/DKNS-JCC/zonadron>. Anyone can check that what this document
-says is what the program does.
+The source code is published and can be read at
+<https://github.com/DKNS-JCC/zonadron>, so that anyone can check how the app
+handles your data. It is source-available, not open source: the terms for the
+code are in its licence.
 
 ## Changes to this policy
 
 If it ever changes, this document will be updated with its date and the change
 will be mentioned in the release notes of the corresponding version.
+
+## Terms of use
+
+Use of the app is governed by its [terms of use](terms).
 
 ## Contact
 
